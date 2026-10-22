@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f2eee5">
+  <meta name="description" content="明鉴：面向教师的作业审核与反馈工作台">
+  <title th:text="${assignmentTitle + ' · 明鉴'}">明鉴 · 教师作业审核平台</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+</head>
+<body data-view="review"
+      th:attr="data-submission-id=${submissionId}">
+  <header class="topbar">
+    <button class="icon-action context-toggle" id="contextToggle" type="button"
+            aria-label="打开作业上下文" aria-controls="contextPanel" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h11" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <a class="brand" th:href="@{/reviews/{id}(id=${submissionId})}" aria-label="明鉴审核工作台">
+      <span class="brand-seal" aria-hidden="true">鉴</span>
+      <span class="brand-copy">
+        <strong>明鉴</strong>
+        <small>教师作业审核平台</small>
+      </span>
+    </a>
+
+    <div class="context-strip">
+      <span class="context-title" th:text="${assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</span>
+      <span class="context-meta">
+        <span th:text="${courseName}">传播学方法课</span>
+        <span aria-hidden="true">/</span>
+        <span th:text="${studentName + ' · ' + studentNumber}">林清和 · 20230116</span>
+      </span>
+    </div>
+
+    <div class="topbar-end">
+      <span class="visibility-note">
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+          <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v9H6z" fill="none"
+                stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+        仅教师可见
+      </span>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+    </div>
+  </header>
+
+  <main class="workspace" id="workspace">
+    <aside class="panel context-panel" id="contextPanel" aria-label="作业与提交信息">
+      <div class="context-heading">
+        <p class="eyebrow">当前审核</p>
+        <h1 th:text="${assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</h1>
+        <p class="attempt-meta">
+          <span th:text="${attempt}">第 2 次提交</span>
+          <span aria-hidden="true">·</span>
+          <span th:text="${wordCount + ' 字'}">2,846 字</span>
+        </p>
+      </div>
+
+      <section class="context-section">
+        <h2>提交信息</h2>
+        <dl class="detail-list">
+          <div>
+            <dt>学生</dt>
+            <dd th:text="${studentName + ' · ' + studentNumber}">林清和 · 20230116</dd>
+          </div>
+          <div>
+            <dt>截止</dt>
+            <dd th:text="${dueAt}">10 月 24 日 23:59</dd>
+          </div>
+          <div>
+            <dt>提交</dt>
+            <dd th:text="${submittedAt}">10 月 21 日 22:48</dd>
+          </div>
+          <div>
+            <dt>状态</dt>
+            <dd><span class="status-badge status-pending">待审核</span></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="context-section rubric-section">
+        <div class="section-heading-row">
+          <h2>评分量规</h2>
+          <span>100 分</span>
+        </div>
+        <ol class="rubric-list">
+          <li class="rubric-item" th:each="criterion : ${rubric}">
+            <div class="rubric-line">
+              <span class="rubric-name" th:text="${criterion.name}">研究问题与目标</span>
+              <span class="rubric-points" th:text="${criterion.points + ' 分'}">25 分</span>
+            </div>
+            <p th:text="${criterion.description}">问题、目标与研究边界是否清楚</p>
+            <span class="criterion-state"
+                  th:classappend="${criterion.state == '需补充'} ? ' is-pending' : ''"
+                  th:text="${criterion.state}">达成</span>
+          </li>
+        </ol>
+      </section>
+
+      <div class="context-note">
+        <span>审核原则</span>
+        <p>先核对证据，再给结论。每条反馈都应指向具体位置，并给出下一步动作。</p>
+      </div>
+    </aside>
+
+    <section class="panel review-panel" aria-label="作业审核区">
+      <div class="review-toolbar">
+        <div class="review-state">
+          <span class="state-dot" aria-hidden="true"></span>
+          <span>审核中</span>
+          <span class="state-chip">反馈草稿</span>
+        </div>
+        <div class="toolbar-actions">
+          <span class="feedback-target">建议 300–500 字</span>
+          <button class="toolbar-button" id="versionSave" type="button">存为审核版本</button>
+          <button class="toolbar-button" id="versionOpen" type="button">
+            审核记录 <span class="count-pill" id="versionCount">0</span>
+          </button>
+        </div>
+      </div>
+
+      <section class="submission-preview" aria-label="学生作业预览">
+        <div class="preview-meta">
+          <span class="submission-label">学生提交 · V2</span>
+          <span>课程论文 / 调查报告</span>
+          <span class="attachment">问卷与编码表.pdf</span>
+        </div>
+        <p class="submission-text" th:text="${submissionExcerpt}">摘要
+
+本研究考察短视频使用强度与大学生注意力恢复之间的关系。
+
+二、研究方法
+
+本研究采用问卷调查法，以某高校在校本科生为研究对象。</p>
+      </section>
+
+      <section class="feedback-workspace" aria-label="教师审核意见">
+        <div class="feedback-heading">
+          <p class="eyebrow">教师审核意见</p>
+          <textarea class="feedback-title" id="feedbackTitle" rows="1"
+                    aria-label="审核意见标题"
+                    th:text="${feedbackTitle}">课程论文第二次提交审核意见</textarea>
+        </div>
+
+        <textarea class="feedback-editor" id="feedbackEditor" spellcheck="false"
+                  aria-label="审核意见正文"
+                  th:text="${feedbackContent}">总体判断
+
+本次提交已经形成清晰的研究问题，并补充了样本来源与调查流程，整体结构完整。
+
+需要优先补充的地方
+
+1. 在结果与分析中补充样本量、相关系数和显著性水平。</textarea>
+
+        <footer class="review-footer">
+          <div class="text-counts">
+            <span><strong id="characterCount">0</strong> 字</span>
+            <span aria-hidden="true">/</span>
+            <span><strong id="paragraphCount">0</strong> 段</span>
+          </div>
+          <span class="save-state" id="saveState" aria-live="polite">草稿仅在本页</span>
+        </footer>
+      </section>
+    </section>
+
+    <aside class="panel assistant-panel" id="assistantPanel" aria-label="审核助手">
+      <div class="assistant-heading">
+        <div>
+          <p class="eyebrow">审核助手</p>
+          <h2>把判断落在证据上</h2>
+          <p>根据评分量规提示可能的薄弱项，由教师决定是否采纳。</p>
+        </div>
+        <span class="assistant-count" id="assistantCount" aria-label="2 条审核提示">2</span>
+      </div>
+
+      <div class="assistant-list">
+        <article class="assistant-card" data-assistant-card>
+          <div class="card-labels">
+            <span class="card-label">证据与引用</span>
+            <span class="card-weight">量规 25 分</span>
+          </div>
+          <h3>概括性结论缺少来源</h3>
+          <blockquote>已有研究表明，短视频使用会影响注意力恢复。</blockquote>
+          <p class="card-explanation">这里概括了一项研究结论，但没有标明具体文献、样本或效应大小。</p>
+          <div class="card-action-copy">
+            <span>建议反馈</span>
+            <p>请为“已有研究表明”补充具体文献来源，并在正文中标注引用。</p>
+          </div>
+          <div class="card-buttons">
+            <button class="primary-action" type="button" data-card-action="adopt"
+                    data-suggestion="4. 请为“已有研究表明”补充具体文献来源，并在正文中标注引用。">写入意见</button>
+            <button class="secondary-action" type="button" data-card-action="dismiss">教师已核验</button>
+          </div>
+        </article>
+
+        <article class="assistant-card" data-assistant-card>
+          <div class="card-labels">
+            <span class="card-label">方法与数据</span>
+            <span class="card-weight">量规 30 分</span>
+          </div>
+          <h3>样本说明不够完整</h3>
+          <blockquote>问卷通过班级群发放，最终获得有效样本 326 份。</blockquote>
+          <p class="card-explanation">提交只报告了有效样本量，没有说明回收率、筛选标准和样本构成。</p>
+          <div class="card-action-copy">
+            <span>建议反馈</span>
+            <p>请补充问卷回收率、有效样本筛选标准和受访者年级分布。</p>
+          </div>
+          <div class="card-buttons">
+            <button class="primary-action" type="button" data-card-action="adopt"
+                    data-suggestion="5. 请在“研究方法”中补充问卷回收率、有效样本筛选标准和受访者年级分布。">写入意见</button>
+            <button class="secondary-action" type="button" data-card-action="dismiss">教师已核验</button>
+          </div>
+        </article>
+      </div>
+
+      <p class="assistant-foot">当前为静态量规提示，动态审核规则将在第三阶段接入。</p>
+    </aside>
+
+    <div class="scrim" id="scrim" aria-hidden="true"></div>
+  </main>
+
+  <nav class="mobile-nav" aria-label="移动端审核导航">
+    <button class="mobile-tab" type="button" data-target="context" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M5 6h14M5 12h14M5 18h9" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span>要求</span>
+    </button>
+    <button class="mobile-tab is-active" type="button" data-target="review" aria-selected="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M5 19h4l10-10a2.1 2.1 0 0 0-3-3L6 16z" fill="none"
+              stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+      </svg>
+      <span>批阅</span>
+    </button>
+    <button class="mobile-tab" type="button" data-target="assistant" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M12 3a6 6 0 0 0-3.4 10.9V17h6.8v-3.1A6 6 0 0 0 12 3zM9.7 20h4.6"
+              fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span>助手</span>
+      <span class="mobile-badge" id="mobileBadge">2</span>
+    </button>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script th:src="@{/js/review-workspace.js}" defer></script>
+</body>
+</html>
+
