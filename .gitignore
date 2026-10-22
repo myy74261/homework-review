@@ -1,4 +1,5 @@
 target/
+.maven-repo/
 .idea/
 .vscode/
 *.iml

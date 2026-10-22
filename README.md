@@ -9,12 +9,28 @@
 - 让教师反馈包含具体位置、判断依据和下一步修改动作。
 - 保留完整审核轨迹，支持教师复盘与课程分析。
 
+## 当前阶段
+
+P1：审核意见自动保存、反馈版本与逐行对比。
+
+本阶段完成：
+
+- 学生提交、作业上下文与评分量规统一展示
+- 教师反馈保存到 H2，刷新页面不丢失
+- 停止输入 900 毫秒后自动保存，失败时退回本机审核草稿
+- 保存时检测版本冲突，避免静默覆盖
+- 手动创建反馈版本，查看时间、字数与触发方式
+- 反馈版本逐行对比、历史反馈恢复
+- PC 三栏、平板双栏和手机单栏布局保持完整
+
+> 右侧审核助手目前是静态量规提示，可一键写入教师反馈；动态规则引擎将在 P3 接入。
+
 ## 阶段路线
 
 | 阶段 | 内容 | 状态 |
 | --- | --- | --- |
 | P0 | 独立工程与响应式教师审核工作台 | 已完成 |
-| P1 | 审核意见自动保存、反馈版本与对比 | 待开始 |
+| P1 | 审核意见自动保存、反馈版本与对比 | 已完成 |
 | P2 | 审核过程事件与量规指标 | 待开始 |
 | P3 | 审核规则引擎与实时反馈卡片 | 待开始 |
 | P4 | 审核档案、课程与教师看板 | 待开始 |
@@ -28,6 +44,18 @@
 | 数据 | Spring Data JPA、H2 文件数据库 |
 | 前端 | 原生 HTML / CSS / JavaScript |
 | 构建 | Maven 3.10 |
+
+## 接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/submissions/{id}/review` | 读取当前审核意见 |
+| PUT | `/api/submissions/{id}/review` | 保存审核意见，使用 `baseRevision` 防止覆盖 |
+| POST | `/api/submissions/{id}/review/versions` | 创建反馈版本 |
+| GET | `/api/submissions/{id}/review/versions` | 审核记录列表 |
+| GET | `/api/submissions/{id}/review/versions/{versionId}` | 审核记录详情 |
+| GET | `/api/submissions/{id}/review/versions/{versionId}/diff` | 与当前反馈逐行对比 |
+| POST | `/api/submissions/{id}/review/versions/{versionId}/restore` | 恢复历史反馈 |
 
 ## 本地运行
 
@@ -50,4 +78,23 @@ $env:JAVA_HOME = "D:\Project\jdk"
 - 公共类型与复杂规则写 Javadoc，说明设计原因。
 - 配置与密钥不进入仓库。
 - 每个阶段单独提交，保持作业过程可追踪。
+
+## 代码结构
+
+```text
+src/main/java/com/reviewdesk
+├── ReviewDeskApplication.java     应用入口
+├── domain                         提交、审核草稿与反馈版本
+├── repository                     JPA 数据访问
+├── service                        保存、快照、恢复与差异计算
+├── bootstrap                      教师审核演示数据
+└── web                            页面路由、REST 接口与 DTO
+
+src/main/resources
+├── application.yml                应用配置
+├── templates/review-workspace.html 审核工作台
+└── static
+    ├── css/review.css             响应式样式
+    └── js/review-workspace.js     页面交互与本机草稿
+```
 

@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f2eee5">
   <meta name="description" content="明鉴：面向教师的作业审核与反馈工作台">
-  <title th:text="${assignmentTitle + ' · 明鉴'}">明鉴 · 教师作业审核平台</title>
+  <title th:text="${submission.assignmentTitle + ' · 明鉴'}">明鉴 · 教师作业审核平台</title>
   <link rel="stylesheet" th:href="@{/css/review.css}">
 </head>
 <body data-view="review"
-      th:attr="data-submission-id=${submissionId}">
+      th:attr="data-submission-id=${submission.id},data-revision=${review.revision},data-version-count=${versionCount}">
   <header class="topbar">
     <button class="icon-action context-toggle" id="contextToggle" type="button"
             aria-label="打开作业上下文" aria-controls="contextPanel" aria-expanded="false">
@@ -19,7 +19,7 @@
       </svg>
     </button>
 
-    <a class="brand" th:href="@{/reviews/{id}(id=${submissionId})}" aria-label="明鉴审核工作台">
+    <a class="brand" th:href="@{/reviews/{id}(id=${submission.id})}" aria-label="明鉴审核工作台">
       <span class="brand-seal" aria-hidden="true">鉴</span>
       <span class="brand-copy">
         <strong>明鉴</strong>
@@ -28,11 +28,11 @@
     </a>
 
     <div class="context-strip">
-      <span class="context-title" th:text="${assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</span>
+      <span class="context-title" th:text="${submission.assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</span>
       <span class="context-meta">
-        <span th:text="${courseName}">传播学方法课</span>
+        <span th:text="${submission.courseName}">传播学方法课</span>
         <span aria-hidden="true">/</span>
-        <span th:text="${studentName + ' · ' + studentNumber}">林清和 · 20230116</span>
+        <span th:text="${submission.studentName + ' · ' + submission.studentNumber}">林清和 · 20230116</span>
       </span>
     </div>
 
@@ -52,7 +52,7 @@
     <aside class="panel context-panel" id="contextPanel" aria-label="作业与提交信息">
       <div class="context-heading">
         <p class="eyebrow">当前审核</p>
-        <h1 th:text="${assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</h1>
+        <h1 th:text="${submission.assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</h1>
         <p class="attempt-meta">
           <span th:text="${attempt}">第 2 次提交</span>
           <span aria-hidden="true">·</span>
@@ -65,7 +65,7 @@
         <dl class="detail-list">
           <div>
             <dt>学生</dt>
-            <dd th:text="${studentName + ' · ' + studentNumber}">林清和 · 20230116</dd>
+            <dd th:text="${submission.studentName + ' · ' + submission.studentNumber}">林清和 · 20230116</dd>
           </div>
           <div>
             <dt>截止</dt>
@@ -118,7 +118,7 @@
           <span class="feedback-target">建议 300–500 字</span>
           <button class="toolbar-button" id="versionSave" type="button">存为审核版本</button>
           <button class="toolbar-button" id="versionOpen" type="button">
-            审核记录 <span class="count-pill" id="versionCount">0</span>
+            审核记录 <span class="count-pill" id="versionCount" th:text="${versionCount}">0</span>
           </button>
         </div>
       </div>
@@ -127,9 +127,9 @@
         <div class="preview-meta">
           <span class="submission-label">学生提交 · V2</span>
           <span>课程论文 / 调查报告</span>
-          <span class="attachment">问卷与编码表.pdf</span>
+          <span class="attachment" th:text="${submission.attachmentName}">问卷与编码表.pdf</span>
         </div>
-        <p class="submission-text" th:text="${submissionExcerpt}">摘要
+        <p class="submission-text" th:text="${submission.content}">摘要
 
 本研究考察短视频使用强度与大学生注意力恢复之间的关系。
 
@@ -143,12 +143,12 @@
           <p class="eyebrow">教师审核意见</p>
           <textarea class="feedback-title" id="feedbackTitle" rows="1"
                     aria-label="审核意见标题"
-                    th:text="${feedbackTitle}">课程论文第二次提交审核意见</textarea>
+                    th:text="${review.title}">课程论文第二次提交审核意见</textarea>
         </div>
 
         <textarea class="feedback-editor" id="feedbackEditor" spellcheck="false"
                   aria-label="审核意见正文"
-                  th:text="${feedbackContent}">总体判断
+                  th:text="${review.content}">总体判断
 
 本次提交已经形成清晰的研究问题，并补充了样本来源与调查流程，整体结构完整。
 
@@ -162,7 +162,7 @@
             <span aria-hidden="true">/</span>
             <span><strong id="paragraphCount">0</strong> 段</span>
           </div>
-          <span class="save-state" id="saveState" aria-live="polite">草稿仅在本页</span>
+          <span class="save-state" id="saveState" aria-live="polite">已保存到服务器</span>
         </footer>
       </section>
     </section>
@@ -247,6 +247,42 @@
       <span class="mobile-badge" id="mobileBadge">2</span>
     </button>
   </nav>
+
+  <div class="drawer-scrim" id="versionScrim" aria-hidden="true"></div>
+
+  <aside class="version-drawer" id="versionDrawer" data-mode="list"
+         aria-hidden="true" aria-label="反馈版本记录" inert>
+    <header class="drawer-head">
+      <div>
+        <p class="eyebrow">审核过程</p>
+        <h2>反馈版本</h2>
+      </div>
+      <button class="drawer-close" id="versionClose" type="button" aria-label="关闭反馈版本">×</button>
+    </header>
+
+    <div class="drawer-body">
+      <div id="versionListWrap">
+        <p class="drawer-hint">每次审核版本都会保留完整反馈，可随时回看、对比或恢复。</p>
+        <ul class="version-list" id="versionList"></ul>
+        <p class="drawer-empty" id="versionEmpty" hidden>
+          还没有审核记录，点击“存为审核版本”创建第一条。
+        </p>
+      </div>
+
+      <section class="version-detail" id="versionDetail" hidden aria-label="反馈版本详情">
+        <button class="back-button" id="versionBack" type="button">← 返回审核记录</button>
+        <div class="detail-head">
+          <div>
+            <h3 id="detailTitle">反馈版本</h3>
+            <p class="detail-meta" id="detailMeta"></p>
+          </div>
+          <button class="restore-button" id="restoreButton" type="button">恢复此反馈版本</button>
+        </div>
+        <p class="diff-caption">与当前反馈稿对比</p>
+        <div class="diff-view" id="diffView"></div>
+      </section>
+    </div>
+  </aside>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
