@@ -204,20 +204,6 @@ button {
   font-size: 10px;
 }
 
-.role-switch {
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--ink-soft);
-  font-size: 9px;
-  text-decoration: none;
-}
-
-.role-switch:hover {
-  border-color: var(--green);
-  color: var(--green);
-}
-
 .logout-form {
   margin: 0;
 }

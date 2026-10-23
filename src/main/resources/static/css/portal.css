@@ -1425,20 +1425,6 @@ body.portal-page:not(.auth-page) {
   font-size: 11px;
 }
 
-.role-switch {
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--ink-soft);
-  font-size: 9px;
-  text-decoration: none;
-}
-
-.role-switch:hover {
-  border-color: var(--green);
-  color: var(--green);
-}
-
 /* ---------- 课堂讲解建议 ---------- */
 
 .lesson-main {

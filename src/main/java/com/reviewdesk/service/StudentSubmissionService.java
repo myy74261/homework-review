@@ -6,7 +6,6 @@ import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.ReviewDraftRepository;
 import com.reviewdesk.repository.SubmissionRepository;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,11 +36,6 @@ public class StudentSubmissionService {
         this.reviewService = reviewService;
         this.activityService = activityService;
         this.classroomService = classroomService;
-    }
-
-    public List<Submission> listForStudent(Account student) {
-        return submissionRepository.findByStudentAccountIdOrderBySubmittedAtDesc(
-                student.getId());
     }
 
     public Optional<Submission> findLatest(long assignmentId, Account student) {

@@ -87,7 +87,7 @@ public class TeachingSuggestionService {
         return planRepository.save(plan);
     }
 
-    public LessonPlan requirePlan(long assignmentId) {
+    private LessonPlan requirePlan(long assignmentId) {
         return planRepository.findById(assignmentId)
                 .orElseThrow(() -> new IllegalStateException("备课稿尚未生成"));
     }

@@ -29,11 +29,6 @@ public class ClassroomService {
         this.membershipRepository = membershipRepository;
     }
 
-    public Classroom require(long classroomId) {
-        return classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new IllegalArgumentException("课堂不存在"));
-    }
-
     public List<Classroom> teacherClassrooms(Account teacher) {
         return classroomRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.getId());
     }
@@ -97,7 +92,7 @@ public class ClassroomService {
         return membershipRepository.countByClassroomId(classroomId);
     }
 
-    public String nextJoinCode() {
+    private String nextJoinCode() {
         for (int attempt = 0; attempt < 20; attempt++) {
             StringBuilder code = new StringBuilder(8);
             for (int index = 0; index < 8; index++) {

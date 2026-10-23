@@ -35,14 +35,6 @@ public class AccessControlService {
         return account;
     }
 
-    public Account requireStudent(String username) {
-        Account account = accountService.requireByUsername(username);
-        if (account.isTeacher()) {
-            throw new SecurityException("需要学生权限");
-        }
-        return account;
-    }
-
     public void requireTeacherClassroom(String username, long classroomId) {
         if (!classroomService.isTeacherOwner(requireTeacher(username), classroomId)) {
             throw new SecurityException("无权访问该课堂");
