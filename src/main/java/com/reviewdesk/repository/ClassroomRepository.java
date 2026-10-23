@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * 教学课堂的数据访问接口。
+ */
 public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
 
     List<Classroom> findByTeacherIdOrderByCreatedAtDesc(Long teacherId);

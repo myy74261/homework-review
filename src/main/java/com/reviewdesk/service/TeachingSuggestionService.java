@@ -93,10 +93,8 @@ public class TeachingSuggestionService {
     }
 
     private List<EvidenceView> loadEvidence(long assignmentId) {
-        List<Submission> submissions = submissionRepository.findAllByOrderBySubmittedAtDesc()
-                .stream()
-                .filter(submission -> submission.getAssignmentId().equals(assignmentId))
-                .toList();
+        List<Submission> submissions = submissionRepository
+                .findByAssignmentIdOrderBySubmittedAtDesc(assignmentId);
         if (submissions.isEmpty()) {
             return List.of();
         }

@@ -30,10 +30,6 @@ public class AssignmentService {
                 .orElseThrow(() -> new AssignmentNotFoundException(assignmentId));
     }
 
-    public List<Assignment> listAssignments() {
-        return assignmentRepository.findAllByOrderByPublishedAtDesc();
-    }
-
     public List<AssignmentRubric> listRubrics(long assignmentId) {
         requireAssignment(assignmentId);
         return rubricRepository.findByAssignmentIdOrderByDisplayOrderAsc(assignmentId);

@@ -5,11 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * 学生作业提交的数据访问接口。
+ */
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
-
-    List<Submission> findAllByOrderBySubmittedAtDesc();
-
-    List<Submission> findByStudentNumberOrderBySubmittedAtDesc(String studentNumber);
 
     List<Submission> findByStudentAccountIdOrderBySubmittedAtDesc(Long studentAccountId);
 
@@ -18,8 +17,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     long countByAssignmentId(Long assignmentId);
 
-    Optional<Submission> findFirstByAssignmentIdAndStudentNumberOrderByAttemptNumberDesc(
-            Long assignmentId, String studentNumber);
+    List<Submission> findByAssignmentIdOrderBySubmittedAtDesc(Long assignmentId);
 
     Optional<Submission> findFirstByAssignmentIdAndStudentAccountIdOrderByAttemptNumberDesc(
             Long assignmentId, Long studentAccountId);

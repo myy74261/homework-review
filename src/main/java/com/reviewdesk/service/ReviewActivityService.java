@@ -3,7 +3,6 @@ package com.reviewdesk.service;
 import com.reviewdesk.domain.ReviewEvent;
 import com.reviewdesk.repository.ReviewEventRepository;
 import com.reviewdesk.repository.SubmissionRepository;
-import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,15 +44,6 @@ public class ReviewActivityService {
             safeDetail = safeDetail.substring(0, 240);
         }
         eventRepository.save(new ReviewEvent(submissionId, eventType, safeDetail));
-    }
-
-    public List<ReviewEvent> recent(long submissionId) {
-        requireSubmission(submissionId);
-        return eventRepository.findBySubmissionIdOrderByOccurredAtDesc(submissionId);
-    }
-
-    public long count(long submissionId, String eventType) {
-        return eventRepository.countBySubmissionIdAndEventType(submissionId, eventType);
     }
 
     private void requireSubmission(long submissionId) {

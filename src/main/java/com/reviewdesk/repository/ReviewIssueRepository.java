@@ -5,11 +5,10 @@ import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * 教师确认问题的数据访问接口。
+ */
 public interface ReviewIssueRepository extends JpaRepository<ReviewIssue, Long> {
-
-    List<ReviewIssue> findAllByOrderByCreatedAtDesc();
-
-    List<ReviewIssue> findBySubmissionIdOrderByCreatedAtDesc(Long submissionId);
 
     List<ReviewIssue> findBySubmissionIdInOrderByCreatedAtDesc(Collection<Long> submissionIds);
 }
