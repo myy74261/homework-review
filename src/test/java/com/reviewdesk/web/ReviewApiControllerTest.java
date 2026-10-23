@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -110,6 +111,21 @@ class ReviewApiControllerTest {
         mockMvc.perform(get(REVIEW_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").value(original));
+    }
+
+    @Test
+    void completingReviewPublishesFeedbackToStudent() throws Exception {
+        mockMvc.perform(post(REVIEW_URL + "/complete"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/reviews/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("已审核")));
+
+        mockMvc.perform(get("/student/assignments/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("教师最终反馈")))
+                .andExpect(content().string(containsString("总体判断")));
     }
 
     private String saveRequest(String title, String content, long baseRevision)

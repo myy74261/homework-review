@@ -64,10 +64,21 @@
 
         <div class="latest-submission" th:if="${latestSubmission != null}">
           <div>
-            <span class="status-badge status-submitted">已提交</span>
+            <span class="status-badge"
+                  th:classappend="${latestSubmission.reviewStatus == 'REVIEWED'} ? ' status-submitted' : ' status-pending'"
+                  th:text="${latestSubmission.reviewStatus == 'REVIEWED'} ? '已审核' : '待审核'">
+              已提交
+            </span>
             <strong th:text="'第 ' + ${latestSubmission.attemptNumber} + ' 次提交'">第 2 次提交</strong>
           </div>
-          <p>教师审核完成后，最终反馈会通过课堂通知发布。平台建议在教师确认前不会直接展示给学生。</p>
+          <p th:if="${reviewFeedback == null}">
+            教师审核完成后，最终反馈会在这里发布。平台建议在教师确认前不会直接展示给学生。
+          </p>
+          <section class="student-final-feedback" th:if="${reviewFeedback != null}">
+            <span>教师最终反馈</span>
+            <h3 th:text="${reviewFeedback.title}">课程论文审核意见</h3>
+            <p th:text="${reviewFeedback.content}">请补充证据来源。</p>
+          </section>
         </div>
 
         <form th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}" method="post">

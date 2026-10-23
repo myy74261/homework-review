@@ -95,6 +95,14 @@
             <span id="lessonSaveState" aria-live="polite">已保存到服务器</span>
           </div>
           <div class="lesson-actions">
+            <a class="secondary-tool export-tool"
+               th:href="@{/teacher/assignments/{id}/lesson-plan/export.doc(id=${assignment.id})}">
+              导出 .doc
+            </a>
+            <a class="secondary-tool export-tool"
+               th:href="@{/teacher/assignments/{id}/lesson-plan/export.md(id=${assignment.id})}">
+              Markdown
+            </a>
             <button class="secondary-tool" id="regenerateButton" type="button">按最新问题重新生成</button>
             <span class="draft-version" th:text="'V' + ${plan.revision}">V0</span>
           </div>

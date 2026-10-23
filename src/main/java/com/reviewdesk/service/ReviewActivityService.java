@@ -22,7 +22,8 @@ public class ReviewActivityService {
             "VERSION_CREATED",
             "VERSION_RESTORED",
             "SUGGESTION_ADOPTED",
-            "SUGGESTION_DISMISSED");
+            "SUGGESTION_DISMISSED",
+            "REVIEW_COMPLETED");
 
     private final ReviewEventRepository eventRepository;
     private final SubmissionRepository submissionRepository;

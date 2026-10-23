@@ -32,8 +32,12 @@ public class TeacherDashboardController {
 
     @GetMapping("/teacher")
     public String dashboard(Model model) {
+        var submissions = workspaceService.listSubmissions();
         model.addAttribute("assignments", workspaceService.listAssignments());
-        model.addAttribute("submissions", workspaceService.listSubmissions());
+        model.addAttribute("submissions", submissions);
+        model.addAttribute("reviewedCount", submissions.stream()
+                .filter(row -> "已审核".equals(row.statusText()))
+                .count());
         model.addAttribute("commonIssues", workspaceService.listCommonIssues());
         return "teacher-dashboard";
     }

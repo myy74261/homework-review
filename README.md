@@ -11,10 +11,14 @@
 
 ## 当前阶段
 
-P3：基于教师确认问题生成可编辑、可追溯的课堂讲解建议。
+P4：审核完成状态、课程看板与备课素材导出。
 
 本阶段完成：
 
+- 教师可完成审核，学生端随即收到最终反馈
+- 教师首页汇总作业、提交、确认问题和完成审核数量
+- 备课稿支持导出 Word 兼容文档和 Markdown
+- 导出材料保留问题证据与教师判断边界
 - 确定性规则根据评分维度生成课堂目标、共性问题、典型错例、追问和练习
 - 教师可编辑并自动保存备课稿，重新生成时形成新版本
 - 备课页并列保留学生原文、教师判断和对应审核入口
@@ -31,7 +35,7 @@ P3：基于教师确认问题生成可编辑、可追溯的课堂讲解建议。
 - 反馈版本逐行对比、历史反馈恢复
 - PC 三栏、平板双栏和手机单栏布局保持完整
 
-> 审核页右侧仍是量规提示卡片；备课建议已经使用真实问题数据通过规则生成。P4 将完成导出、归档与课程看板。
+> 当前完成智慧教学最小闭环：发布作业 → 学生提交 → 教师审核 → 问题汇总 → 备课建议 → 教师编辑 → 导出。
 
 ## 阶段路线
 
@@ -41,7 +45,7 @@ P3：基于教师确认问题生成可编辑、可追溯的课堂讲解建议。
 | P1 | 审核意见自动保存、反馈版本与对比 | 已完成 |
 | P2 | 作业发布、学生提交、审核事件与量规问题汇总 | 已完成 |
 | P3 | 可解释备课建议生成与教师编辑 | 已完成 |
-| P4 | 审核档案、课程与教师看板 | 待开始 |
+| P4 | 审核档案、课程看板与备课素材导出 | 已完成 |
 
 ## 技术栈
 
@@ -64,11 +68,14 @@ P3：基于教师确认问题生成可编辑、可追溯的课堂讲解建议。
 | GET | `/api/submissions/{id}/review/versions/{versionId}` | 审核记录详情 |
 | GET | `/api/submissions/{id}/review/versions/{versionId}/diff` | 与当前反馈逐行对比 |
 | POST | `/api/submissions/{id}/review/versions/{versionId}/restore` | 恢复历史反馈 |
+| POST | `/api/submissions/{id}/review/complete` | 完成审核并向学生发布最终反馈 |
 | POST | `/api/submissions/{id}/issues` | 保存教师确认的量规问题 |
 | POST | `/api/submissions/{id}/events` | 记录关键审核事件 |
 | GET | `/api/assignments/{id}/lesson-plan` | 获取备课建议与问题依据 |
 | PUT | `/api/assignments/{id}/lesson-plan` | 自动保存教师编辑的备课稿 |
 | POST | `/api/assignments/{id}/lesson-plan/regenerate` | 按最新问题重新生成备课稿 |
+| GET | `/teacher/assignments/{id}/lesson-plan/export.doc` | 导出 Word 兼容备课文档 |
+| GET | `/teacher/assignments/{id}/lesson-plan/export.md` | 导出 Markdown 备课文档 |
 
 ## 演示流程
 
@@ -77,6 +84,7 @@ P3：基于教师确认问题生成可编辑、可追溯的课堂讲解建议。
 3. 教师从提交队列进入审核工作台，确认问题并生成反馈。
 4. 教师首页按评分维度查看共性问题汇总。
 5. 教师打开备课建议，核对问题依据、编辑课堂讲解并按需重新生成。
+6. 教师完成审核，学生端查看最终反馈；备课稿可导出为 Word 兼容文档。
 
 ## 本地运行
 
@@ -105,7 +113,7 @@ $env:JAVA_HOME = "D:\Project\jdk"
 ```text
 src/main/java/com/reviewdesk
 ├── ReviewDeskApplication.java     应用入口
-├── domain                         作业、量规、提交、审核、问题、事件与备课稿
+├── domain                         作业、量规、提交、审核、问题、事件、备课稿与状态
 ├── repository                     JPA 数据访问
 ├── service                        审核版本、问题汇总与规则式备课建议
 ├── bootstrap                      教师审核演示数据

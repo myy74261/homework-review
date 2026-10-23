@@ -59,6 +59,11 @@
         <strong th:text="${commonIssues.isEmpty()} ? 0 : ${commonIssues.size()}">0</strong>
         <small>个评分维度出现薄弱项</small>
       </article>
+      <article class="metric-card">
+        <span>完成审核</span>
+        <strong th:text="${reviewedCount}">0</strong>
+        <small>份最终反馈已发布</small>
+      </article>
     </section>
 
     <div class="portal-grid">

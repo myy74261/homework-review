@@ -496,6 +496,17 @@ button {
   cursor: wait;
 }
 
+.complete-review-button {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.complete-review-button:hover {
+  background: var(--green-dark);
+  color: #fff;
+}
+
 .count-pill {
   display: inline-grid;
   place-items: center;

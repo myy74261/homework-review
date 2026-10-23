@@ -34,6 +34,8 @@
 
   const versionSave = document.getElementById('versionSave');
   const versionOpen = document.getElementById('versionOpen');
+  const completeReview = document.getElementById('completeReview');
+  const reviewStateText = document.getElementById('reviewStateText');
   const versionCountElement = document.getElementById('versionCount');
   const versionDrawer = document.getElementById('versionDrawer');
   const versionScrim = document.getElementById('versionScrim');
@@ -415,6 +417,29 @@
     }
   }
 
+  async function finishReview() {
+    completeReview.disabled = true;
+    try {
+      if (unsynced) {
+        const saved = await saveReview();
+        if (!saved) {
+          throw new Error('审核意见尚未保存');
+        }
+      }
+      const response = await fetch(`${reviewApi}/complete`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`完成审核失败：${response.status}`);
+      }
+      reviewStateText.textContent = '已审核';
+      document.querySelector('.state-chip').textContent = '反馈已发布';
+      completeReview.textContent = '审核已完成';
+      showToast('审核已完成，学生端将显示最终反馈');
+    } catch (error) {
+      completeReview.disabled = false;
+      showToast('完成审核失败，请确认反馈已保存后重试');
+    }
+  }
+
   function setMobileView(view) {
     body.dataset.view = view;
     tabs.forEach((tab) => {
@@ -517,6 +542,9 @@
   versionBack.addEventListener('click', () => setVersionMode('list'));
   versionSave.addEventListener('click', () => {
     void saveVersion();
+  });
+  completeReview.addEventListener('click', () => {
+    void finishReview();
   });
   restoreButton.addEventListener('click', () => {
     void restoreSelectedVersion();

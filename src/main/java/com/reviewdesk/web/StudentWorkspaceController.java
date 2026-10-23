@@ -3,6 +3,7 @@ package com.reviewdesk.web;
 import com.reviewdesk.domain.Assignment;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.service.AssignmentService;
+import com.reviewdesk.service.ReviewService;
 import com.reviewdesk.service.StudentSubmissionService;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -30,11 +31,14 @@ public class StudentWorkspaceController {
 
     private final AssignmentService assignmentService;
     private final StudentSubmissionService submissionService;
+    private final ReviewService reviewService;
 
     public StudentWorkspaceController(AssignmentService assignmentService,
-                                      StudentSubmissionService submissionService) {
+                                      StudentSubmissionService submissionService,
+                                      ReviewService reviewService) {
         this.assignmentService = assignmentService;
         this.submissionService = submissionService;
+        this.reviewService = reviewService;
     }
 
     @GetMapping("/student")
@@ -64,8 +68,14 @@ public class StudentWorkspaceController {
         model.addAttribute("rubrics", assignmentService.listRubrics(assignmentId));
         model.addAttribute("studentName", DEMO_STUDENT_NAME);
         model.addAttribute("studentNumber", DEMO_STUDENT_NUMBER);
-        model.addAttribute("latestSubmission",
-                submissionService.findLatest(assignmentId, DEMO_STUDENT_NUMBER).orElse(null));
+        Submission latestSubmission = submissionService
+                .findLatest(assignmentId, DEMO_STUDENT_NUMBER)
+                .orElse(null);
+        model.addAttribute("latestSubmission", latestSubmission);
+        model.addAttribute("reviewFeedback",
+                latestSubmission != null && "REVIEWED".equals(latestSubmission.getReviewStatus())
+                        ? reviewService.requireDraft(latestSubmission.getId())
+                        : null);
         return "student-assignment";
     }
 

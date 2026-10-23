@@ -130,5 +130,12 @@ public class Submission {
     public String getReviewStatus() {
         return reviewStatus;
     }
+
+    /**
+     * 标记教师已经完成本轮审核。
+     */
+    public void markReviewed() {
+        this.reviewStatus = "REVIEWED";
+    }
 }
 

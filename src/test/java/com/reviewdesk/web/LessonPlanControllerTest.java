@@ -87,6 +87,15 @@ class LessonPlanControllerTest {
                 .andExpect(jsonPath("$.content", containsString("方法与数据")));
     }
 
+    @Test
+    void teacherCanExportWordCompatibleMaterial() throws Exception {
+        mockMvc.perform(get("/teacher/assignments/1/lesson-plan/export.doc"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/msword"))
+                .andExpect(content().string(containsString("课堂讲解建议")))
+                .andExpect(content().string(containsString("附：问题证据")));
+    }
+
     private JsonNode readPlan() throws Exception {
         String body = mockMvc.perform(get(PLAN_URL))
                 .andExpect(status().isOk())

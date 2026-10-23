@@ -104,6 +104,18 @@ public class ReviewService {
         return draft;
     }
 
+    /**
+     * 标记教师已完成审核，并记录审核事件。
+     */
+    @Transactional
+    public Submission completeReview(long submissionId) {
+        Submission submission = requireSubmission(submissionId);
+        submission.markReviewed();
+        submissionRepository.save(submission);
+        activityService.record(submissionId, "REVIEW_COMPLETED", "教师完成本轮审核");
+        return submission;
+    }
+
     private ReviewVersion appendVersion(ReviewDraft draft, String triggerType) {
         long nextVersion = versionRepository
                 .findFirstBySubmissionIdOrderByVersionNumberDesc(draft.getSubmissionId())

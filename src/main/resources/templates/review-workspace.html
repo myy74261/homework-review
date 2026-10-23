@@ -113,7 +113,8 @@
       <div class="review-toolbar">
         <div class="review-state">
           <span class="state-dot" aria-hidden="true"></span>
-          <span>审核中</span>
+          <span id="reviewStateText"
+                th:text="${submission.reviewStatus == 'REVIEWED'} ? '已审核' : '审核中'">审核中</span>
           <span class="state-chip">反馈草稿</span>
         </div>
         <div class="toolbar-actions">
@@ -121,6 +122,12 @@
           <button class="toolbar-button" id="versionSave" type="button">存为审核版本</button>
           <button class="toolbar-button" id="versionOpen" type="button">
             审核记录 <span class="count-pill" id="versionCount" th:text="${versionCount}">0</span>
+          </button>
+          <button class="toolbar-button complete-review-button" id="completeReview"
+                  type="button"
+                  th:disabled="${submission.reviewStatus == 'REVIEWED'}"
+                  th:text="${submission.reviewStatus == 'REVIEWED'} ? '审核已完成' : '完成审核'">
+            完成审核
           </button>
         </div>
       </div>

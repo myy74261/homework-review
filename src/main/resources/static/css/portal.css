@@ -128,7 +128,7 @@ body.portal-page {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -781,6 +781,31 @@ body.portal-page {
   line-height: 1.65;
 }
 
+.student-final-feedback {
+  margin-top: 11px;
+  padding: 11px;
+  border-radius: 9px;
+  background: #fffefb;
+}
+
+.student-final-feedback > span {
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.student-final-feedback h3 {
+  margin: 6px 0 0;
+  font-family: var(--font-reading);
+  font-size: 14px;
+}
+
+.student-final-feedback p {
+  margin-top: 6px;
+  white-space: pre-line;
+}
+
 .student-form-head {
   display: flex;
   align-items: flex-start;
@@ -1102,6 +1127,12 @@ body.portal-page {
   color: var(--green);
 }
 
+.export-tool {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .secondary-tool:disabled {
   opacity: 0.55;
   cursor: wait;
@@ -1229,6 +1260,10 @@ body.portal-page {
 }
 
 @media (max-width: 960px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .portal-grid {
     grid-template-columns: 1fr;
   }
