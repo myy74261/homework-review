@@ -4,8 +4,10 @@ import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.ReviewDraftRepository;
 import com.reviewdesk.repository.SubmissionRepository;
+import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ReviewService;
 import java.time.Instant;
+import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -50,13 +52,16 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final SubmissionRepository submissionRepository;
     private final ReviewDraftRepository draftRepository;
     private final ReviewService reviewService;
+    private final AssignmentService assignmentService;
 
     public DemoDataInitializer(SubmissionRepository submissionRepository,
                                ReviewDraftRepository draftRepository,
-                               ReviewService reviewService) {
+                               ReviewService reviewService,
+                               AssignmentService assignmentService) {
         this.submissionRepository = submissionRepository;
         this.draftRepository = draftRepository;
         this.reviewService = reviewService;
+        this.assignmentService = assignmentService;
     }
 
     @Override
@@ -66,17 +71,36 @@ public class DemoDataInitializer implements ApplicationRunner {
             return;
         }
 
+        var assignment = assignmentService.listAssignments().stream()
+                .findFirst()
+                .orElseGet(() -> assignmentService.publish(
+                        "短视频使用与大学生注意力恢复的关系研究",
+                        "传播学方法课",
+                        "完成一篇 3,000 字左右的调查报告，说明研究问题、研究方法、"
+                                + "数据来源与主要发现，并附参考文献。",
+                        Instant.parse("2026-10-24T15:59:00Z"),
+                        List.of(
+                                new AssignmentService.RubricDefinition(
+                                        "研究问题与目标", 25, "问题、目标与研究边界是否清楚"),
+                                new AssignmentService.RubricDefinition(
+                                        "证据与引用", 25, "结论是否有可追溯的数据或文献支持"),
+                                new AssignmentService.RubricDefinition(
+                                        "方法与数据", 30, "样本、抽样、回收率与统计过程是否透明"),
+                                new AssignmentService.RubricDefinition(
+                                        "结构与表达", 20, "论证顺序、段落衔接与学术表达是否清晰")
+                        )));
         Submission submission = new Submission(
                 ReviewService.DEMO_SUBMISSION_ID,
-                "短视频使用与大学生注意力恢复的关系研究",
-                "传播学方法课",
+                assignment.getId(),
+                assignment.getTitle(),
+                assignment.getCourseName(),
                 "林清和",
                 "20230116",
                 SUBMISSION_CONTENT,
                 2846,
                 2,
                 "问卷与编码表.pdf",
-                Instant.parse("2026-10-24T15:59:00Z"),
+                assignment.getDueAt(),
                 Instant.parse("2026-10-21T14:48:00Z"));
         submissionRepository.save(submission);
         draftRepository.save(new ReviewDraft(

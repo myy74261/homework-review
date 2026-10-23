@@ -184,6 +184,20 @@ button {
   font-size: 10px;
 }
 
+.role-switch {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.role-switch:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
 .teacher-avatar {
   width: 34px;
   height: 34px;
@@ -242,6 +256,14 @@ button {
   font-size: 18px;
   font-weight: 600;
   line-height: 1.5;
+}
+
+.back-to-class {
+  display: inline-block;
+  margin-bottom: 9px;
+  color: var(--green);
+  font-size: 9px;
+  text-decoration: none;
 }
 
 .attempt-meta {

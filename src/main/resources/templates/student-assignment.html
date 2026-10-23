@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${assignment.title + ' · 明鉴'}">课程作业 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page student-theme">
+  <header class="topbar portal-topbar">
+    <a class="brand" th:href="@{/student}" aria-label="返回我的作业">
+      <span class="brand-seal" aria-hidden="true">鉴</span>
+      <span class="brand-copy">
+        <strong>明鉴</strong>
+        <small>学生作业空间</small>
+      </span>
+    </a>
+    <div class="context-strip">
+      <span class="context-title" th:text="${assignment.title}">短视频使用与大学生注意力恢复的关系研究</span>
+      <span class="context-meta">
+        <span th:text="${assignment.courseName}">传播学方法课</span>
+        <span aria-hidden="true">/</span>
+        <span th:text="'截止 ' + ${dueAtText}">截止 10 月 24 日 23:59</span>
+      </span>
+    </div>
+    <div class="topbar-end">
+      <span class="role-chip student-chip">学生端</span>
+      <button class="teacher-avatar" type="button" aria-label="学生个人中心">林</button>
+    </div>
+  </header>
+
+  <main class="student-assignment-main">
+    <a class="back-to-class" th:href="@{/student}">← 返回我的作业</a>
+
+    <div class="student-assignment-layout">
+      <aside class="student-brief">
+        <p class="eyebrow">作业要求</p>
+        <h1 th:text="${assignment.title}">短视频使用与大学生注意力恢复的关系研究</h1>
+        <p class="student-instructions" th:text="${assignment.instructions}">作业说明</p>
+        <div class="deadline-card">
+          <span>提交截止</span>
+          <strong th:text="${dueAtText}">10 月 24 日 23:59</strong>
+        </div>
+        <section class="student-rubric">
+          <h2>评分量规</h2>
+          <div class="student-rubric-row" th:each="rubric : ${rubrics}">
+            <div>
+              <strong th:text="${rubric.name}">证据与引用</strong>
+              <p th:text="${rubric.description}">结论是否有可追溯的数据或文献支持</p>
+            </div>
+            <span th:text="${rubric.points + ' 分'}">25 分</span>
+          </div>
+        </section>
+      </aside>
+
+      <section class="student-submit-panel">
+        <div class="success-banner" th:if="${successMessage}" th:text="${successMessage}">
+          作业已提交。
+        </div>
+        <div class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}">
+          提交失败。
+        </div>
+
+        <div class="latest-submission" th:if="${latestSubmission != null}">
+          <div>
+            <span class="status-badge status-submitted">已提交</span>
+            <strong th:text="'第 ' + ${latestSubmission.attemptNumber} + ' 次提交'">第 2 次提交</strong>
+          </div>
+          <p>教师审核完成后，最终反馈会通过课堂通知发布。平台建议在教师确认前不会直接展示给学生。</p>
+        </div>
+
+        <form th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}" method="post">
+          <div class="student-form-head">
+            <div>
+              <p class="eyebrow" th:text="${latestSubmission == null ? '在线提交' : '再次提交'}">
+                在线提交
+              </p>
+              <h2 th:text="${latestSubmission == null ? '提交你的作业' : '提交修订版本'}">
+                提交你的作业
+              </h2>
+            </div>
+            <span>至少 20 个字符</span>
+          </div>
+          <textarea class="student-submission-editor" name="content" required
+                    aria-label="作业内容"
+                    th:text="${latestSubmission == null ? '' : ''}"
+                    placeholder="请粘贴或输入完整作业内容……"></textarea>
+          <div class="student-form-foot">
+            <p>重复提交会保留为新的提交记录，教师可以对照前后版本。</p>
+            <button type="submit" th:text="${latestSubmission == null ? '提交作业' : '提交修订版本'}">
+              提交作业
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

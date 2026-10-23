@@ -19,7 +19,7 @@
       </svg>
     </button>
 
-    <a class="brand" th:href="@{/reviews/{id}(id=${submission.id})}" aria-label="明鉴审核工作台">
+    <a class="brand" th:href="@{/teacher}" aria-label="返回教师课堂">
       <span class="brand-seal" aria-hidden="true">鉴</span>
       <span class="brand-copy">
         <strong>明鉴</strong>
@@ -37,6 +37,7 @@
     </div>
 
     <div class="topbar-end">
+      <a class="role-switch" th:href="@{/student}">学生端预览</a>
       <span class="visibility-note">
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
           <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v9H6z" fill="none"
@@ -51,6 +52,7 @@
   <main class="workspace" id="workspace">
     <aside class="panel context-panel" id="contextPanel" aria-label="作业与提交信息">
       <div class="context-heading">
+        <a class="back-to-class" th:href="@{/teacher}">← 返回课堂</a>
         <p class="eyebrow">当前审核</p>
         <h1 th:text="${submission.assignmentTitle}">短视频使用与大学生注意力恢复的关系研究</h1>
         <p class="attempt-meta">
@@ -192,8 +194,11 @@
           </div>
           <div class="card-buttons">
             <button class="primary-action" type="button" data-card-action="adopt"
+                    data-rubric-name="证据与引用"
+                    data-evidence="已有研究表明，短视频使用会影响注意力恢复。"
                     data-suggestion="4. 请为“已有研究表明”补充具体文献来源，并在正文中标注引用。">写入意见</button>
-            <button class="secondary-action" type="button" data-card-action="dismiss">教师已核验</button>
+            <button class="secondary-action" type="button" data-card-action="dismiss"
+                    data-rubric-name="证据与引用">教师已核验</button>
           </div>
         </article>
 
@@ -211,8 +216,11 @@
           </div>
           <div class="card-buttons">
             <button class="primary-action" type="button" data-card-action="adopt"
+                    data-rubric-name="方法与数据"
+                    data-evidence="问卷通过班级群发放，最终获得有效样本 326 份。"
                     data-suggestion="5. 请在“研究方法”中补充问卷回收率、有效样本筛选标准和受访者年级分布。">写入意见</button>
-            <button class="secondary-action" type="button" data-card-action="dismiss">教师已核验</button>
+            <button class="secondary-action" type="button" data-card-action="dismiss"
+                    data-rubric-name="方法与数据">教师已核验</button>
           </div>
         </article>
       </div>

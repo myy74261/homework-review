@@ -22,13 +22,16 @@ public class ReviewService {
     private final SubmissionRepository submissionRepository;
     private final ReviewDraftRepository draftRepository;
     private final ReviewVersionRepository versionRepository;
+    private final ReviewActivityService activityService;
 
     public ReviewService(SubmissionRepository submissionRepository,
                          ReviewDraftRepository draftRepository,
-                         ReviewVersionRepository versionRepository) {
+                         ReviewVersionRepository versionRepository,
+                         ReviewActivityService activityService) {
         this.submissionRepository = submissionRepository;
         this.draftRepository = draftRepository;
         this.versionRepository = versionRepository;
+        this.activityService = activityService;
     }
 
     public Submission requireSubmission(long submissionId) {
@@ -55,7 +58,9 @@ public class ReviewService {
                             long baseRevision) {
         ReviewDraft draft = requireDraft(submissionId);
         draft.applyUpdate(title.strip(), content, baseRevision);
-        return draftRepository.save(draft);
+        ReviewDraft saved = draftRepository.save(draft);
+        activityService.record(submissionId, "FEEDBACK_SAVED", "自动保存教师反馈");
+        return saved;
     }
 
     /**
@@ -66,7 +71,10 @@ public class ReviewService {
     @Transactional
     public ReviewVersion createVersion(long submissionId, String triggerType) {
         ReviewDraft draft = requireDraft(submissionId);
-        return appendVersion(draft, triggerType);
+        ReviewVersion version = appendVersion(draft, triggerType);
+        activityService.record(
+                submissionId, "VERSION_CREATED", "反馈版本 " + version.getVersionNumber());
+        return version;
     }
 
     public List<ReviewVersion> listVersions(long submissionId) {
@@ -88,7 +96,11 @@ public class ReviewService {
         ReviewVersion version = requireVersion(submissionId, versionId);
         draft.applyRestore(version.getTitle(), version.getContent());
         draftRepository.save(draft);
-        appendVersion(draft, "RESTORE");
+        ReviewVersion restored = appendVersion(draft, "RESTORE");
+        activityService.record(
+                submissionId, "VERSION_RESTORED",
+                "恢复反馈版本 " + version.getVersionNumber()
+                        + "，生成快照 " + restored.getVersionNumber());
         return draft;
     }
 

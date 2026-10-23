@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2eee5">
+  <title>我的作业 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page student-theme">
+  <header class="topbar portal-topbar">
+    <a class="brand" th:href="@{/student}" aria-label="明鉴学生作业">
+      <span class="brand-seal" aria-hidden="true">鉴</span>
+      <span class="brand-copy">
+        <strong>明鉴</strong>
+        <small>学生作业空间</small>
+      </span>
+    </a>
+    <nav class="portal-nav" aria-label="学生端主导航">
+      <a class="is-active" th:href="@{/student}">我的作业</a>
+      <a th:href="@{/teacher}">教师端演示</a>
+    </nav>
+    <div class="topbar-end">
+      <span class="role-chip student-chip">学生端</span>
+      <button class="teacher-avatar" type="button" aria-label="学生个人中心">林</button>
+    </div>
+  </header>
+
+  <main class="portal-main student-main">
+    <section class="student-welcome">
+      <p class="eyebrow">你好，林清和</p>
+      <h1>按时提交，也看清评价依据</h1>
+      <p>作业要求与评分量规在这里公开；平台不替你写作，也不会根据写作过程自动判定诚信问题。</p>
+    </section>
+
+    <section class="student-assignment-grid">
+      <article class="student-assignment-card" th:each="item : ${assignments}">
+        <div class="assignment-card-top">
+          <span class="status-badge"
+                th:classappend="${item.latestSubmission == null} ? ' status-pending' : ' status-submitted'"
+                th:text="${item.latestSubmission == null ? '待提交' : '已提交'}">待提交</span>
+          <span th:text="${item.assignment.courseName}">传播学方法课</span>
+        </div>
+        <h2 th:text="${item.assignment.title}">短视频使用与大学生注意力恢复的关系研究</h2>
+        <p th:text="${item.assignment.instructions}">完成一篇调查报告。</p>
+        <div class="student-assignment-meta">
+          <span th:text="'截止 ' + ${item.dueAtText}">截止 10 月 24 日 23:59</span>
+          <span th:if="${item.latestSubmission != null}"
+                th:text="'第 ' + ${item.latestSubmission.attemptNumber} + ' 次提交'">第 2 次提交</span>
+        </div>
+        <a class="student-open" th:href="@{/student/assignments/{id}(id=${item.assignment.id})}">
+          <span th:text="${item.latestSubmission == null ? '查看要求并提交' : '查看我的提交'}">
+            查看要求并提交
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
+

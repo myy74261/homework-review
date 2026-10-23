@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2eee5">
+  <meta name="description" content="明鉴教师端：发布作业、查看提交与汇总共性问题">
+  <title>我的课堂 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page">
+  <header class="topbar portal-topbar">
+    <a class="brand" th:href="@{/teacher}" aria-label="明鉴教师课堂">
+      <span class="brand-seal" aria-hidden="true">鉴</span>
+      <span class="brand-copy">
+        <strong>明鉴</strong>
+        <small>教师作业审核平台</small>
+      </span>
+    </a>
+    <nav class="portal-nav" aria-label="教师端主导航">
+      <a class="is-active" th:href="@{/teacher}">我的课堂</a>
+      <a th:href="@{/teacher/assignments/new}">发布作业</a>
+      <a th:href="@{/student}">学生端预览</a>
+    </nav>
+    <div class="topbar-end">
+      <span class="role-chip">教师端</span>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+    </div>
+  </header>
+
+  <main class="portal-main">
+    <section class="portal-hero">
+      <div>
+        <p class="eyebrow">智慧教学闭环</p>
+        <h1>从提交证据到备课素材</h1>
+        <p>先确认学生作业中的共性问题，再把教师判断转化为可编辑的课堂讲解建议。</p>
+      </div>
+      <a class="hero-action" th:href="@{/teacher/assignments/new}">＋ 发布新作业</a>
+    </section>
+
+    <p class="success-banner" th:if="${param.published}">
+      作业已发布。学生端现在可以查看要求并提交作业。
+    </p>
+
+    <section class="metric-grid" aria-label="课堂概览">
+      <article class="metric-card">
+        <span>已发布作业</span>
+        <strong th:text="${assignments.size()}">1</strong>
+        <small>课堂任务</small>
+      </article>
+      <article class="metric-card">
+        <span>学生提交</span>
+        <strong th:text="${submissions.size()}">1</strong>
+        <small>等待形成教学判断</small>
+      </article>
+      <article class="metric-card">
+        <span>确认问题</span>
+        <strong th:text="${commonIssues.isEmpty()} ? 0 : ${commonIssues.size()}">0</strong>
+        <small>个评分维度出现薄弱项</small>
+      </article>
+    </section>
+
+    <div class="portal-grid">
+      <section class="portal-section assignments-section">
+        <div class="portal-section-head">
+          <div>
+            <p class="eyebrow">教学任务</p>
+            <h2>已发布作业</h2>
+          </div>
+          <a th:href="@{/teacher/assignments/new}">新建作业</a>
+        </div>
+
+        <div class="assignment-cards" th:if="${!assignments.isEmpty()}">
+          <article class="assignment-card" th:each="item : ${assignments}">
+            <div class="assignment-card-top">
+              <span class="status-badge status-pending">进行中</span>
+              <span th:text="${item.assignment.courseName}">传播学方法课</span>
+            </div>
+            <h3 th:text="${item.assignment.title}">短视频使用与大学生注意力恢复的关系研究</h3>
+            <p th:text="${item.assignment.instructions}">完成调查报告并说明研究方法。</p>
+            <div class="assignment-card-foot">
+              <span th:text="'截止 ' + ${item.dueAtText}">截止 10 月 24 日 23:59</span>
+              <span th:text="${item.submissionCount + ' 份提交'}">1 份提交</span>
+            </div>
+            <a class="text-link" th:href="@{/student/assignments/{id}(id=${item.assignment.id})}">
+              以学生视角查看 →
+            </a>
+          </article>
+        </div>
+        <p class="empty-state" th:if="${assignments.isEmpty()}">还没有发布作业。</p>
+      </section>
+
+      <section class="portal-section submissions-section">
+        <div class="portal-section-head">
+          <div>
+            <p class="eyebrow">审核队列</p>
+            <h2>学生提交</h2>
+          </div>
+          <span class="section-count" th:text="${submissions.size() + ' 份'}">1 份</span>
+        </div>
+
+        <div class="submission-table" th:if="${!submissions.isEmpty()}">
+          <article class="submission-row" th:each="row : ${submissions}">
+            <div class="student-avatar" th:text="${#strings.substring(row.submission.studentName, 0, 1)}">林</div>
+            <div class="submission-info">
+              <strong th:text="${row.submission.studentName + ' · ' + row.submission.studentNumber}">
+                林清和 · 20230116
+              </strong>
+              <span th:text="${row.submission.assignmentTitle}">课程论文</span>
+              <small th:text="${'第 ' + row.submission.attemptNumber + ' 次 · ' + row.submittedAtText}">
+                第 2 次 · 10 月 21 日 22:48
+              </small>
+            </div>
+            <span class="status-badge status-pending" th:text="${row.statusText}">待审核</span>
+            <a class="row-action" th:href="@{/reviews/{id}(id=${row.submission.id})}">开始审核</a>
+          </article>
+        </div>
+        <p class="empty-state" th:if="${submissions.isEmpty()}">
+          学生提交后会出现在这里。
+        </p>
+      </section>
+
+      <aside class="portal-section issues-section">
+        <div class="portal-section-head">
+          <div>
+            <p class="eyebrow">共性问题</p>
+            <h2>量规薄弱项</h2>
+          </div>
+        </div>
+        <div class="issue-summary-list" th:if="${!commonIssues.isEmpty()}">
+          <div class="issue-summary" th:each="issue : ${commonIssues}">
+            <span th:text="${issue.rubricName}">证据与引用</span>
+            <strong th:text="${issue.count + ' 处'}">2 处</strong>
+          </div>
+        </div>
+        <div class="empty-issue" th:if="${commonIssues.isEmpty()}">
+          <span aria-hidden="true">◎</span>
+          <p>在教师审核页确认问题后，这里会按评分量规自动汇总。</p>
+        </div>
+        <div class="integrity-note">
+          <span>诚信与可追溯</span>
+          <p>平台只汇总教师确认的问题；每条判断保留学生原文与修改建议，不作为自动作弊判定。</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
+

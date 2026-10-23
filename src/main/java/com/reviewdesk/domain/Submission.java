@@ -19,6 +19,9 @@ public class Submission {
     @Id
     private Long id;
 
+    @Column(nullable = false)
+    private Long assignmentId;
+
     @Column(nullable = false, length = 240)
     private String assignmentTitle;
 
@@ -50,14 +53,19 @@ public class Submission {
     @Column(nullable = false)
     private Instant submittedAt;
 
+    @Column(nullable = false, length = 20)
+    private String reviewStatus;
+
     protected Submission() {
         // JPA 需要的无参构造方法
     }
 
-    public Submission(Long id, String assignmentTitle, String courseName, String studentName,
-                      String studentNumber, String content, int wordCount, int attemptNumber,
-                      String attachmentName, Instant dueAt, Instant submittedAt) {
+    public Submission(Long id, Long assignmentId, String assignmentTitle, String courseName,
+                      String studentName, String studentNumber, String content, int wordCount,
+                      int attemptNumber, String attachmentName, Instant dueAt,
+                      Instant submittedAt) {
         this.id = id;
+        this.assignmentId = assignmentId;
         this.assignmentTitle = assignmentTitle;
         this.courseName = courseName;
         this.studentName = studentName;
@@ -68,6 +76,7 @@ public class Submission {
         this.attachmentName = attachmentName;
         this.dueAt = dueAt;
         this.submittedAt = submittedAt;
+        this.reviewStatus = "PENDING";
     }
 
     public Long getId() {
@@ -76,6 +85,10 @@ public class Submission {
 
     public String getAssignmentTitle() {
         return assignmentTitle;
+    }
+
+    public Long getAssignmentId() {
+        return assignmentId;
     }
 
     public String getCourseName() {
@@ -112,6 +125,10 @@ public class Submission {
 
     public Instant getSubmittedAt() {
         return submittedAt;
+    }
+
+    public String getReviewStatus() {
+        return reviewStatus;
     }
 }
 

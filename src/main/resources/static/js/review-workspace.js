@@ -444,7 +444,29 @@
       const separation = editor.value.trim() ? '\n\n' : '';
       editor.value = `${editor.value}${separation}${suggestion}`;
       editor.dispatchEvent(new Event('input', { bubbles: true }));
-      showToast('审核建议已写入反馈');
+      void fetch(`/api/submissions/${submissionId}/issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rubricName: button.dataset.rubricName,
+          evidenceQuote: button.dataset.evidence,
+          teacherNote: suggestion,
+        }),
+      }).then(readJson)
+        .then(() => showToast('审核建议已写入并标记为共性问题'))
+        .catch(() => showToast('反馈已写入，但问题标记保存失败'));
+    }
+    if (action === 'dismiss') {
+      void fetch(`/api/submissions/${submissionId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'SUGGESTION_DISMISSED',
+          detail: button.dataset.rubricName || '教师已核验',
+        }),
+      }).catch(() => {
+        // 提示状态不应因为审计事件记录失败而阻塞教师继续审核。
+      });
     }
 
     card.classList.add('is-resolved');

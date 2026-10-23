@@ -2,11 +2,13 @@ package com.reviewdesk.web;
 
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.Submission;
+import com.reviewdesk.service.AssignmentService;
+import com.reviewdesk.service.ReviewActivityService;
 import com.reviewdesk.service.ReviewService;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,20 +27,27 @@ public class ReviewWorkspaceController {
             DateTimeFormatter.ofPattern("M 月 d 日 HH:mm", Locale.CHINA);
 
     private final ReviewService reviewService;
+    private final AssignmentService assignmentService;
+    private final ReviewActivityService activityService;
 
-    public ReviewWorkspaceController(ReviewService reviewService) {
+    public ReviewWorkspaceController(ReviewService reviewService,
+                                     AssignmentService assignmentService,
+                                     ReviewActivityService activityService) {
         this.reviewService = reviewService;
+        this.assignmentService = assignmentService;
+        this.activityService = activityService;
     }
 
     @GetMapping("/")
     public String root() {
-        return "redirect:/reviews/" + ReviewService.DEMO_SUBMISSION_ID;
+        return "redirect:/teacher";
     }
 
     @GetMapping("/reviews/{submissionId}")
     public String workspace(@PathVariable long submissionId, Model model) {
         Submission submission = reviewService.requireSubmission(submissionId);
         ReviewDraft draft = reviewService.requireDraft(submissionId);
+        activityService.record(submissionId, "SUBMISSION_VIEWED", "教师打开审核工作台");
         model.addAttribute("submission", submission);
         model.addAttribute("review", draft);
         model.addAttribute("versionCount", reviewService.countVersions(submissionId));
@@ -47,12 +56,16 @@ public class ReviewWorkspaceController {
         model.addAttribute("attempt", "第 " + submission.getAttemptNumber() + " 次提交");
         model.addAttribute("wordCount",
                 String.format(Locale.CHINA, "%,d", submission.getWordCount()));
-        model.addAttribute("rubric", List.of(
-                new RubricCriterion("研究问题与目标", 25, "达成", "问题、目标与研究边界是否清楚"),
-                new RubricCriterion("证据与引用", 25, "需补充", "结论是否有可追溯的数据或文献支持"),
-                new RubricCriterion("方法与数据", 30, "需补充", "样本、抽样、回收率与统计过程是否透明"),
-                new RubricCriterion("结构与表达", 20, "达成", "论证顺序、段落衔接与学术表达是否清晰")
-        ));
+        List<RubricCriterion> rubric = assignmentService.listRubrics(submission.getAssignmentId())
+                .stream()
+                .map(criterion -> new RubricCriterion(
+                        criterion.getName(),
+                        criterion.getPoints(),
+                        criterion.getName().contains("证据") || criterion.getName().contains("方法")
+                                ? "待核对" : "待确认",
+                        criterion.getDescription()))
+                .toList();
+        model.addAttribute("rubric", rubric);
         return "review-workspace";
     }
 
