@@ -1,6 +1,7 @@
 package com.reviewdesk.web.api;
 
 import com.reviewdesk.domain.StaleReviewException;
+import com.reviewdesk.domain.StaleLessonPlanException;
 import com.reviewdesk.service.ReviewNotFoundException;
 import com.reviewdesk.service.ReviewVersionNotFoundException;
 import com.reviewdesk.service.SubmissionNotFoundException;
@@ -23,6 +24,13 @@ public class GlobalExceptionHandler {
                 exception.getCurrentRevision());
     }
 
+    @ExceptionHandler(StaleLessonPlanException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError staleLessonPlan(StaleLessonPlanException exception) {
+        return new ApiError("STALE_REVISION", exception.getMessage(),
+                exception.getCurrentRevision());
+    }
+
     @ExceptionHandler({
             AssignmentNotFoundException.class,
             SubmissionNotFoundException.class,
@@ -38,6 +46,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError invalidRequest(IllegalArgumentException exception) {
         return ApiError.of("INVALID_REQUEST", exception.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError invalidState(IllegalStateException exception) {
+        return ApiError.of("INVALID_STATE", exception.getMessage());
     }
 }
 

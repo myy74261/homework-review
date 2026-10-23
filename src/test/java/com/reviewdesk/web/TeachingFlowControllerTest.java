@@ -103,7 +103,7 @@ class TeachingFlowControllerTest {
 
         mockMvc.perform(get("/teacher"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("1 处")));
+                .andExpect(content().string(containsString("2 处")));
 
         org.assertj.core.api.Assertions.assertThat(
                 eventRepository.countBySubmissionIdAndEventType(

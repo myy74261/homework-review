@@ -83,9 +83,15 @@
               <span th:text="'截止 ' + ${item.dueAtText}">截止 10 月 24 日 23:59</span>
               <span th:text="${item.submissionCount + ' 份提交'}">1 份提交</span>
             </div>
-            <a class="text-link" th:href="@{/student/assignments/{id}(id=${item.assignment.id})}">
-              以学生视角查看 →
-            </a>
+            <div class="assignment-card-actions">
+              <a class="text-link" th:href="@{/student/assignments/{id}(id=${item.assignment.id})}">
+                以学生视角查看
+              </a>
+              <a class="text-link lesson-link"
+                 th:href="@{/teacher/assignments/{id}/lesson-plan(id=${item.assignment.id})}">
+                生成备课建议 →
+              </a>
+            </div>
           </article>
         </div>
         <p class="empty-state" th:if="${assignments.isEmpty()}">还没有发布作业。</p>

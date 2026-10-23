@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${plan.title + ' · 明鉴'}">课堂讲解建议 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page lesson-page"
+      th:attr="data-assignment-id=${assignment.id},data-revision=${plan.revision}">
+  <header class="topbar portal-topbar">
+    <a class="brand" th:href="@{/teacher}" aria-label="返回明鉴课堂">
+      <span class="brand-seal" aria-hidden="true">鉴</span>
+      <span class="brand-copy">
+        <strong>明鉴</strong>
+        <small>教师备课工作区</small>
+      </span>
+    </a>
+    <nav class="portal-nav" aria-label="备课导航">
+      <a th:href="@{/teacher}">我的课堂</a>
+      <a class="is-active" th:href="@{/teacher/assignments/{id}/lesson-plan(id=${assignment.id})}">
+        备课建议
+      </a>
+      <a th:href="@{/student}">学生端预览</a>
+    </nav>
+    <div class="topbar-end">
+      <span class="role-chip">教师端</span>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+    </div>
+  </header>
+
+  <main class="lesson-main">
+    <div class="lesson-heading">
+      <div>
+        <a class="back-to-class" th:href="@{/teacher}">← 返回课堂</a>
+        <p class="eyebrow">P3 · 可解释备课建议</p>
+        <h1>把共性问题变成一节有证据的课</h1>
+        <p th:text="${assignment.courseName + ' / ' + assignment.title}">
+          传播学方法课 / 短视频使用与大学生注意力恢复的关系研究
+        </p>
+      </div>
+      <div class="lesson-stats">
+        <strong th:text="${evidence.size()}">0</strong>
+        <span>条教师确认证据</span>
+        <strong th:text="${groups.size()}">0</strong>
+        <span>个量规维度</span>
+      </div>
+    </div>
+
+    <div class="lesson-workspace">
+      <aside class="lesson-evidence-panel">
+        <div class="lesson-panel-head">
+          <div>
+            <p class="eyebrow">问题依据</p>
+            <h2>教师确认记录</h2>
+          </div>
+          <span class="rule-badge">不自动判定</span>
+        </div>
+
+        <div class="criterion-groups" th:if="${!groups.isEmpty()}">
+          <div class="criterion-group" th:each="group : ${groups}">
+            <span th:text="${group.rubricName}">证据与引用</span>
+            <strong th:text="${group.count + ' 处'}">2 处</strong>
+          </div>
+        </div>
+
+        <div class="evidence-list" th:if="${!evidence.isEmpty()}">
+          <article class="evidence-card" th:each="item : ${evidence}">
+            <div class="evidence-meta">
+              <span th:text="${item.issue.rubricName}">证据与引用</span>
+              <span th:text="${item.submission.studentName}">林清和</span>
+            </div>
+            <blockquote th:text="${item.issue.evidenceQuote}">
+              已有研究表明，短视频使用会影响注意力恢复。
+            </blockquote>
+            <p th:text="${item.issue.teacherNote}">请补充具体文献来源。</p>
+            <a th:href="@{/reviews/{id}(id=${item.submission.id})}">回到原文审核 →</a>
+          </article>
+        </div>
+        <p class="empty-issue lesson-empty" th:if="${evidence.isEmpty()}">
+          暂无教师确认的问题。回到审核页确认问题后，可重新生成备课建议。
+        </p>
+
+        <div class="integrity-note lesson-integrity">
+          <span>证据链</span>
+          <p>左侧记录始终来自教师确认的学生原文。右侧编辑内容即使被改写，也不会删除原始依据。</p>
+        </div>
+      </aside>
+
+      <section class="lesson-editor-panel">
+        <div class="lesson-editor-toolbar">
+          <div class="lesson-save-state">
+            <span class="state-dot" aria-hidden="true"></span>
+            <span id="lessonSaveState" aria-live="polite">已保存到服务器</span>
+          </div>
+          <div class="lesson-actions">
+            <button class="secondary-tool" id="regenerateButton" type="button">按最新问题重新生成</button>
+            <span class="draft-version" th:text="'V' + ${plan.revision}">V0</span>
+          </div>
+        </div>
+
+        <div class="lesson-editor-head">
+          <p class="eyebrow">教师可编辑稿</p>
+          <textarea class="lesson-title-input" id="lessonTitle" rows="1"
+                    aria-label="备课稿标题" th:text="${plan.title}">课堂讲解建议</textarea>
+        </div>
+        <textarea class="lesson-editor" id="lessonEditor" spellcheck="false"
+                  aria-label="课堂讲解建议正文"
+                  th:text="${plan.content}">一、课堂目标
+
+围绕本班共性问题展开讲解。</textarea>
+        <footer class="lesson-editor-foot">
+          <span><strong id="lessonCharCount">0</strong> 字 · 自动保存</span>
+          <span>平台建议仅供教师编辑，不作为学生评价结论</span>
+        </footer>
+      </section>
+
+      <aside class="lesson-guide-panel">
+        <p class="eyebrow">使用方法</p>
+        <h2>从问题到课堂</h2>
+        <ol class="lesson-steps">
+          <li>
+            <span>01</span>
+            <div><strong>核对证据</strong><p>左侧每条问题都对应学生原文与教师判断。</p></div>
+          </li>
+          <li>
+            <span>02</span>
+            <div><strong>调整讲解</strong><p>直接编辑课堂目标、错例分析、追问和练习。</p></div>
+          </li>
+          <li>
+            <span>03</span>
+            <div><strong>再次生成</strong><p>新增审核问题后，可生成最新版本再继续编辑。</p></div>
+          </li>
+        </ol>
+        <div class="rule-note">
+          <span>规则边界</span>
+          <p>建议由评分维度模板和教师确认记录生成，不使用自动作弊检测，也不替代教师判断。</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script th:src="@{/js/lesson-plan.js}" defer></script>
+</body>
+</html>
+

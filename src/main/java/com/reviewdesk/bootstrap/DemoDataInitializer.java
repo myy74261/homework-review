@@ -1,8 +1,10 @@
 package com.reviewdesk.bootstrap;
 
 import com.reviewdesk.domain.ReviewDraft;
+import com.reviewdesk.domain.ReviewIssue;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.ReviewDraftRepository;
+import com.reviewdesk.repository.ReviewIssueRepository;
 import com.reviewdesk.repository.SubmissionRepository;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ReviewService;
@@ -53,21 +55,25 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final ReviewDraftRepository draftRepository;
     private final ReviewService reviewService;
     private final AssignmentService assignmentService;
+    private final ReviewIssueRepository issueRepository;
 
     public DemoDataInitializer(SubmissionRepository submissionRepository,
                                ReviewDraftRepository draftRepository,
                                ReviewService reviewService,
-                               AssignmentService assignmentService) {
+                               AssignmentService assignmentService,
+                               ReviewIssueRepository issueRepository) {
         this.submissionRepository = submissionRepository;
         this.draftRepository = draftRepository;
         this.reviewService = reviewService;
         this.assignmentService = assignmentService;
+        this.issueRepository = issueRepository;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         if (submissionRepository.existsById(ReviewService.DEMO_SUBMISSION_ID)) {
+            seedIssues();
             return;
         }
 
@@ -108,5 +114,22 @@ public class DemoDataInitializer implements ApplicationRunner {
                 "课程论文第二次提交审核意见",
                 INITIAL_FEEDBACK));
         reviewService.createVersion(submission.getId(), "INITIAL");
+        seedIssues();
+    }
+
+    private void seedIssues() {
+        if (issueRepository.count() > 0) {
+            return;
+        }
+        issueRepository.save(new ReviewIssue(
+                ReviewService.DEMO_SUBMISSION_ID,
+                "证据与引用",
+                "已有研究表明，短视频使用会影响注意力恢复。",
+                "请为“已有研究表明”补充具体文献来源，并在正文中标注引用。"));
+        issueRepository.save(new ReviewIssue(
+                ReviewService.DEMO_SUBMISSION_ID,
+                "方法与数据",
+                "问卷通过班级群发放，最终获得有效样本 326 份。",
+                "请补充问卷回收率、有效样本筛选标准和受访者年级分布。"));
     }
 }
