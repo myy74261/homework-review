@@ -90,6 +90,23 @@ if (-not (Test-LocalApp)) {
     Write-Host 'The local application is already running. Creating a public tunnel...'
 }
 
+if ((Test-Path -LiteralPath $tunnelPidFile) -and (Test-Path -LiteralPath $urlFile)) {
+    $existingTunnelId = [int](Get-Content -LiteralPath $tunnelPidFile -Raw).Trim()
+    $existingTunnel = Get-Process -Id $existingTunnelId -ErrorAction SilentlyContinue
+    if ($existingTunnel -and $existingTunnel.ProcessName -eq 'cloudflared') {
+        $existingUrl = (Get-Content -LiteralPath $urlFile -Raw).Trim()
+        Write-Host 'The public preview is already running:'
+        Write-Host $existingUrl
+        try {
+            Set-Clipboard -Value $existingUrl
+        } catch {
+            # The URL is still printed when clipboard access is unavailable.
+        }
+        Start-Process $existingUrl
+        exit 0
+    }
+}
+
 Write-Host 'Creating temporary HTTPS public URL...'
 $tunnelProcess = Start-Process `
     -FilePath $cloudflared `
