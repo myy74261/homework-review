@@ -7,6 +7,26 @@ body.portal-page {
   overflow-y: auto;
 }
 
+body.portal-page:not(.auth-page) {
+  --canvas: #f8f7f3;
+  --paper: #ffffff;
+  --paper-warm: #fbfaf7;
+  --line: #eae6dd;
+  --line-strong: #dcd6cb;
+  --green: #2f725e;
+  --green-dark: #245947;
+  --green-soft: #edf6f1;
+  --rust: #aa6248;
+  --rust-soft: #fcf3ee;
+  --gold: #9a7134;
+  --gold-soft: #fbf5e9;
+  --shadow: 0 12px 38px rgba(52, 65, 56, 0.055);
+  background:
+    radial-gradient(900px 520px at 8% -10%, rgba(255, 255, 255, 0.98), transparent 60%),
+    radial-gradient(780px 430px at 100% 0%, rgba(235, 245, 239, 0.8), transparent 52%),
+    var(--canvas);
+}
+
 /* ---------- 登录与注册 ---------- */
 
 .auth-page {
@@ -202,6 +222,8 @@ body.portal-page {
   position: sticky;
   top: 0;
   flex-basis: 62px;
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom-color: #eeebe4;
 }
 
 .portal-nav {
@@ -262,6 +284,42 @@ body.portal-page {
   padding: 28px 0 52px;
 }
 
+.teacher-portal .portal-main {
+  position: relative;
+}
+
+.teacher-portal .portal-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 26px 28px 30px;
+  border: 1px solid rgba(224, 232, 225, 0.8);
+  border-radius: 22px;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.97), rgba(240, 247, 242, 0.88) 62%, rgba(251, 244, 235, 0.78)),
+    var(--paper);
+  box-shadow: 0 16px 48px rgba(48, 74, 61, 0.055);
+}
+
+.teacher-portal .portal-hero::after {
+  content: "明鉴";
+  position: absolute;
+  right: 34px;
+  bottom: -45px;
+  z-index: -1;
+  color: rgba(47, 114, 94, 0.045);
+  font-family: var(--font-reading);
+  font-size: 150px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.teacher-portal .portal-hero h1 {
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1.2;
+}
+
 .portal-hero {
   display: flex;
   align-items: flex-end;
@@ -305,11 +363,15 @@ body.portal-page {
   color: #fff;
   font-size: 12px;
   text-decoration: none;
+  box-shadow: 0 9px 22px rgba(47, 114, 94, 0.17);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .hero-action:hover,
 .submit-assignment:hover {
   background: var(--green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(47, 114, 94, 0.22);
 }
 
 .success-banner,
@@ -346,7 +408,8 @@ body.portal-page {
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: var(--paper);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 248, 0.92));
 }
 
 .classroom-bar-head {
@@ -384,7 +447,14 @@ body.portal-page {
   gap: 12px;
   padding: 11px 12px;
   border-radius: 10px;
-  background: var(--paper-warm);
+  border: 1px solid rgba(232, 239, 234, 0.9);
+  background: #f7fbf8;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.classroom-chip:hover {
+  border-color: #cfe1d7;
+  transform: translateY(-1px);
 }
 
 .classroom-chip > div {
@@ -418,6 +488,35 @@ body.portal-page {
   letter-spacing: 0.08em;
 }
 
+.join-code-block {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 3px 7px;
+}
+
+.join-code-block > span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 7px;
+  text-align: right;
+}
+
+.join-code-block button {
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--green);
+  font-size: 8px;
+}
+
+.join-code-block button:hover,
+.join-code-block button.is-copied {
+  background: var(--green-soft);
+}
+
 .empty-classroom {
   padding: 21px;
 }
@@ -429,6 +528,8 @@ body.portal-page {
 }
 
 .metric-card {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
@@ -436,7 +537,35 @@ body.portal-page {
   padding: 17px 18px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--paper);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 24px rgba(52, 65, 56, 0.035);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #77a993, #b8d5c7);
+}
+
+.metric-card:nth-child(2)::before {
+  background: linear-gradient(90deg, #d5a77b, #ecd4bb);
+}
+
+.metric-card:nth-child(3)::before {
+  background: linear-gradient(90deg, #c88972, #e9c5b9);
+}
+
+.metric-card:nth-child(4)::before {
+  background: linear-gradient(90deg, #9e9c72, #d7d5b9);
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: #d9e6de;
+  box-shadow: 0 12px 30px rgba(52, 65, 56, 0.065);
 }
 
 .metric-card span {
@@ -511,10 +640,27 @@ body.portal-page {
 }
 
 .assignment-card {
+  position: relative;
+  overflow: hidden;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fffefb;
+  background: #ffffff;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.assignment-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, #7eb09a, #d5e7dd);
+}
+
+.assignment-card:hover {
+  border-color: #d2e3da;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(52, 65, 56, 0.055);
 }
 
 .assignment-card-top {
@@ -585,6 +731,12 @@ body.portal-page {
   gap: 10px;
   padding: 11px 0;
   border-bottom: 1px solid var(--line);
+  border-radius: 9px;
+  transition: background 0.16s ease;
+}
+
+.submission-row:hover {
+  background: #f8fbf9;
 }
 
 .submission-row:last-child {
@@ -658,6 +810,7 @@ body.portal-page {
 }
 
 .issue-summary {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -667,6 +820,14 @@ body.portal-page {
   background: var(--rust-soft);
   color: var(--rust);
   font-size: 10px;
+}
+
+.issue-summary::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ce8b73;
 }
 
 .issue-summary strong {
@@ -889,7 +1050,23 @@ body.portal-page {
 }
 
 .student-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: 30px 0 28px;
+}
+
+.student-theme .student-welcome::after {
+  content: "学";
+  position: absolute;
+  right: 5%;
+  bottom: -42px;
+  z-index: -1;
+  color: rgba(47, 114, 94, 0.045);
+  font-family: var(--font-reading);
+  font-size: 150px;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .student-welcome p:last-child {
@@ -911,7 +1088,8 @@ body.portal-page {
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: var(--paper);
+  background:
+    linear-gradient(120deg, #ffffff, #f5faf7 70%, #fbf7f1);
 }
 
 .student-account-strip h2 {
@@ -957,11 +1135,28 @@ body.portal-page {
 }
 
 .student-assignment-card {
+  position: relative;
+  overflow: hidden;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: var(--paper);
+  background: #ffffff;
   box-shadow: var(--shadow);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.student-assignment-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #8ab9a4, #e2d5bc);
+}
+
+.student-assignment-card:hover {
+  border-color: #d5e5dc;
+  transform: translateY(-3px);
+  box-shadow: 0 16px 38px rgba(52, 65, 56, 0.075);
 }
 
 .student-assignment-card h2 {
@@ -1000,10 +1195,12 @@ body.portal-page {
   color: var(--green-dark);
   font-size: 10px;
   text-decoration: none;
+  transition: background 0.16s ease, transform 0.16s ease;
 }
 
 .student-open:hover {
   background: #dceadf;
+  transform: translateX(2px);
 }
 
 .status-submitted {
@@ -1028,8 +1225,13 @@ body.portal-page {
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: var(--paper);
+  background: #ffffff;
   box-shadow: var(--shadow);
+}
+
+.student-brief {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 249, 245, 0.88));
 }
 
 .student-brief h1 {
