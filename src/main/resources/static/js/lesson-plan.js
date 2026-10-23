@@ -23,6 +23,12 @@
   let unsynced = false;
   let toastTimer = null;
 
+  function csrfHeaders(extra = {}) {
+    const token = document.querySelector('meta[name="_csrf"]')?.content;
+    const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+    return token && header ? { ...extra, [header]: token } : extra;
+  }
+
   function resizeTitle() {
     title.style.height = 'auto';
     title.style.height = `${title.scrollHeight}px`;
@@ -96,7 +102,7 @@
         for (let attempt = 0; attempt < 2; attempt++) {
           response = await fetch(api, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
               title: title.value,
               content: editor.value,
@@ -141,7 +147,10 @@
     }
     regenerateButton.disabled = true;
     try {
-      const plan = await fetch(`${api}/regenerate`, { method: 'POST' }).then((response) => {
+      const plan = await fetch(`${api}/regenerate`, {
+        method: 'POST',
+        headers: csrfHeaders(),
+      }).then((response) => {
         if (!response.ok) {
           throw new Error(`生成失败：${response.status}`);
         }

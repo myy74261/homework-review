@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f2eee5">
   <meta name="description" content="明鉴：面向教师的作业审核与反馈工作台">
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:content="${_csrf.headerName}">
   <title th:text="${submission.assignmentTitle + ' · 明鉴'}">明鉴 · 教师作业审核平台</title>
   <link rel="stylesheet" th:href="@{/css/review.css}">
 </head>
@@ -37,7 +39,6 @@
     </div>
 
     <div class="topbar-end">
-      <a class="role-switch" th:href="@{/student}">学生端预览</a>
       <span class="visibility-note">
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
           <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v9H6z" fill="none"
@@ -45,7 +46,11 @@
         </svg>
         仅教师可见
       </span>
-      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心"
+              th:text="${#strings.substring(currentAccount.displayName, 0, 1)}">陈</button>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
     </div>
   </header>
 

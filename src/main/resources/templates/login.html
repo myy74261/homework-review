@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page auth-page">
+  <main class="auth-shell">
+    <section class="auth-story">
+      <a class="brand" th:href="@{/login}" aria-label="明鉴登录">
+        <span class="brand-seal" aria-hidden="true">鉴</span>
+        <span class="brand-copy">
+          <strong>明鉴</strong>
+          <small>智慧教学闭环</small>
+        </span>
+      </a>
+      <div>
+        <p class="eyebrow">从教学证据到课堂行动</p>
+        <h1>让教师看清问题，<br>让学生看见依据。</h1>
+        <p>教师管理课堂与备课建议，学生加入课堂并提交作业。每个角色只访问自己的教学数据。</p>
+      </div>
+      <div class="auth-flow">
+        <span>发布作业</span><i>→</i><span>学生提交</span><i>→</i><span>教师审核</span><i>→</i><span>备课导出</span>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <div class="auth-card-head">
+        <p class="eyebrow">账号登录</p>
+        <h2>进入你的课堂</h2>
+        <p>教师和学生使用同一入口，系统会自动识别角色。</p>
+      </div>
+
+      <p class="error-banner" th:if="${param.error}">账号或密码不正确，请重新输入。</p>
+      <p class="success-banner" th:if="${param.logout}">你已安全退出登录。</p>
+      <p class="success-banner" th:if="${param.registered}">
+        账号创建成功，请使用新账号登录。
+      </p>
+
+      <form class="auth-form" th:action="@{/login}" method="post">
+        <label class="field">
+          <span>账号</span>
+          <input type="text" name="username" autocomplete="username" required autofocus>
+        </label>
+        <label class="field">
+          <span>密码</span>
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="auth-submit" type="submit">登录并进入课堂</button>
+      </form>
+
+      <p class="auth-switch">还没有账号？<a th:href="@{/register}">创建教师或学生账号</a></p>
+
+      <div class="demo-accounts">
+        <span>演示账号</span>
+        <div>
+          <strong>教师</strong>
+          <code>chen / Teach1234</code>
+        </div>
+        <div>
+          <strong>学生</strong>
+          <code>lin / Student1234</code>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+

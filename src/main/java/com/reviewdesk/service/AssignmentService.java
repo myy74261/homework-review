@@ -43,8 +43,9 @@ public class AssignmentService {
      * 发布作业并保存可解释的评分量规。
      */
     @Transactional
-    public Assignment publish(String title, String courseName, String instructions,
-                              Instant dueAt, List<RubricDefinition> rubrics) {
+    public Assignment publish(Long classroomId, String title, String courseName,
+                              String instructions, Instant dueAt,
+                              List<RubricDefinition> rubrics) {
         if (rubrics.isEmpty()) {
             throw new IllegalArgumentException("至少需要一个评分维度");
         }
@@ -57,6 +58,7 @@ public class AssignmentService {
         }
 
         Assignment assignment = assignmentRepository.save(new Assignment(
+                classroomId,
                 title.strip(),
                 courseName.strip(),
                 instructions.strip(),
@@ -74,6 +76,12 @@ public class AssignmentService {
     }
 
     public record RubricDefinition(String name, int points, String description) {
+    }
+
+    public List<Assignment> listForClassrooms(List<Long> classroomIds) {
+        return classroomIds.isEmpty()
+                ? List.of()
+                : assignmentRepository.findByClassroomIdInOrderByPublishedAtDesc(classroomIds);
     }
 }
 

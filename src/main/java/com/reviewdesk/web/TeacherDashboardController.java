@@ -1,17 +1,25 @@
 package com.reviewdesk.web;
 
 import com.reviewdesk.domain.Assignment;
+import com.reviewdesk.domain.Account;
+import com.reviewdesk.domain.Classroom;
+import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AssignmentService;
+import com.reviewdesk.service.ClassroomService;
 import com.reviewdesk.service.TeachingWorkspaceService;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Controller;
+import org.springframework.security.core.Authentication;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * 教师端作业发布、提交总览和审核入口。
@@ -23,35 +31,63 @@ public class TeacherDashboardController {
 
     private final TeachingWorkspaceService workspaceService;
     private final AssignmentService assignmentService;
+    private final AccountService accountService;
+    private final ClassroomService classroomService;
 
     public TeacherDashboardController(TeachingWorkspaceService workspaceService,
-                                      AssignmentService assignmentService) {
+                                      AssignmentService assignmentService,
+                                      AccountService accountService,
+                                      ClassroomService classroomService) {
         this.workspaceService = workspaceService;
         this.assignmentService = assignmentService;
+        this.accountService = accountService;
+        this.classroomService = classroomService;
     }
 
     @GetMapping("/teacher")
-    public String dashboard(Model model) {
-        var submissions = workspaceService.listSubmissions();
-        model.addAttribute("assignments", workspaceService.listAssignments());
+    public String dashboard(Authentication authentication, Model model) {
+        Account teacher = accountService.current(authentication);
+        List<Classroom> classrooms = classroomService.teacherClassrooms(teacher);
+        List<Long> classroomIds = classrooms.stream().map(Classroom::getId).toList();
+        var submissions = workspaceService.listSubmissions(classroomIds);
+        Map<Long, Long> classroomMembers = new LinkedHashMap<>();
+        classrooms.forEach(classroom -> classroomMembers.put(
+                classroom.getId(), classroomService.memberCount(classroom.getId())));
+        model.addAttribute("classrooms", classrooms);
+        model.addAttribute("classroomMembers", classroomMembers);
+        model.addAttribute("assignments", workspaceService.listAssignments(classroomIds));
         model.addAttribute("submissions", submissions);
         model.addAttribute("reviewedCount", submissions.stream()
                 .filter(row -> "已审核".equals(row.statusText()))
                 .count());
-        model.addAttribute("commonIssues", workspaceService.listCommonIssues());
+        model.addAttribute("commonIssues", workspaceService.listCommonIssues(classroomIds));
         return "teacher-dashboard";
     }
 
     @GetMapping("/teacher/assignments/new")
-    public String publishForm(Model model) {
-        model.addAttribute("form", PublishAssignmentForm.defaults());
+    public String publishForm(Authentication authentication, Model model) {
+        Account teacher = accountService.current(authentication);
+        List<Classroom> classrooms = classroomService.teacherClassrooms(teacher);
+        if (classrooms.isEmpty()) {
+            return "redirect:/teacher/classrooms/new";
+        }
+        model.addAttribute("classrooms", classrooms);
+        model.addAttribute("form", PublishAssignmentForm.defaults(classrooms.get(0).getId()));
         return "publish-assignment";
     }
 
     @PostMapping("/teacher/assignments")
     public String publish(@Valid @ModelAttribute("form") PublishAssignmentForm form,
-                          BindingResult bindingResult, Model model) {
+                          BindingResult bindingResult, Authentication authentication,
+                          Model model) {
+        Account teacher = accountService.current(authentication);
+        List<Classroom> classrooms = classroomService.teacherClassrooms(teacher);
+        model.addAttribute("classrooms", classrooms);
         if (bindingResult.hasErrors()) {
+            return "publish-assignment";
+        }
+        if (!classroomService.isTeacherOwner(teacher, form.classroomId())) {
+            bindingResult.reject("classroom.invalid", "无权向该课堂发布作业");
             return "publish-assignment";
         }
         List<AssignmentService.RubricDefinition> rubrics = List.of(
@@ -69,6 +105,7 @@ public class TeacherDashboardController {
                         form.criterion4Description()));
         try {
             Assignment assignment = assignmentService.publish(
+                    form.classroomId(),
                     form.title(),
                     form.courseName(),
                     form.instructions(),
@@ -79,6 +116,20 @@ public class TeacherDashboardController {
             bindingResult.reject("assignment.invalid", exception.getMessage());
             return "publish-assignment";
         }
+    }
+
+    @GetMapping("/teacher/classrooms/new")
+    public String classroomForm() {
+        return "create-classroom";
+    }
+
+    @PostMapping("/teacher/classrooms")
+    public String createClassroom(Authentication authentication,
+                                  @RequestParam String name,
+                                  @RequestParam String courseName) {
+        Account teacher = accountService.current(authentication);
+        classroomService.create(teacher, name, courseName);
+        return "redirect:/teacher?classroomCreated";
     }
 }
 

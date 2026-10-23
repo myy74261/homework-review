@@ -34,8 +34,12 @@ public class TeachingWorkspaceService {
         this.issueService = issueService;
     }
 
-    public List<AssignmentOverview> listAssignments() {
-        return assignmentRepository.findAllByOrderByPublishedAtDesc().stream()
+    public List<AssignmentOverview> listAssignments(List<Long> classroomIds) {
+        if (classroomIds.isEmpty()) {
+            return List.of();
+        }
+        return assignmentRepository
+                .findByClassroomIdInOrderByPublishedAtDesc(classroomIds).stream()
                 .map(assignment -> new AssignmentOverview(
                         assignment,
                         submissionRepository.countByAssignmentId(assignment.getId()),
@@ -43,8 +47,15 @@ public class TeachingWorkspaceService {
                 .toList();
     }
 
-    public List<SubmissionOverview> listSubmissions() {
-        return submissionRepository.findAllByOrderBySubmittedAtDesc().stream()
+    public List<SubmissionOverview> listSubmissions(List<Long> classroomIds) {
+        List<Long> assignmentIds = listAssignments(classroomIds).stream()
+                .map(overview -> overview.assignment().getId())
+                .toList();
+        if (assignmentIds.isEmpty()) {
+            return List.of();
+        }
+        return submissionRepository.findByAssignmentIdInOrderBySubmittedAtDesc(assignmentIds)
+                .stream()
                 .map(submission -> new SubmissionOverview(
                         submission,
                         DATE_TIME.format(submission.getSubmittedAt().atZone(DISPLAY_ZONE)),
@@ -52,8 +63,12 @@ public class TeachingWorkspaceService {
                 .toList();
     }
 
-    public List<ReviewIssueService.IssueSummary> listCommonIssues() {
-        return issueService.summarizeAll();
+    public List<ReviewIssueService.IssueSummary> listCommonIssues(
+            List<Long> classroomIds) {
+        List<Long> submissionIds = listSubmissions(classroomIds).stream()
+                .map(overview -> overview.submission().getId())
+                .toList();
+        return issueService.summarizeForSubmissions(submissionIds);
     }
 
     public record AssignmentOverview(Assignment assignment, long submissionCount,

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>创建账号 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page auth-page">
+  <main class="auth-shell">
+    <section class="auth-story register-story">
+      <a class="brand" th:href="@{/login}" aria-label="返回明鉴登录">
+        <span class="brand-seal" aria-hidden="true">鉴</span>
+        <span class="brand-copy">
+          <strong>明鉴</strong>
+          <small>教师与学生双端</small>
+        </span>
+      </a>
+      <div>
+        <p class="eyebrow">账号与课堂</p>
+        <h1>教师创建课堂，<br>学生凭课堂码加入。</h1>
+        <p>账号用于隔离个人数据。教师只能管理自己的课堂，学生只能查看已加入课堂的作业与反馈。</p>
+      </div>
+      <div class="auth-security">
+        <strong>密码安全</strong>
+        <p>密码使用 BCrypt 哈希保存，登录会话由 Spring Security 管理。</p>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <div class="auth-card-head">
+        <p class="eyebrow">新账号</p>
+        <h2>创建你的身份</h2>
+        <p>注册机构或任课教师账号后，可在课堂页创建班级。</p>
+      </div>
+
+      <p class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}">
+        请检查账号信息。
+      </p>
+
+      <form class="auth-form" th:action="@{/register}" method="post">
+        <label class="field">
+          <span>选择身份</span>
+          <select name="role" required>
+            <option value="TEACHER" th:selected="${selectedRole == null || selectedRole.name() == 'TEACHER'}">
+              教师
+            </option>
+            <option value="STUDENT" th:selected="${selectedRole != null && selectedRole.name() == 'STUDENT'}">
+              学生
+            </option>
+          </select>
+        </label>
+        <label class="field">
+          <span>姓名</span>
+          <input type="text" name="displayName" th:value="${displayName}" required>
+        </label>
+        <label class="field">
+          <span>账号</span>
+          <input type="text" name="username" th:value="${username}"
+                 pattern="[a-z0-9_]{3,30}" autocomplete="username" required>
+          <small>3–30 位小写字母、数字或下划线</small>
+        </label>
+        <label class="field">
+          <span>学号（学生填写）</span>
+          <input type="text" name="studentNumber" th:value="${studentNumber}">
+        </label>
+        <label class="field">
+          <span>密码</span>
+          <input type="password" name="password" minlength="8"
+                 autocomplete="new-password" required>
+          <small>至少 8 个字符</small>
+        </label>
+        <button class="auth-submit" type="submit">创建账号</button>
+      </form>
+
+      <p class="auth-switch">已有账号？<a th:href="@{/login}">返回登录</a></p>
+    </section>
+  </main>
+</body>
+</html>

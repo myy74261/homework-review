@@ -21,11 +21,14 @@
     <nav class="portal-nav" aria-label="教师端主导航">
       <a class="is-active" th:href="@{/teacher}">我的课堂</a>
       <a th:href="@{/teacher/assignments/new}">发布作业</a>
-      <a th:href="@{/student}">学生端预览</a>
     </nav>
     <div class="topbar-end">
-      <span class="role-chip">教师端</span>
-      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+      <span class="role-chip" th:text="${currentAccount.displayName + ' · 教师'}">陈老师 · 教师</span>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心"
+              th:text="${#strings.substring(currentAccount.displayName, 0, 1)}">陈</button>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
     </div>
   </header>
 
@@ -42,6 +45,37 @@
     <p class="success-banner" th:if="${param.published}">
       作业已发布。学生端现在可以查看要求并提交作业。
     </p>
+    <p class="success-banner" th:if="${param.classroomCreated}">
+      新课堂已创建，可以把课堂码分享给学生。
+    </p>
+
+    <section class="classroom-bar" th:if="${!classrooms.isEmpty()}">
+      <div class="classroom-bar-head">
+        <div>
+          <p class="eyebrow">我的课堂</p>
+          <h2>学生通过课堂码加入</h2>
+        </div>
+        <a th:href="@{/teacher/classrooms/new}">＋ 新建课堂</a>
+      </div>
+      <div class="classroom-list">
+        <article class="classroom-chip" th:each="classroom : ${classrooms}">
+          <div>
+            <strong th:text="${classroom.name}">传播学方法课 · 2026 秋</strong>
+            <span th:text="${classroom.courseName + ' · ' + classroomMembers[classroom.id] + ' 名学生'}">
+              传播学方法课 · 1 名学生
+            </span>
+          </div>
+          <code th:text="${classroom.joinCode}">CM2026</code>
+        </article>
+      </div>
+    </section>
+
+    <section class="empty-classroom" th:if="${classrooms.isEmpty()}">
+      <p class="eyebrow">开始使用</p>
+      <h2>先创建一个课堂</h2>
+      <p>课堂创建后会生成唯一课堂码，学生使用课堂码加入后才能看到作业。</p>
+      <a class="hero-action" th:href="@{/teacher/classrooms/new}">创建第一个课堂</a>
+    </section>
 
     <section class="metric-grid" aria-label="课堂概览">
       <article class="metric-card">
@@ -99,7 +133,9 @@
             </div>
           </article>
         </div>
-        <p class="empty-state" th:if="${assignments.isEmpty()}">还没有发布作业。</p>
+        <p class="empty-state" th:if="${assignments.isEmpty()}">
+          还没有发布作业。<a class="text-link" th:href="@{/teacher/assignments/new}">发布第一份作业</a>
+        </p>
       </section>
 
       <section class="portal-section submissions-section">

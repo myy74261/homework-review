@@ -53,5 +53,11 @@ public class GlobalExceptionHandler {
     public ApiError invalidState(IllegalStateException exception) {
         return ApiError.of("INVALID_STATE", exception.getMessage());
     }
+
+    @ExceptionHandler(SecurityException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiError forbidden(SecurityException exception) {
+        return ApiError.of("FORBIDDEN", exception.getMessage());
+    }
 }
 

@@ -3,6 +3,7 @@ package com.reviewdesk.web;
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.service.AssignmentService;
+import com.reviewdesk.service.AccessControlService;
 import com.reviewdesk.service.ReviewActivityService;
 import com.reviewdesk.service.ReviewService;
 import java.time.ZoneId;
@@ -10,6 +11,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Controller;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,22 +32,34 @@ public class ReviewWorkspaceController {
     private final ReviewService reviewService;
     private final AssignmentService assignmentService;
     private final ReviewActivityService activityService;
+    private final AccessControlService accessControlService;
 
     public ReviewWorkspaceController(ReviewService reviewService,
                                      AssignmentService assignmentService,
-                                     ReviewActivityService activityService) {
+                                     ReviewActivityService activityService,
+                                     AccessControlService accessControlService) {
         this.reviewService = reviewService;
         this.assignmentService = assignmentService;
         this.activityService = activityService;
+        this.accessControlService = accessControlService;
     }
 
     @GetMapping("/")
-    public String root() {
-        return "redirect:/teacher";
+    public String root(Authentication authentication) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return "redirect:/login";
+        }
+        boolean teacher = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_TEACHER".equals(authority.getAuthority()));
+        return "redirect:" + (teacher ? "/teacher" : "/student");
     }
 
     @GetMapping("/reviews/{submissionId}")
-    public String workspace(@PathVariable long submissionId, Model model) {
+    public String workspace(@PathVariable long submissionId,
+                            Authentication authentication, Model model) {
+        accessControlService.requireTeacherSubmission(authentication.getName(), submissionId);
         Submission submission = reviewService.requireSubmission(submissionId);
         ReviewDraft draft = reviewService.requireDraft(submissionId);
         activityService.record(submissionId, "SUBMISSION_VIEWED", "教师打开审核工作台");

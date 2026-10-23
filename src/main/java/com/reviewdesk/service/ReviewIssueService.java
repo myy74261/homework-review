@@ -3,6 +3,7 @@ package com.reviewdesk.service;
 import com.reviewdesk.domain.ReviewIssue;
 import com.reviewdesk.repository.ReviewIssueRepository;
 import java.util.Comparator;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,21 @@ public class ReviewIssueService {
     public List<IssueSummary> summarizeAll() {
         Map<String, Long> counts = new LinkedHashMap<>();
         for (ReviewIssue issue : issueRepository.findAllByOrderByCreatedAtDesc()) {
+            counts.merge(issue.getRubricName(), 1L, Long::sum);
+        }
+        return counts.entrySet().stream()
+                .map(entry -> new IssueSummary(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparingLong(IssueSummary::count).reversed())
+                .toList();
+    }
+
+    public List<IssueSummary> summarizeForSubmissions(Collection<Long> submissionIds) {
+        if (submissionIds.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (ReviewIssue issue : issueRepository
+                .findBySubmissionIdInOrderByCreatedAtDesc(submissionIds)) {
             counts.merge(issue.getRubricName(), 1L, Long::sum);
         }
         return counts.entrySet().stream()

@@ -11,10 +11,18 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     List<Submission> findByStudentNumberOrderBySubmittedAtDesc(String studentNumber);
 
+    List<Submission> findByStudentAccountIdOrderBySubmittedAtDesc(Long studentAccountId);
+
+    List<Submission> findByAssignmentIdInOrderBySubmittedAtDesc(
+            List<Long> assignmentIds);
+
     long countByAssignmentId(Long assignmentId);
 
     Optional<Submission> findFirstByAssignmentIdAndStudentNumberOrderByAttemptNumberDesc(
             Long assignmentId, String studentNumber);
+
+    Optional<Submission> findFirstByAssignmentIdAndStudentAccountIdOrderByAttemptNumberDesc(
+            Long assignmentId, Long studentAccountId);
 
     Optional<Submission> findTopByOrderByIdDesc();
 }

@@ -1,6 +1,7 @@
 package com.reviewdesk.service;
 
 import com.reviewdesk.domain.Assignment;
+import com.reviewdesk.domain.Account;
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.ReviewDraftRepository;
@@ -22,40 +23,47 @@ public class StudentSubmissionService {
     private final ReviewDraftRepository draftRepository;
     private final ReviewService reviewService;
     private final ReviewActivityService activityService;
+    private final ClassroomService classroomService;
 
     public StudentSubmissionService(AssignmentService assignmentService,
                                     SubmissionRepository submissionRepository,
                                     ReviewDraftRepository draftRepository,
                                     ReviewService reviewService,
-                                    ReviewActivityService activityService) {
+                                    ReviewActivityService activityService,
+                                    ClassroomService classroomService) {
         this.assignmentService = assignmentService;
         this.submissionRepository = submissionRepository;
         this.draftRepository = draftRepository;
         this.reviewService = reviewService;
         this.activityService = activityService;
+        this.classroomService = classroomService;
     }
 
-    public List<Submission> listForStudent(String studentNumber) {
-        return submissionRepository.findByStudentNumberOrderBySubmittedAtDesc(studentNumber);
+    public List<Submission> listForStudent(Account student) {
+        return submissionRepository.findByStudentAccountIdOrderBySubmittedAtDesc(
+                student.getId());
     }
 
-    public Optional<Submission> findLatest(long assignmentId, String studentNumber) {
-        return submissionRepository.findFirstByAssignmentIdAndStudentNumberOrderByAttemptNumberDesc(
-                assignmentId, studentNumber);
+    public Optional<Submission> findLatest(long assignmentId, Account student) {
+        return submissionRepository
+                .findFirstByAssignmentIdAndStudentAccountIdOrderByAttemptNumberDesc(
+                        assignmentId, student.getId());
     }
 
     /**
      * 每次重新提交都会创建新的提交记录，保留之前提交供教师对照。
      */
     @Transactional
-    public Submission submit(long assignmentId, String studentName, String studentNumber,
-                             String content) {
+    public Submission submit(long assignmentId, Account student, String content) {
         Assignment assignment = assignmentService.requireAssignment(assignmentId);
+        if (!classroomService.isStudentMember(student, assignment.getClassroomId())) {
+            throw new SecurityException("尚未加入该作业所属课堂");
+        }
         if (content == null || content.strip().length() < 20) {
             throw new IllegalArgumentException("提交内容不能少于 20 个字符");
         }
 
-        int attempt = findLatest(assignmentId, studentNumber)
+        int attempt = findLatest(assignmentId, student)
                 .map(previous -> previous.getAttemptNumber() + 1)
                 .orElse(1);
         long nextId = submissionRepository.findTopByOrderByIdDesc()
@@ -65,10 +73,11 @@ public class StudentSubmissionService {
         Submission submission = new Submission(
                 nextId,
                 assignment.getId(),
+                student.getId(),
                 assignment.getTitle(),
                 assignment.getCourseName(),
-                studentName.strip(),
-                studentNumber.strip(),
+                student.getDisplayName(),
+                student.getStudentNumber(),
                 cleanContent,
                 ReviewService.countCharacters(cleanContent),
                 attempt,

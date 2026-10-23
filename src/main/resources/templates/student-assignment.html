@@ -25,8 +25,13 @@
       </span>
     </div>
     <div class="topbar-end">
-      <span class="role-chip student-chip">学生端</span>
-      <button class="teacher-avatar" type="button" aria-label="学生个人中心">林</button>
+      <span class="role-chip student-chip"
+            th:text="${currentAccount.displayName + ' · 学生'}">林清和 · 学生</span>
+      <button class="teacher-avatar" type="button" aria-label="学生个人中心"
+              th:text="${#strings.substring(currentAccount.displayName, 0, 1)}">林</button>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
     </div>
   </header>
 

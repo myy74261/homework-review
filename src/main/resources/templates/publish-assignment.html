@@ -19,11 +19,14 @@
     <nav class="portal-nav" aria-label="教师端主导航">
       <a th:href="@{/teacher}">我的课堂</a>
       <a class="is-active" th:href="@{/teacher/assignments/new}">发布作业</a>
-      <a th:href="@{/student}">学生端预览</a>
     </nav>
     <div class="topbar-end">
-      <span class="role-chip">教师端</span>
-      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+      <span class="role-chip" th:text="${currentAccount.displayName + ' · 教师'}">陈老师 · 教师</span>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心"
+              th:text="${#strings.substring(currentAccount.displayName, 0, 1)}">陈</button>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
     </div>
   </header>
 
@@ -58,6 +61,17 @@
             <span>课程名称</span>
             <input type="text" th:field="*{courseName}">
             <small class="field-error" th:errors="*{courseName}"></small>
+          </label>
+          <label class="field">
+            <span>发布课堂</span>
+            <select th:field="*{classroomId}">
+              <option th:each="classroom : ${classrooms}"
+                      th:value="${classroom.id}"
+                      th:text="${classroom.name + ' · ' + classroom.courseName}">
+                传播学方法课 · 2026 秋
+              </option>
+            </select>
+            <small class="field-error" th:errors="*{classroomId}"></small>
           </label>
           <label class="field">
             <span>截止时间</span>

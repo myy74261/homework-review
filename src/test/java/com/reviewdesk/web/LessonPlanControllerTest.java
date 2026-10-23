@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.test.context.support.WithMockUser;
 
 /**
  * 验证 P3 可解释备课建议的生成、编辑和重新生成。
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@WithMockUser(username = "chen", roles = "TEACHER")
 class LessonPlanControllerTest {
 
     private static final String PLAN_URL = "/api/assignments/1/lesson-plan";
@@ -63,6 +66,7 @@ class LessonPlanControllerTest {
         long revision = original.get("revision").asLong();
 
         mockMvc.perform(put(PLAN_URL)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "title", "教师修改后的课堂讲解",
@@ -80,7 +84,7 @@ class LessonPlanControllerTest {
     @Test
     void regenerateUsesLatestTeacherConfirmedIssues() throws Exception {
         readPlan();
-        mockMvc.perform(post(PLAN_URL + "/regenerate"))
+        mockMvc.perform(post(PLAN_URL + "/regenerate").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.issueGroups[0].rubricName").value("证据与引用"))
                 .andExpect(jsonPath("$.content", containsString("证据与引用")))

@@ -61,6 +61,12 @@
   let selectedVersionId = null;
   let restoreArmed = false;
 
+  function csrfHeaders(extra = {}) {
+    const token = document.querySelector('meta[name="_csrf"]')?.content;
+    const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+    return token && header ? { ...extra, [header]: token } : extra;
+  }
+
   function resizeTitle() {
     title.style.height = 'auto';
     title.style.height = `${title.scrollHeight}px`;
@@ -181,7 +187,7 @@
     for (let attempt = 0; attempt < 2; attempt++) {
       const response = await fetch(reviewApi, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           title: title.value,
           content: editor.value,
@@ -378,6 +384,7 @@
       }
       const version = await fetch(`${reviewApi}/versions`, {
         method: 'POST',
+        headers: csrfHeaders(),
       }).then(readJson);
       versionCount += 1;
       updateVersionBadge();
@@ -407,6 +414,7 @@
     try {
       await fetch(`${reviewApi}/versions/${selectedVersionId}/restore`, {
         method: 'POST',
+        headers: csrfHeaders(),
       }).then(readJson);
       window.location.reload();
     } catch (error) {
@@ -426,7 +434,10 @@
           throw new Error('审核意见尚未保存');
         }
       }
-      const response = await fetch(`${reviewApi}/complete`, { method: 'POST' });
+      const response = await fetch(`${reviewApi}/complete`, {
+        method: 'POST',
+        headers: csrfHeaders(),
+      });
       if (!response.ok) {
         throw new Error(`完成审核失败：${response.status}`);
       }
@@ -471,7 +482,7 @@
       editor.dispatchEvent(new Event('input', { bubbles: true }));
       void fetch(`/api/submissions/${submissionId}/issues`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           rubricName: button.dataset.rubricName,
           evidenceQuote: button.dataset.evidence,
@@ -484,7 +495,7 @@
     if (action === 'dismiss') {
       void fetch(`/api/submissions/${submissionId}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           eventType: 'SUGGESTION_DISMISSED',
           detail: button.dataset.rubricName || '教师已核验',

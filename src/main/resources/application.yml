@@ -23,6 +23,10 @@ server:
     encoding:
       charset: UTF-8
       force: true
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
 
 logging:
   level:

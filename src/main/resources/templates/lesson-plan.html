@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:content="${_csrf.headerName}">
   <title th:text="${plan.title + ' · 明鉴'}">课堂讲解建议 · 明鉴</title>
   <link rel="stylesheet" th:href="@{/css/review.css}">
   <link rel="stylesheet" th:href="@{/css/portal.css}">
@@ -22,11 +24,14 @@
       <a class="is-active" th:href="@{/teacher/assignments/{id}/lesson-plan(id=${assignment.id})}">
         备课建议
       </a>
-      <a th:href="@{/student}">学生端预览</a>
     </nav>
     <div class="topbar-end">
-      <span class="role-chip">教师端</span>
-      <button class="teacher-avatar" type="button" aria-label="教师个人中心">陈</button>
+      <span class="role-chip" th:text="${currentAccount.displayName + ' · 教师'}">陈老师 · 教师</span>
+      <button class="teacher-avatar" type="button" aria-label="教师个人中心"
+              th:text="${#strings.substring(currentAccount.displayName, 0, 1)}">陈</button>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
     </div>
   </header>
 

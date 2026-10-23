@@ -1,6 +1,8 @@
 package com.reviewdesk.web;
 
 import com.reviewdesk.service.TeachingSuggestionService;
+import com.reviewdesk.service.AccessControlService;
+import org.springframework.security.core.Authentication;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -19,13 +21,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class LessonPlanExportController {
 
     private final TeachingSuggestionService suggestionService;
+    private final AccessControlService accessControlService;
 
-    public LessonPlanExportController(TeachingSuggestionService suggestionService) {
+    public LessonPlanExportController(TeachingSuggestionService suggestionService,
+                                      AccessControlService accessControlService) {
         this.suggestionService = suggestionService;
+        this.accessControlService = accessControlService;
     }
 
     @GetMapping("/teacher/assignments/{assignmentId}/lesson-plan/export.doc")
-    public ResponseEntity<byte[]> exportWord(@PathVariable long assignmentId) {
+    public ResponseEntity<byte[]> exportWord(@PathVariable long assignmentId,
+                                             Authentication authentication) {
+        accessControlService.requireTeacherAssignment(authentication.getName(), assignmentId);
         TeachingSuggestionService.LessonPlanWorkspace workspace =
                 suggestionService.getOrCreateWorkspace(assignmentId);
         String html = buildWordHtml(workspace);
@@ -34,7 +41,9 @@ public class LessonPlanExportController {
     }
 
     @GetMapping("/teacher/assignments/{assignmentId}/lesson-plan/export.md")
-    public ResponseEntity<byte[]> exportMarkdown(@PathVariable long assignmentId) {
+    public ResponseEntity<byte[]> exportMarkdown(@PathVariable long assignmentId,
+                                                 Authentication authentication) {
+        accessControlService.requireTeacherAssignment(authentication.getName(), assignmentId);
         TeachingSuggestionService.LessonPlanWorkspace workspace =
                 suggestionService.getOrCreateWorkspace(assignmentId);
         return download(buildMarkdown(workspace), workspace.plan().getTitle() + ".md",

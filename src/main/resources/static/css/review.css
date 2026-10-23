@@ -198,6 +198,22 @@ button {
   color: var(--green);
 }
 
+.logout-form {
+  margin: 0;
+}
+
+.logout-form button {
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.logout-form button:hover {
+  color: var(--rust);
+}
+
 .teacher-avatar {
   width: 34px;
   height: 34px;

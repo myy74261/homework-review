@@ -1,12 +1,17 @@
 package com.reviewdesk.bootstrap;
 
+import com.reviewdesk.domain.Account;
+import com.reviewdesk.domain.Classroom;
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.ReviewIssue;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.ReviewDraftRepository;
 import com.reviewdesk.repository.ReviewIssueRepository;
 import com.reviewdesk.repository.SubmissionRepository;
+import com.reviewdesk.repository.AccountRepository;
+import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AssignmentService;
+import com.reviewdesk.service.ClassroomService;
 import com.reviewdesk.service.ReviewService;
 import java.time.Instant;
 import java.util.List;
@@ -56,30 +61,53 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final ReviewService reviewService;
     private final AssignmentService assignmentService;
     private final ReviewIssueRepository issueRepository;
+    private final AccountRepository accountRepository;
+    private final AccountService accountService;
+    private final ClassroomService classroomService;
 
     public DemoDataInitializer(SubmissionRepository submissionRepository,
                                ReviewDraftRepository draftRepository,
                                ReviewService reviewService,
                                AssignmentService assignmentService,
-                               ReviewIssueRepository issueRepository) {
+                               ReviewIssueRepository issueRepository,
+                               AccountRepository accountRepository,
+                               AccountService accountService,
+                               ClassroomService classroomService) {
         this.submissionRepository = submissionRepository;
         this.draftRepository = draftRepository;
         this.reviewService = reviewService;
         this.assignmentService = assignmentService;
         this.issueRepository = issueRepository;
+        this.accountRepository = accountRepository;
+        this.accountService = accountService;
+        this.classroomService = classroomService;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        Account teacher = accountRepository.findByUsername("chen")
+                .orElseGet(() -> accountService.register(
+                        "chen", "Teach1234", "陈老师", Account.Role.TEACHER, null));
+        Account student = accountRepository.findByUsername("lin")
+                .orElseGet(() -> accountService.register(
+                        "lin", "Student1234", "林清和", Account.Role.STUDENT, "20230116"));
+        Classroom classroom = classroomService.teacherClassrooms(teacher).stream()
+                .findFirst()
+                .orElseGet(() -> classroomService.create(
+                        teacher, "传播学方法课 · 2026 秋", "传播学方法课"));
+        classroomService.join(student, classroom.getJoinCode());
+
         if (submissionRepository.existsById(ReviewService.DEMO_SUBMISSION_ID)) {
             seedIssues();
             return;
         }
 
-        var assignment = assignmentService.listAssignments().stream()
+        var assignment = assignmentService.listForClassrooms(
+                        List.of(classroom.getId())).stream()
                 .findFirst()
                 .orElseGet(() -> assignmentService.publish(
+                        classroom.getId(),
                         "短视频使用与大学生注意力恢复的关系研究",
                         "传播学方法课",
                         "完成一篇 3,000 字左右的调查报告，说明研究问题、研究方法、"
@@ -98,6 +126,7 @@ public class DemoDataInitializer implements ApplicationRunner {
         Submission submission = new Submission(
                 ReviewService.DEMO_SUBMISSION_ID,
                 assignment.getId(),
+                student.getId(),
                 assignment.getTitle(),
                 assignment.getCourseName(),
                 "林清和",

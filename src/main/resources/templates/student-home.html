@@ -19,19 +19,51 @@
     </a>
     <nav class="portal-nav" aria-label="学生端主导航">
       <a class="is-active" th:href="@{/student}">我的作业</a>
-      <a th:href="@{/teacher}">教师端演示</a>
     </nav>
     <div class="topbar-end">
-      <span class="role-chip student-chip">学生端</span>
-      <button class="teacher-avatar" type="button" aria-label="学生个人中心">林</button>
+      <span class="role-chip student-chip"
+            th:text="${currentAccount.displayName + ' · 学生'}">林清和 · 学生</span>
+      <button class="teacher-avatar" type="button" aria-label="学生个人中心"
+              th:text="${#strings.substring(currentAccount.displayName, 0, 1)}">林</button>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
     </div>
   </header>
 
   <main class="portal-main student-main">
     <section class="student-welcome">
-      <p class="eyebrow">你好，林清和</p>
+      <p class="eyebrow" th:text="${'你好，' + currentAccount.displayName}">你好，林清和</p>
       <h1>按时提交，也看清评价依据</h1>
       <p>作业要求与评分量规在这里公开；平台不替你写作，也不会根据写作过程自动判定诚信问题。</p>
+    </section>
+
+    <p class="success-banner" th:if="${successMessage}" th:text="${successMessage}">
+      已加入课堂。
+    </p>
+    <p class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}">
+      课堂码无效。
+    </p>
+
+    <section class="student-account-strip">
+      <div>
+        <p class="eyebrow">我的课堂</p>
+        <h2 th:if="${!classrooms.isEmpty()}">已加入课程</h2>
+        <h2 th:if="${classrooms.isEmpty()}">还没有加入课堂</h2>
+        <div class="joined-classrooms" th:if="${!classrooms.isEmpty()}">
+          <span th:each="classroom : ${classrooms}"
+                th:text="${classroom.name + ' · ' + classroom.courseName}">
+            传播学方法课 · 2026 秋
+          </span>
+        </div>
+      </div>
+      <form class="join-class-form" th:action="@{/student/join}" method="post">
+        <label class="field">
+          <span>输入教师提供的课堂码</span>
+          <input type="text" name="joinCode" maxlength="12" required placeholder="例如 A2B3C4D5">
+        </label>
+        <button type="submit">加入课堂</button>
+      </form>
     </section>
 
     <section class="student-assignment-grid">
@@ -57,6 +89,9 @@
         </a>
       </article>
     </section>
+    <p class="empty-state" th:if="${assignments.isEmpty()}">
+      加入课堂后，教师发布的作业会显示在这里。
+    </p>
   </main>
 </body>
 </html>

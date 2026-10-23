@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import com.reviewdesk.repository.ReviewEventRepository;
 import org.junit.jupiter.api.Test;
@@ -32,13 +34,13 @@ class TeachingFlowControllerTest {
 
     @Test
     void teacherAndStudentPortalsRender() throws Exception {
-        mockMvc.perform(get("/teacher"))
+        mockMvc.perform(get("/teacher").with(user("chen").roles("TEACHER")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("我的课堂")))
                 .andExpect(content().string(containsString("发布新作业")))
                 .andExpect(content().string(containsString("诚信与可追溯")));
 
-        mockMvc.perform(get("/student"))
+        mockMvc.perform(get("/student").with(user("lin").roles("STUDENT")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("我的作业")))
                 .andExpect(content().string(containsString("评分量规")));
@@ -46,14 +48,18 @@ class TeachingFlowControllerTest {
 
     @Test
     void teacherCanPublishAssignmentWithRubric() throws Exception {
-        mockMvc.perform(get("/teacher/assignments/new"))
+        mockMvc.perform(get("/teacher/assignments/new")
+                        .with(user("chen").roles("TEACHER")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("评分量规")))
                 .andExpect(content().string(containsString("发布作业并开放提交")));
 
         mockMvc.perform(post("/teacher/assignments")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
                         .param("title", "媒介使用与学习策略调查")
                         .param("courseName", "传播学方法课")
+                        .param("classroomId", "1")
                         .param("instructions", "完成一份调查说明，并展示数据来源与核心发现。")
                         .param("dueAt", "2027-01-10T23:59")
                         .param("criterion1Name", "研究问题")
@@ -77,12 +83,14 @@ class TeachingFlowControllerTest {
         String content = "摘要\n\n本研究围绕课程作业问题展开分析，并说明数据来源、研究方法与主要发现。";
 
         mockMvc.perform(post("/student/assignments/1/submissions")
+                        .with(user("lin").roles("STUDENT"))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("content", content))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/student/assignments/1"));
 
-        mockMvc.perform(get("/teacher"))
+        mockMvc.perform(get("/teacher").with(user("chen").roles("TEACHER")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("第 3 次")))
                 .andExpect(content().string(containsString("开始审核")));
@@ -91,6 +99,8 @@ class TeachingFlowControllerTest {
     @Test
     void confirmedIssueAppearsInTeacherSummary() throws Exception {
         mockMvc.perform(post("/api/submissions/1/issues")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -101,7 +111,7 @@ class TeachingFlowControllerTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/teacher"))
+        mockMvc.perform(get("/teacher").with(user("chen").roles("TEACHER")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("2 处")));
 

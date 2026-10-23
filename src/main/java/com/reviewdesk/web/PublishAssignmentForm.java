@@ -18,6 +18,9 @@ public record PublishAssignmentForm(
         @NotBlank(message = "请填写课程名称")
         String courseName,
 
+        @NotNull(message = "请选择发布课堂")
+        Long classroomId,
+
         @NotBlank(message = "请填写作业要求")
         String instructions,
 
@@ -51,10 +54,11 @@ public record PublishAssignmentForm(
         String criterion4Description
 ) {
 
-    public static PublishAssignmentForm defaults() {
+    public static PublishAssignmentForm defaults(Long classroomId) {
         return new PublishAssignmentForm(
                 "短视频使用与大学生注意力恢复的关系研究",
                 "传播学方法课",
+                classroomId,
                 "完成一篇 3,000 字左右的调查报告，说明研究问题、研究方法、"
                         + "数据来源与主要发现，并附参考文献。",
                 LocalDateTime.of(2026, 10, 24, 23, 59),

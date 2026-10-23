@@ -20,6 +20,9 @@ public class Assignment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private Long classroomId;
+
     @Column(nullable = false, length = 240)
     private String title;
 
@@ -43,8 +46,9 @@ public class Assignment {
         // JPA 需要的无参构造方法
     }
 
-    public Assignment(String title, String courseName, String instructions,
-                      Instant dueAt) {
+    public Assignment(Long classroomId, String title, String courseName,
+                      String instructions, Instant dueAt) {
+        this.classroomId = classroomId;
         this.title = title;
         this.courseName = courseName;
         this.instructions = instructions;
@@ -55,6 +59,10 @@ public class Assignment {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getClassroomId() {
+        return classroomId;
     }
 
     public String getTitle() {

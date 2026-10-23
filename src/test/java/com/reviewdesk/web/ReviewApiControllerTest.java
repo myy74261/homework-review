@@ -6,6 +6,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.test.context.support.WithMockUser;
 
 /**
  * 审核意见保存、反馈版本和恢复的接口测试。
@@ -29,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@WithMockUser(username = "chen", roles = "TEACHER")
 class ReviewApiControllerTest {
 
     private static final String REVIEW_URL = "/api/submissions/1/review";
@@ -54,6 +58,7 @@ class ReviewApiControllerTest {
         long revision = currentRevision();
 
         mockMvc.perform(put(REVIEW_URL)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(saveRequest("补充后的审核意见", "新增审核反馈", revision)))
                 .andExpect(status().isOk())
@@ -67,6 +72,7 @@ class ReviewApiControllerTest {
         long revision = currentRevision();
 
         mockMvc.perform(put(REVIEW_URL)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(saveRequest("审核意见", "反馈", revision + 3)))
                 .andExpect(status().isConflict())
@@ -80,6 +86,7 @@ class ReviewApiControllerTest {
         long revision = currentRevision();
 
         mockMvc.perform(put(REVIEW_URL)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(saveRequest("修订后的审核意见", "第一段。\n\n新增反馈。", revision)))
                 .andExpect(status().isOk());
@@ -100,11 +107,13 @@ class ReviewApiControllerTest {
         long revision = currentRevision();
 
         mockMvc.perform(put(REVIEW_URL)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(saveRequest("临时审核意见", "临时反馈", revision)))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post(REVIEW_URL + "/versions/" + versionId + "/restore"))
+        mockMvc.perform(post(REVIEW_URL + "/versions/" + versionId + "/restore")
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").value(original));
 
@@ -115,14 +124,15 @@ class ReviewApiControllerTest {
 
     @Test
     void completingReviewPublishesFeedbackToStudent() throws Exception {
-        mockMvc.perform(post(REVIEW_URL + "/complete"))
+        mockMvc.perform(post(REVIEW_URL + "/complete").with(csrf()))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/reviews/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("已审核")));
 
-        mockMvc.perform(get("/student/assignments/1"))
+        mockMvc.perform(get("/student/assignments/1")
+                        .with(user("lin").roles("STUDENT")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("教师最终反馈")))
                 .andExpect(content().string(containsString("总体判断")));
@@ -150,7 +160,7 @@ class ReviewApiControllerTest {
     }
 
     private long createVersion() throws Exception {
-        MvcResult result = mockMvc.perform(post(REVIEW_URL + "/versions"))
+        MvcResult result = mockMvc.perform(post(REVIEW_URL + "/versions").with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(

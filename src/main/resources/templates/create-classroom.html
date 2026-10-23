@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>创建课堂 · 明鉴</title>
+  <link rel="stylesheet" th:href="@{/css/review.css}">
+  <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body class="portal-page">
+  <header class="topbar portal-topbar">
+    <a class="brand" th:href="@{/teacher}" aria-label="返回教师课堂">
+      <span class="brand-seal" aria-hidden="true">鉴</span>
+      <span class="brand-copy">
+        <strong>明鉴</strong>
+        <small>教师作业审核平台</small>
+      </span>
+    </a>
+    <div class="topbar-end">
+      <span class="role-chip">教师端</span>
+      <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">退出</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="simple-form-main">
+    <a class="back-to-class" th:href="@{/teacher}">← 返回课堂</a>
+    <section class="simple-form-card">
+      <p class="eyebrow">创建课堂</p>
+      <h1>先建立课堂，再发布作业</h1>
+      <p>学生需要使用系统生成的课堂码加入。课堂码可以分享到班级群。</p>
+      <form th:action="@{/teacher/classrooms}" method="post">
+        <label class="field">
+          <span>课堂名称</span>
+          <input type="text" name="name" placeholder="例如：传播学方法课 · 2026 秋" required>
+        </label>
+        <label class="field">
+          <span>课程名称</span>
+          <input type="text" name="courseName" placeholder="例如：传播学方法课" required>
+        </label>
+        <button class="auth-submit" type="submit">创建课堂并生成课堂码</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
