@@ -1,7 +1,7 @@
 package com.reviewdesk.web;
 
-import com.reviewdesk.service.TeachingSuggestionService;
 import com.reviewdesk.service.AccessControlService;
+import com.reviewdesk.service.TeachingSuggestionService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

@@ -2,9 +2,9 @@ package com.reviewdesk.web;
 
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.ReviewVersion;
+import com.reviewdesk.service.AccessControlService;
 import com.reviewdesk.service.ReviewDiffService;
 import com.reviewdesk.service.ReviewService;
-import com.reviewdesk.service.AccessControlService;
 import com.reviewdesk.web.api.DiffResponse;
 import com.reviewdesk.web.api.ReviewResponse;
 import com.reviewdesk.web.api.SaveReviewRequest;
@@ -13,15 +13,15 @@ import com.reviewdesk.web.api.VersionSummaryResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 教师审核意见保存与反馈版本管理的 REST 接口。

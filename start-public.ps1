@@ -1,6 +1,10 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSCommandPath
+
+. (Join-Path $projectRoot 'load-env.ps1')
+
+$serverPort = if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } else { 8080 }
 $runDirectory = Join-Path $projectRoot '.run'
 $toolsDirectory = Join-Path $projectRoot '.tools'
 $jar = Join-Path $projectRoot 'target\review-desk-0.1.0-SNAPSHOT.jar'
@@ -48,7 +52,7 @@ if (-not (Test-Path -LiteralPath $cloudflared)) {
 function Test-LocalApp {
     try {
         $response = Invoke-WebRequest -UseBasicParsing `
-            -Uri 'http://127.0.0.1:8080/login' -TimeoutSec 2
+            -Uri "http://127.0.0.1:$serverPort/login" -TimeoutSec 2
         return $response.StatusCode -eq 200
     } catch {
         return $false
@@ -56,9 +60,9 @@ function Test-LocalApp {
 }
 
 if (-not (Test-LocalApp)) {
-    $listener = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue
+    $listener = Get-NetTCPConnection -LocalPort $serverPort -State Listen -ErrorAction SilentlyContinue
     if ($listener) {
-        throw "Port 8080 is used by PID $($listener[0].OwningProcess), but the app is not responding."
+        throw "Port $serverPort is used by PID $($listener[0].OwningProcess), but the app is not responding."
     }
 
     Write-Host 'Starting application in the background...'
@@ -110,7 +114,7 @@ if ((Test-Path -LiteralPath $tunnelPidFile) -and (Test-Path -LiteralPath $urlFil
 Write-Host 'Creating temporary HTTPS public URL...'
 $tunnelProcess = Start-Process `
     -FilePath $cloudflared `
-    -ArgumentList @('tunnel', '--url', 'http://127.0.0.1:8080', '--no-autoupdate') `
+    -ArgumentList @('tunnel', '--url', "http://127.0.0.1:$serverPort", '--no-autoupdate') `
     -WorkingDirectory $projectRoot `
     -WindowStyle Hidden `
     -RedirectStandardOutput $tunnelLog `

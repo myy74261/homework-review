@@ -1,8 +1,7 @@
 package com.reviewdesk.web;
 
-import com.reviewdesk.service.TeachingSuggestionService;
 import com.reviewdesk.service.AccessControlService;
-import org.springframework.security.core.Authentication;
+import com.reviewdesk.service.TeachingSuggestionService;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -10,6 +9,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

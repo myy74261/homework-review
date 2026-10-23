@@ -118,7 +118,13 @@ review-desk/
 │       ├── css/
 │       └── js/
 ├── src/test/java/com/reviewdesk/web
+├── docs/
+│   ├── ENVIRONMENT.md             完整环境变量与配置说明
+│   ├── DEPENDENCIES.md            依赖清单与升级方式
+│   └── TEAM.md                    团队职责与验收范围
+├── .env.example                   环境变量模板
 ├── data/                          本地 H2 数据文件（不提交）
+├── start-local.cmd                本地启动
 ├── start-public.cmd               后台启动网站并生成公网地址
 ├── stop-public.cmd                停止网站和公网隧道
 └── pom.xml
@@ -145,6 +151,18 @@ java -version
 mvn -v
 ```
 
+完整环境配置见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)，依赖清单见 [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)。
+
+### 初始化环境变量
+
+```powershell
+cd D:\workspace\Web\review-desk
+Copy-Item .env.example .env
+notepad .env
+```
+
+`.env` 不会被 Git 提交。启动脚本会自动加载其中的配置。
+
 ### 获取项目
 
 ```powershell
@@ -155,7 +173,14 @@ cd homework-review
 ### 开发模式启动
 
 ```powershell
-cd D:\workspace\Web\review-desk
+start-local.cmd
+```
+
+`start-local.cmd` 会加载 `.env`、在缺少 JAR 时执行打包，并以前台模式运行网站。
+
+开发热启动仍可使用：
+
+```powershell
 $env:JAVA_HOME = "D:\Project\jdk"
 & "D:\Project\apache-maven-3.10.0\bin\mvn.cmd" spring-boot:run
 ```
@@ -277,10 +302,12 @@ src/main/resources/application.yml
 
 | 角色 | 姓名 | 学号/单位 | 项目分工 |
 | --- | --- | --- | --- |
-| 队员一 | （待填写） | （待填写） | （待填写） |
-| 队员二 | （待填写） | （待填写） | （待填写） |
-| 队员三 | （待填写） | （待填写） | （待填写） |
-| 指导教师 | （待填写） | （待填写） | 项目指导 |
+| 队员一 | （待填写） | （待填写） | 后端架构、账号权限、数据模型与课堂数据隔离 |
+| 队员二 | （待填写） | （待填写） | 教师端、审核与备课界面，视觉和响应式 |
+| 队员三 | （待填写） | （待填写） | 学生端、测试、依赖配置、部署和演示材料 |
+| 指导教师 | （待填写） | （待填写） | 教学场景、诚信边界和阶段成果审核 |
+
+详细分工与验收标准见 [docs/TEAM.md](docs/TEAM.md)。
 
 ## 仓库
 

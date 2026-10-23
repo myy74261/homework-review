@@ -1,11 +1,11 @@
 package com.reviewdesk.web.api;
 
-import com.reviewdesk.domain.StaleReviewException;
 import com.reviewdesk.domain.StaleLessonPlanException;
+import com.reviewdesk.domain.StaleReviewException;
+import com.reviewdesk.service.AssignmentNotFoundException;
 import com.reviewdesk.service.ReviewNotFoundException;
 import com.reviewdesk.service.ReviewVersionNotFoundException;
 import com.reviewdesk.service.SubmissionNotFoundException;
-import com.reviewdesk.service.AssignmentNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;

@@ -2,6 +2,9 @@ target/
 .maven-repo/
 .tools/
 .run/
+.env
+.env.*
+!.env.example
 .idea/
 .vscode/
 *.iml

@@ -1,14 +1,15 @@
 package com.reviewdesk.bootstrap;
 
+import com.reviewdesk.config.DemoAccountProperties;
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.domain.Classroom;
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.ReviewIssue;
 import com.reviewdesk.domain.Submission;
+import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.repository.ReviewDraftRepository;
 import com.reviewdesk.repository.ReviewIssueRepository;
 import com.reviewdesk.repository.SubmissionRepository;
-import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
@@ -64,6 +65,7 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final AccountRepository accountRepository;
     private final AccountService accountService;
     private final ClassroomService classroomService;
+    private final DemoAccountProperties demoAccounts;
 
     public DemoDataInitializer(SubmissionRepository submissionRepository,
                                ReviewDraftRepository draftRepository,
@@ -72,7 +74,8 @@ public class DemoDataInitializer implements ApplicationRunner {
                                ReviewIssueRepository issueRepository,
                                AccountRepository accountRepository,
                                AccountService accountService,
-                               ClassroomService classroomService) {
+                               ClassroomService classroomService,
+                               DemoAccountProperties demoAccounts) {
         this.submissionRepository = submissionRepository;
         this.draftRepository = draftRepository;
         this.reviewService = reviewService;
@@ -81,17 +84,26 @@ public class DemoDataInitializer implements ApplicationRunner {
         this.accountRepository = accountRepository;
         this.accountService = accountService;
         this.classroomService = classroomService;
+        this.demoAccounts = demoAccounts;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        Account teacher = accountRepository.findByUsername("chen")
+        Account teacher = accountRepository.findByUsername(demoAccounts.teacherUsername())
                 .orElseGet(() -> accountService.register(
-                        "chen", "Teach1234", "陈老师", Account.Role.TEACHER, null));
-        Account student = accountRepository.findByUsername("lin")
+                        demoAccounts.teacherUsername(),
+                        demoAccounts.teacherPassword(),
+                        demoAccounts.teacherName(),
+                        Account.Role.TEACHER,
+                        null));
+        Account student = accountRepository.findByUsername(demoAccounts.studentUsername())
                 .orElseGet(() -> accountService.register(
-                        "lin", "Student1234", "林清和", Account.Role.STUDENT, "20230116"));
+                        demoAccounts.studentUsername(),
+                        demoAccounts.studentPassword(),
+                        demoAccounts.studentName(),
+                        Account.Role.STUDENT,
+                        demoAccounts.studentNumber()));
         Classroom classroom = classroomService.teacherClassrooms(teacher).stream()
                 .findFirst()
                 .orElseGet(() -> classroomService.create(
@@ -129,8 +141,8 @@ public class DemoDataInitializer implements ApplicationRunner {
                 student.getId(),
                 assignment.getTitle(),
                 assignment.getCourseName(),
-                "林清和",
-                "20230116",
+                demoAccounts.studentName(),
+                demoAccounts.studentNumber(),
                 SUBMISSION_CONTENT,
                 2846,
                 2,

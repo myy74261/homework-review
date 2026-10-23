@@ -1,7 +1,7 @@
 package com.reviewdesk.service;
 
-import com.reviewdesk.domain.Assignment;
 import com.reviewdesk.domain.Account;
+import com.reviewdesk.domain.Assignment;
 import com.reviewdesk.domain.ReviewDraft;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.ReviewDraftRepository;

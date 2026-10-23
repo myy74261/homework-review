@@ -1,24 +1,24 @@
 spring:
   application:
-    name: review-desk
+    name: ${SPRING_APPLICATION_NAME:review-desk}
   datasource:
-    url: jdbc:h2:file:./data/review-desk
-    username: sa
-    password: ""
+    url: ${DATABASE_URL:jdbc:h2:file:./data/review-desk}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:update}
     open-in-view: false
   thymeleaf:
-    cache: false
+    cache: ${THYMELEAF_CACHE:false}
   web:
     resources:
       cache:
         period: 0
 
 server:
-  port: 8080
-  address: 0.0.0.0
+  port: ${SERVER_PORT:8080}
+  address: ${SERVER_ADDRESS:0.0.0.0}
   servlet:
     encoding:
       charset: UTF-8
@@ -26,7 +26,18 @@ server:
     session:
       cookie:
         http-only: true
-        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: ${SESSION_COOKIE_SAME_SITE:lax}
+
+review-desk:
+  demo:
+    teacher-username: ${DEMO_TEACHER_USERNAME:chen}
+    teacher-password: ${DEMO_TEACHER_PASSWORD:Teach1234}
+    teacher-name: ${DEMO_TEACHER_NAME:陈老师}
+    student-username: ${DEMO_STUDENT_USERNAME:lin}
+    student-password: ${DEMO_STUDENT_PASSWORD:Student1234}
+    student-name: ${DEMO_STUDENT_NAME:林清和}
+    student-number: ${DEMO_STUDENT_NUMBER:20230116}
 
 logging:
   level:
