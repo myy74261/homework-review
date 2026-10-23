@@ -1,5 +1,7 @@
 target/
 .maven-repo/
+.tools/
+.run/
 .idea/
 .vscode/
 *.iml
