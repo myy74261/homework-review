@@ -4,15 +4,18 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.reviewdesk.repository.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,9 +30,19 @@ class SpaApiControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private AccountRepository accountRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Test
     void reactEntryAndTeacherSessionAreAvailable() throws Exception {
         mockMvc.perform(get("/app/teacher").with(user("chen").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/app/index.html"));
+
+        mockMvc.perform(get("/app/account").with(user("chen").roles("TEACHER")))
                 .andExpect(status().isOk())
                 .andExpect(forwardedUrl("/app/index.html"));
 
@@ -105,5 +118,38 @@ class SpaApiControllerTest {
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.name").value("新媒体设计课 · 2026"))
                 .andExpect(jsonPath("$.joinCode").isNotEmpty());
+    }
+
+    @Test
+    void authenticatedUserCanChangePasswordAfterVerifyingOldPassword() throws Exception {
+        mockMvc.perform(put("/api/app/account/password")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "Teach1234",
+                                  "newPassword": "ChangedPass-2026!"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        var account = accountRepository.findByUsername("chen").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(
+                        passwordEncoder.matches("ChangedPass-2026!", account.getPasswordHash()))
+                .isTrue();
+
+        mockMvc.perform(put("/api/app/account/password")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "Teach1234",
+                                  "newPassword": "AnotherPass-2026!"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("当前密码不正确"));
     }
 }

@@ -22,6 +22,8 @@ try {
   } else {
     await page.getByRole("heading", { name: "我的作业" }).waitFor();
   }
+  await page.goto(`${baseUrl}/app/account`);
+  await page.getByRole("heading", { name: "个人中心" }).waitFor();
   console.log(`Production React smoke test passed: ${new URL(url).pathname}`);
 } finally {
   await browser.close();

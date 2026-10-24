@@ -36,6 +36,28 @@ public class AccountService {
     }
 
     @Transactional
+    public void changePassword(String username, String currentPassword,
+                               String newPassword) {
+        Account account = requireByUsername(username);
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("请输入当前密码");
+        }
+        if (!passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
+            throw new IllegalArgumentException("当前密码不正确");
+        }
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("新密码至少需要 8 个字符");
+        }
+        if (newPassword.length() > 72) {
+            throw new IllegalArgumentException("新密码不能超过 72 个字符");
+        }
+        if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
+            throw new IllegalArgumentException("新密码不能与当前密码相同");
+        }
+        account.changePasswordHash(passwordEncoder.encode(newPassword));
+    }
+
+    @Transactional
     public Account register(String username, String password, String displayName,
                             Account.Role role, String studentNumber) {
         String cleanUsername = username == null ? "" : username.strip().toLowerCase();

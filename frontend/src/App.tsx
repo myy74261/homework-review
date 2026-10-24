@@ -10,6 +10,7 @@ import { ReviewWorkspacePage } from "@/pages/ReviewWorkspacePage";
 import { LessonPlanPage } from "@/pages/LessonPlanPage";
 import { StudentHomePage } from "@/pages/StudentHomePage";
 import { StudentAssignmentPage } from "@/pages/StudentAssignmentPage";
+import { AccountPage } from "@/pages/AccountPage";
 
 function HomeRedirect() {
   const session = useAppStore((state) => state.session);
@@ -55,6 +56,7 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<HomeRedirect />} />
+        <Route path="account" element={<AccountPage />} />
         <Route
           path="teacher"
           element={

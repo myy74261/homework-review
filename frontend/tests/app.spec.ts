@@ -60,3 +60,13 @@ test("student can submit through the React async form", async ({ page }) => {
   await page.getByRole("button", { name: "提交修订版本" }).click();
   await expect(page.getByText("作业已提交，等待教师审核。")).toBeVisible();
 });
+
+test("authenticated user can change their password from account settings", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.goto("/app/account");
+  await page.getByLabel("当前密码").fill("Teach1234");
+  await page.getByLabel("新密码", { exact: true }).fill("ChangedPass-2026!");
+  await page.getByLabel("确认新密码").fill("ChangedPass-2026!");
+  await page.getByRole("button", { name: "更新密码" }).click();
+  await expect(page.getByText("密码已更新，下次登录时请使用新密码。")).toBeVisible();
+});

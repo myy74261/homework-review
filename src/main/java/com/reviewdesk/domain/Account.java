@@ -87,5 +87,12 @@ public class Account {
     public boolean isTeacher() {
         return Role.TEACHER.name().equals(role);
     }
+
+    /**
+     * 更新密码哈希。明文密码不得进入实体。
+     */
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 }
 

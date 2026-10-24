@@ -1,5 +1,5 @@
-import { BookOpen, ClipboardCheck, Home, LogOut, Sparkles } from "lucide-react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { BookOpen, ClipboardCheck, Home, LogOut, Settings, Sparkles } from "lucide-react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
@@ -72,9 +72,16 @@ export function AppShell() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden rounded-full bg-stone-100 px-3 py-1.5 text-xs text-muted sm:inline">
-              {session.user.displayName} · {session.user.role === "TEACHER" ? "教师" : "学生"}
-            </span>
+            <Link
+              to="/account"
+              className="flex items-center gap-2 rounded-full bg-stone-100 px-3 py-1.5 text-xs text-muted transition hover:bg-pine-50 hover:text-pine-700"
+            >
+              <Settings className="size-3.5" />
+              <span className="hidden sm:inline">
+                {session.user.displayName} · {session.user.role === "TEACHER" ? "教师" : "学生"}
+              </span>
+              <span className="sm:hidden">{session.user.displayName.slice(0, 1)}</span>
+            </Link>
             <Button variant="ghost" size="icon" onClick={logout} aria-label="退出登录">
               <LogOut className="size-4" />
             </Button>

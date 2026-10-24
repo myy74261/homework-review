@@ -31,6 +31,7 @@
 ### 教师端
 
 - 注册、登录和退出，只能访问自己的课堂数据。
+- 在个人中心校验旧密码后修改登录密码。
 - 创建课堂并生成唯一课堂码。
 - 发布作业，选择文档、代码、截图/设计或混合提交形式。
 - 配置 1–10 项总分 100 分的动态评分量规。
@@ -374,6 +375,7 @@ npm run test:e2e
 | POST | `/api/submissions/{id}/issues` | 保存教师确认的问题 |
 | POST | `/student/submissions/{id}/appeals` | 学生提交申诉 |
 | POST | `/teacher/appeals/{id}/respond` | 教师回复申诉 |
+| PUT | `/api/app/account/password` | 教师或学生校验旧密码后修改密码 |
 | GET/PUT | `/api/assignments/{id}/lesson-plan` | 读取或保存备课稿 |
 | POST | `/api/assignments/{id}/lesson-plan/regenerate` | 重新生成备课稿 |
 | GET | `/teacher/assignments/{id}/lesson-plan/export.doc` | 导出 Word 兼容文档 |
