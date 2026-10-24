@@ -1,0 +1,21 @@
+[Unit]
+Description=ReviewDesk teacher homework review platform
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=reviewdesk
+Group=reviewdesk
+WorkingDirectory=/opt/review-desk
+EnvironmentFile=/opt/review-desk/.env.production
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/review-desk/app.jar
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/review-desk
+
+[Install]
+WantedBy=multi-user.target

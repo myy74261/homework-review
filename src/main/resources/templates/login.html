@@ -54,15 +54,15 @@
 
       <p class="auth-switch">还没有账号？<a th:href="@{/register}">创建教师或学生账号</a></p>
 
-      <div class="demo-accounts">
+      <div class="demo-accounts" th:if="${showDemoCredentials}">
         <span>演示账号</span>
         <div>
           <strong>教师</strong>
-          <code>chen / Teach1234</code>
+          <code th:text="${demoTeacherUsername + ' / ' + demoTeacherPassword}">chen / Teach1234</code>
         </div>
         <div>
           <strong>学生</strong>
-          <code>lin / Student1234</code>
+          <code th:text="${demoStudentUsername + ' / ' + demoStudentPassword}">lin / Student1234</code>
         </div>
       </div>
     </section>

@@ -31,6 +31,8 @@ server:
         same-site: ${SESSION_COOKIE_SAME_SITE:lax}
 
 review-desk:
+  ui:
+    show-demo-credentials: ${SHOW_DEMO_CREDENTIALS:true}
   demo:
     teacher-username: ${DEMO_TEACHER_USERNAME:chen}
     teacher-password: ${DEMO_TEACHER_PASSWORD:Teach1234}

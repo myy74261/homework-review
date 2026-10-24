@@ -1,5 +1,16 @@
 # 云服务器部署说明
 
+## 0. 选择部署方式
+
+项目支持两种方式：
+
+| 方式 | 适用情况 |
+| --- | --- |
+| Docker Compose | Docker Hub 可访问，希望使用容器隔离 |
+| 原生 JDK + PostgreSQL | Docker Hub 受限，或希望减少运行层级 |
+
+当前阿里云 ECS 使用原生 JDK + PostgreSQL + Nginx + systemd。
+
 ## 1. 推荐环境
 
 - Ubuntu 22.04 LTS 或 24.04 LTS
@@ -152,4 +163,66 @@ sudo journalctl -u nginx --no-pager -n 100
 4. 教师填写反馈并点击“发布反馈”。
 5. 学生重新登录，确认能查看提交全文和最终反馈。
 6. 重启容器后确认数据仍然存在。
+
+## 11. 原生 Ubuntu 部署
+
+适用于无法访问 Docker Hub 的服务器。
+
+安装依赖：
+
+```bash
+sudo apt update
+sudo apt install -y openjdk-17-jre-headless \
+  postgresql postgresql-contrib nginx
+sudo systemctl enable --now postgresql nginx
+```
+
+上传构建产物到：
+
+```text
+/opt/review-desk/app.jar
+```
+
+创建服务器配置：
+
+```bash
+cd /opt/review-desk
+cp deploy/native.env.example .env.production
+chmod 600 .env.production
+nano .env.production
+```
+
+初始化数据库：
+
+```bash
+bash deploy/setup-native-db.sh
+```
+
+创建运行账号并配置服务：
+
+```bash
+sudo useradd --system --home-dir /opt/review-desk \
+  --shell /usr/sbin/nologin reviewdesk
+sudo chown reviewdesk:reviewdesk /opt/review-desk/.env.production /opt/review-desk/app.jar
+sudo chmod 600 /opt/review-desk/.env.production
+sudo chmod 640 /opt/review-desk/app.jar
+sudo cp deploy/review-desk.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now review-desk
+```
+
+检查：
+
+```bash
+systemctl status review-desk
+curl http://127.0.0.1:8080/login
+```
+
+原生部署时：
+
+- 应用只监听 `127.0.0.1:8080`
+- PostgreSQL 只在服务器本机使用
+- Nginx 接收公网 80/443 请求
+- 使用 HTTP IP 测试时保持 `SESSION_COOKIE_SECURE=false`
+- 配置域名 HTTPS 后改为 `SESSION_COOKIE_SECURE=true` 并重启服务
 

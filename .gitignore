@@ -2,6 +2,7 @@ target/
 .maven-repo/
 .tools/
 .run/
+.deploy/
 .env
 .env.*
 !.env.example

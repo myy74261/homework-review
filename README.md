@@ -128,6 +128,9 @@ review-desk/
 ├── Dockerfile                     多阶段 Java 构建镜像
 ├── docker-compose.yml             应用与 PostgreSQL 编排
 ├── deploy/nginx-review-desk.conf  Nginx 反向代理模板
+├── deploy/native.env.example     原生服务器环境模板
+├── deploy/setup-native-db.sh     PostgreSQL 初始化脚本
+├── deploy/review-desk.service    systemd 服务配置
 ├── data/                          本地 H2 数据文件（不提交）
 ├── start-local.cmd                本地启动
 ├── start-public.cmd               后台启动网站并生成公网地址

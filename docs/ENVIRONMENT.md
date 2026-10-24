@@ -68,6 +68,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `SESSION_COOKIE_SAME_SITE` | `lax` | 会话 Cookie 的 SameSite 策略 |
 | `SPRING_APPLICATION_NAME` | `review-desk` | 应用名称 |
 | `THYMELEAF_CACHE` | `false` | 是否缓存服务端页面模板 |
+| `SHOW_DEMO_CREDENTIALS` | `true` | 登录页是否显示初始演示账号；生产环境应设为 `false` |
 | `DEMO_TEACHER_USERNAME` | `chen` | 首次启动创建的教师账号 |
 | `DEMO_TEACHER_PASSWORD` | `Teach1234` | 首次启动创建的教师密码 |
 | `DEMO_TEACHER_NAME` | `陈老师` | 演示教师姓名 |
