@@ -88,6 +88,10 @@ public class StudentWorkspaceController {
                 .findLatest(assignmentId, student)
                 .orElse(null);
         model.addAttribute("latestSubmission", latestSubmission);
+        model.addAttribute("latestSubmittedAtText",
+                latestSubmission == null ? null : formatTime(latestSubmission.getSubmittedAt()));
+        model.addAttribute("reviewedAtText",
+                latestSubmission == null ? null : formatTime(latestSubmission.getReviewedAt()));
         model.addAttribute("reviewFeedback",
                 latestSubmission != null && "REVIEWED".equals(latestSubmission.getReviewStatus())
                         ? reviewService.requireDraft(latestSubmission.getId())
@@ -126,10 +130,32 @@ public class StudentWorkspaceController {
     }
 
     private String formatTime(java.time.Instant instant) {
+        if (instant == null) {
+            return null;
+        }
         return DATE_TIME.format(instant.atZone(DISPLAY_ZONE));
     }
 
     public record StudentAssignmentView(Assignment assignment, Submission latestSubmission,
                                         String dueAtText) {
+
+        public boolean isReviewed() {
+            return latestSubmission != null
+                    && "REVIEWED".equals(latestSubmission.getReviewStatus());
+        }
+
+        public String getStatusText() {
+            if (latestSubmission == null) {
+                return "待提交";
+            }
+            return isReviewed() ? "已反馈" : "待审核";
+        }
+
+        public String getStatusClass() {
+            if (latestSubmission == null) {
+                return "status-pending";
+            }
+            return isReviewed() ? "status-submitted" : "status-reviewing";
+        }
     }
 }

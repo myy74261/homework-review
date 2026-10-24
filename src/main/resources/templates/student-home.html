@@ -70,8 +70,8 @@
       <article class="student-assignment-card" th:each="item : ${assignments}">
         <div class="assignment-card-top">
           <span class="status-badge"
-                th:classappend="${item.latestSubmission == null} ? ' status-pending' : ' status-submitted'"
-                th:text="${item.latestSubmission == null ? '待提交' : '已提交'}">待提交</span>
+                th:classappend="${item.statusClass}"
+                th:text="${item.statusText}">待提交</span>
           <span th:text="${item.assignment.courseName}">传播学方法课</span>
         </div>
         <h2 th:text="${item.assignment.title}">短视频使用与大学生注意力恢复的关系研究</h2>
@@ -82,7 +82,9 @@
                 th:text="'第 ' + ${item.latestSubmission.attemptNumber} + ' 次提交'">第 2 次提交</span>
         </div>
         <a class="student-open" th:href="@{/student/assignments/{id}(id=${item.assignment.id})}">
-          <span th:text="${item.latestSubmission == null ? '查看要求并提交' : '查看我的提交'}">
+          <span th:text="${item.latestSubmission == null
+                            ? '查看要求并提交'
+                            : (item.reviewed ? '查看教师反馈' : '查看我的提交')}">
             查看要求并提交
           </span>
           <span aria-hidden="true">→</span>

@@ -71,20 +71,41 @@
           <div>
             <span class="status-badge"
                   th:classappend="${latestSubmission.reviewStatus == 'REVIEWED'} ? ' status-submitted' : ' status-pending'"
-                  th:text="${latestSubmission.reviewStatus == 'REVIEWED'} ? '已审核' : '待审核'">
-              已提交
+                  th:text="${latestSubmission.reviewStatus == 'REVIEWED'} ? '已反馈' : '待审核'">
+              待审核
             </span>
             <strong th:text="'第 ' + ${latestSubmission.attemptNumber} + ' 次提交'">第 2 次提交</strong>
+            <span class="submission-time" th:text="${'提交于 ' + latestSubmittedAtText}">
+              提交于 10 月 21 日 22:48
+            </span>
           </div>
           <p th:if="${reviewFeedback == null}">
             教师审核完成后，最终反馈会在这里发布。平台建议在教师确认前不会直接展示给学生。
           </p>
           <section class="student-final-feedback" th:if="${reviewFeedback != null}">
-            <span>教师最终反馈</span>
+            <div class="feedback-heading-row">
+              <span>教师最终反馈</span>
+              <small th:if="${reviewedAtText}" th:text="${'发布于 ' + reviewedAtText}">
+                发布于 10 月 24 日 20:30
+              </small>
+            </div>
             <h3 th:text="${reviewFeedback.title}">课程论文审核意见</h3>
-            <p th:text="${reviewFeedback.content}">请补充证据来源。</p>
+            <pre th:text="${reviewFeedback.content}">请补充证据来源。</pre>
           </section>
         </div>
+
+        <section class="submitted-work-preview" th:if="${latestSubmission != null}">
+          <div class="submitted-work-head">
+            <div>
+              <p class="eyebrow">我的提交内容</p>
+              <h2 th:text="${'第 ' + latestSubmission.attemptNumber + ' 次提交全文'}">
+                第 2 次提交全文
+              </h2>
+            </div>
+            <span th:text="${latestSubmission.wordCount + ' 字'}">2,846 字</span>
+          </div>
+          <pre th:text="${latestSubmission.content}">学生提交的完整作业内容</pre>
+        </section>
 
         <form th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}" method="post">
           <div class="student-form-head">
@@ -100,7 +121,7 @@
           </div>
           <textarea class="student-submission-editor" name="content" required
                     aria-label="作业内容"
-                    th:text="${latestSubmission == null ? '' : ''}"
+                    th:text="${latestSubmission == null ? '' : latestSubmission.content}"
                     placeholder="请粘贴或输入完整作业内容……"></textarea>
           <div class="student-form-foot">
             <p>重复提交会保留为新的提交记录，教师可以对照前后版本。</p>

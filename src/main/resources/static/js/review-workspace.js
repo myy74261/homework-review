@@ -12,6 +12,7 @@
     INITIAL: '初始审核版本',
     MANUAL: '教师手动保存',
     RESTORE: '恢复后快照',
+    FINAL: '最终反馈',
   };
 
   const body = document.body;
@@ -439,15 +440,18 @@
         headers: csrfHeaders(),
       });
       if (!response.ok) {
-        throw new Error(`完成审核失败：${response.status}`);
+        const problem = await response.json().catch(() => null);
+        throw new Error(problem?.message || `完成审核失败：${response.status}`);
       }
       reviewStateText.textContent = '已审核';
       document.querySelector('.state-chip').textContent = '反馈已发布';
-      completeReview.textContent = '审核已完成';
+      completeReview.textContent = '反馈已发布';
+      versionCount += 1;
+      updateVersionBadge();
       showToast('审核已完成，学生端将显示最终反馈');
     } catch (error) {
       completeReview.disabled = false;
-      showToast('完成审核失败，请确认反馈已保存后重试');
+      showToast(error.message);
     }
   }
 

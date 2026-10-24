@@ -59,6 +59,9 @@ public class Submission {
     @Column(nullable = false, length = 20)
     private String reviewStatus;
 
+    @Column
+    private Instant reviewedAt;
+
     protected Submission() {
         // JPA 需要的无参构造方法
     }
@@ -144,6 +147,11 @@ public class Submission {
      */
     public void markReviewed() {
         this.reviewStatus = "REVIEWED";
+        this.reviewedAt = Instant.now();
+    }
+
+    public Instant getReviewedAt() {
+        return reviewedAt;
     }
 }
 

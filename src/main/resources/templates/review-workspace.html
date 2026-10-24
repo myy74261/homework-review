@@ -131,8 +131,8 @@
           <button class="toolbar-button complete-review-button" id="completeReview"
                   type="button"
                   th:disabled="${submission.reviewStatus == 'REVIEWED'}"
-                  th:text="${submission.reviewStatus == 'REVIEWED'} ? '审核已完成' : '完成审核'">
-            完成审核
+                  th:text="${submission.reviewStatus == 'REVIEWED'} ? '反馈已发布' : '发布反馈'">
+            发布反馈
           </button>
         </div>
       </div>

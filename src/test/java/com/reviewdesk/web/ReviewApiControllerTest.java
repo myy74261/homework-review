@@ -127,6 +127,10 @@ class ReviewApiControllerTest {
         mockMvc.perform(post(REVIEW_URL + "/complete").with(csrf()))
                 .andExpect(status().isNoContent());
 
+        mockMvc.perform(get(REVIEW_URL + "/versions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].triggerType").value("FINAL"));
+
         mockMvc.perform(get("/reviews/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("已审核")));
@@ -135,7 +139,9 @@ class ReviewApiControllerTest {
                         .with(user("lin").roles("STUDENT")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("教师最终反馈")))
-                .andExpect(content().string(containsString("总体判断")));
+                .andExpect(content().string(containsString("总体判断")))
+                .andExpect(content().string(containsString("我的提交内容")))
+                .andExpect(content().string(containsString("本研究考察短视频使用强度")));
     }
 
     private String saveRequest(String title, String content, long baseRevision)

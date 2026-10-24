@@ -4,12 +4,14 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import com.reviewdesk.repository.ReviewEventRepository;
+import com.reviewdesk.repository.SubmissionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,6 +33,9 @@ class TeachingFlowControllerTest {
 
     @Autowired
     private ReviewEventRepository eventRepository;
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
 
     @Test
     void teacherAndStudentPortalsRender() throws Exception {
@@ -94,6 +99,30 @@ class TeachingFlowControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("第 3 次")))
                 .andExpect(content().string(containsString("开始审核")));
+
+        mockMvc.perform(get("/student/assignments/1").with(user("lin").roles("STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("我的提交内容")))
+                .andExpect(content().string(containsString("本研究围绕课程作业问题展开分析")));
+    }
+
+    @Test
+    void teacherCannotPublishEmptyFeedback() throws Exception {
+        String content = "这是一份用于验证最终反馈发布条件的完整学生作业内容。";
+        mockMvc.perform(post("/student/assignments/1/submissions")
+                        .with(user("lin").roles("STUDENT"))
+                        .with(csrf())
+                        .param("content", content))
+                .andExpect(status().is3xxRedirection());
+
+        long submissionId = submissionRepository.findTopByOrderByIdDesc()
+                .orElseThrow()
+                .getId();
+        mockMvc.perform(post("/api/submissions/" + submissionId + "/review/complete")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("请先填写审核反馈再完成审核"));
     }
 
     @Test

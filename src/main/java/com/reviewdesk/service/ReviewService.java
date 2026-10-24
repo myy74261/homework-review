@@ -110,8 +110,17 @@ public class ReviewService {
     @Transactional
     public Submission completeReview(long submissionId) {
         Submission submission = requireSubmission(submissionId);
+        if ("REVIEWED".equals(submission.getReviewStatus())) {
+            return submission;
+        }
+        ReviewDraft draft = requireDraft(submissionId);
+        String feedback = draft.getContent().strip();
+        if (feedback.isBlank() || "待教师填写".equals(feedback)) {
+            throw new IllegalArgumentException("请先填写审核反馈再完成审核");
+        }
         submission.markReviewed();
         submissionRepository.save(submission);
+        appendVersion(draft, "FINAL");
         activityService.record(submissionId, "REVIEW_COMPLETED", "教师完成本轮审核");
         return submission;
     }

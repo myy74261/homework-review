@@ -1208,6 +1208,11 @@ body.portal-page:not(.auth-page) {
   color: var(--green);
 }
 
+.status-reviewing {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
 .student-assignment-main {
   width: min(1240px, calc(100% - 34px));
   margin: 0 auto;
@@ -1320,7 +1325,14 @@ body.portal-page:not(.auth-page) {
 .latest-submission > div {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.submission-time {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 8px;
 }
 
 .latest-submission strong {
@@ -1341,11 +1353,23 @@ body.portal-page:not(.auth-page) {
   background: #fffefb;
 }
 
-.student-final-feedback > span {
+.feedback-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feedback-heading-row span {
   color: var(--green);
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.08em;
+}
+
+.feedback-heading-row small {
+  color: var(--muted);
+  font-size: 8px;
 }
 
 .student-final-feedback h3 {
@@ -1354,9 +1378,57 @@ body.portal-page:not(.auth-page) {
   font-size: 14px;
 }
 
-.student-final-feedback p {
+.student-final-feedback pre {
   margin-top: 6px;
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  font-family: var(--font-reading);
+  font-size: 11px;
+  line-height: 1.75;
   white-space: pre-line;
+}
+
+.submitted-work-preview {
+  margin-bottom: 18px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-warm);
+}
+
+.submitted-work-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.submitted-work-head h2 {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 17px;
+}
+
+.submitted-work-head > span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.submitted-work-preview > pre {
+  max-height: 360px;
+  margin: 12px 0 0;
+  overflow-y: auto;
+  color: var(--ink-soft);
+  font-family: var(--font-reading);
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
 }
 
 .student-form-head {
