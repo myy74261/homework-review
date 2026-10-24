@@ -18,6 +18,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -35,6 +37,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 public class StudentWorkspaceController {
 
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(StudentWorkspaceController.class);
     private static final ZoneId DISPLAY_ZONE = ZoneId.of("Asia/Shanghai");
     private static final DateTimeFormatter DATE_TIME =
             DateTimeFormatter.ofPattern("M 月 d 日 HH:mm", Locale.CHINA);
@@ -185,7 +189,11 @@ public class StudentWorkspaceController {
                     integrityConfirmed,
                     files);
             redirectAttributes.addFlashAttribute("successMessage", "作业已提交，等待教师审核。");
-        } catch (IllegalArgumentException | SecurityException | IOException exception) {
+        } catch (IOException exception) {
+            LOGGER.error("学生提交附件保存失败，assignmentId={}", assignmentId, exception);
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", "附件保存失败，请联系教师或管理员检查上传目录。");
+        } catch (IllegalArgumentException | SecurityException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
         return "redirect:/student/assignments/" + assignmentId;
@@ -223,7 +231,13 @@ public class StudentWorkspaceController {
                     true,
                     "作业已提交，等待教师审核。",
                     "/student/assignments/" + assignmentId));
-        } catch (IllegalArgumentException | SecurityException | IOException exception) {
+        } catch (IOException exception) {
+            LOGGER.error("学生异步提交附件保存失败，assignmentId={}", assignmentId, exception);
+            return ResponseEntity.internalServerError().body(new SubmissionAjaxResponse(
+                    false,
+                    "附件保存失败，请联系教师或管理员检查上传目录。",
+                    "/student/assignments/" + assignmentId));
+        } catch (IllegalArgumentException | SecurityException exception) {
             return ResponseEntity.badRequest().body(new SubmissionAjaxResponse(
                     false,
                     exception.getMessage(),

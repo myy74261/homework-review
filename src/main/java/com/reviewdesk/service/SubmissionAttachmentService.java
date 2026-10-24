@@ -67,6 +67,9 @@ public class SubmissionAttachmentService {
         List<MultipartFile> providedFiles = files == null
                 ? List.of()
                 : List.of(files).stream().filter(file -> !file.isEmpty()).toList();
+        if (providedFiles.isEmpty()) {
+            return List.of();
+        }
         if (providedFiles.size() > MAX_FILES) {
             throw new IllegalArgumentException("一次最多上传 " + MAX_FILES + " 个附件");
         }
