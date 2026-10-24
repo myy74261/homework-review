@@ -93,7 +93,7 @@ Spring Data JPA
 | 运行环境 | Java 17 |
 | 后端 | Spring Boot 3.3.5、Spring MVC、Thymeleaf |
 | 安全 | Spring Security 6.3、BCrypt、CSRF、角色权限 |
-| 数据 | Spring Data JPA、Hibernate、H2 文件数据库 |
+| 数据 | Spring Data JPA、Hibernate、H2（开发）、PostgreSQL（部署） |
 | 前端 | HTML5、CSS3、原生 JavaScript |
 | 构建 | Maven 3.10 |
 | 测试 | JUnit 5、Spring Boot Test、MockMvc、Spring Security Test |
@@ -121,8 +121,13 @@ review-desk/
 ├── docs/
 │   ├── ENVIRONMENT.md             完整环境变量与配置说明
 │   ├── DEPENDENCIES.md            依赖清单与升级方式
+│   ├── DEPLOYMENT.md              云服务器与 Docker 部署说明
 │   └── TEAM.md                    团队职责与验收范围
 ├── .env.example                   环境变量模板
+├── .env.production.example        生产环境变量模板
+├── Dockerfile                     多阶段 Java 构建镜像
+├── docker-compose.yml             应用与 PostgreSQL 编排
+├── deploy/nginx-review-desk.conf  Nginx 反向代理模板
 ├── data/                          本地 H2 数据文件（不提交）
 ├── start-local.cmd                本地启动
 ├── start-public.cmd               后台启动网站并生成公网地址
@@ -212,6 +217,28 @@ $env:JAVA_HOME = "D:\Project\jdk"
 
 > 临时公网地址没有可用性保证，电脑休眠、断网或关闭进程后都会失效。部分校园或企业网络可能无法访问 `trycloudflare.com`。
 
+### 云服务器部署
+
+项目已提供 Docker Compose + PostgreSQL 部署方案。
+
+服务器首次部署：
+
+```bash
+cd /opt/review-desk
+cp .env.production.example .env.production
+chmod 600 .env.production
+docker compose --env-file .env.production up -d --build
+```
+
+完整步骤见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)，包括：
+
+- 生产环境变量和安全密码
+- PostgreSQL 数据卷
+- Nginx 反向代理
+- HTTPS 证书
+- 防火墙规则
+- 数据库备份和版本更新
+
 ## 演示账号
 
 | 角色 | 账号 | 密码 |
@@ -293,7 +320,7 @@ src/main/resources/application.yml
 
 ## 已知边界
 
-- 当前使用 H2 文件数据库，适合课程项目和单机演示，不适合多实例云部署。
+- 本地开发使用 H2，正式部署使用 Docker Compose 中的 PostgreSQL。
 - 课堂讲解建议由确定性规则和教师确认记录生成，不替代教师判断。
 - 临时公网隧道依赖第三方服务，不能作为长期生产部署方案。
 - 演示账号密码和本地化工具路径需要在正式发布前调整。

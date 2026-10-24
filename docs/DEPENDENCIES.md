@@ -23,6 +23,7 @@
 | `spring-boot-starter-validation` | runtime | Jakarta Validation 与表单校验 |
 | `spring-boot-starter-security` | runtime | 登录会话、角色权限、CSRF |
 | `com.h2database:h2` | runtime | H2 文件数据库驱动 |
+| `org.postgresql:postgresql` | runtime | PostgreSQL 生产数据库驱动 |
 | `spring-boot-starter-test` | test | JUnit 5、AssertJ、MockMvc |
 | `spring-security-test` | test | 模拟教师/学生登录与 CSRF |
 
@@ -35,6 +36,7 @@
 | Spring Security | 6.3.4 | Spring Boot |
 | Hibernate ORM | 6.5.3.Final | Spring Data JPA |
 | H2 Database | 2.2.224 | Boot 依赖管理 |
+| PostgreSQL JDBC | Boot 依赖管理版本 | 生产数据库 |
 | Tomcat Embedded | 10.1.31 | Web Starter |
 | Jackson | 2.x | Web Starter |
 | JUnit Jupiter | 5.10.5 | Test Starter |

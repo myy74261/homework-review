@@ -59,6 +59,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | --- | --- | --- |
 | `SERVER_PORT` | `8080` | HTTP 服务端口 |
 | `SERVER_ADDRESS` | `0.0.0.0` | 监听地址；局域网访问时保持默认 |
+| `FORWARD_HEADERS_STRATEGY` | `framework` | 正确识别 Nginx 转发的协议、域名和客户端 IP |
 | `DATABASE_URL` | `jdbc:h2:file:./data/review-desk` | H2 文件数据库地址 |
 | `DATABASE_USERNAME` | `sa` | 数据库用户名 |
 | `DATABASE_PASSWORD` | 空字符串 | 数据库密码 |

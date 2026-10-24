@@ -1,0 +1,14 @@
+.git
+.github
+.idea
+.maven-repo
+.run
+.tools
+.env
+.env.*
+!.env.production.example
+data
+docs
+target
+*.log
+
