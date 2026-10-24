@@ -235,6 +235,15 @@ $env:JAVA_HOME = "D:\Project\jdk"
 
 项目已提供 Docker Compose + PostgreSQL 部署方案。
 
+当前阿里云演示环境使用受信任的 HTTPS 地址：
+
+```text
+https://47-114-60-5.sslip.io/login
+```
+
+原来的 HTTP IP 地址会通过 Nginx 自动跳转到 HTTPS。生产配置模板见
+`deploy/nginx-review-desk-https.conf`，证书由 Certbot 自动续期。
+
 服务器首次部署：
 
 ```bash
