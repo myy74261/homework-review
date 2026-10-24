@@ -1678,6 +1678,26 @@ body.portal-page:not(.auth-page) {
   margin-top: 13px;
 }
 
+.submission-ajax-status {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.submission-ajax-status.is-success {
+  border: 1px solid #cfe0d5;
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.submission-ajax-status.is-error {
+  border: 1px solid #edd0c8;
+  background: var(--rust-soft);
+  color: var(--rust);
+}
+
 .student-form-foot p {
   max-width: 460px;
   margin: 0;

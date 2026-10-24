@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.domain.Assignment;
@@ -163,6 +164,28 @@ class AdvancedReviewFeaturesTest {
                         .with(user("lin").roles("STUDENT")))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/student/assignments/1"));
+    }
+
+    @Test
+    void ajaxSubmissionReturnsSuccessWithoutWholePagePostNavigation() throws Exception {
+        MockMultipartFile document = new MockMultipartFile(
+                "files",
+                "answer.txt",
+                "text/plain",
+                "作业附件".getBytes(StandardCharsets.UTF_8));
+        mockMvc.perform(multipart("/student/assignments/1/submissions/ajax")
+                        .file(document)
+                        .with(user("lin").roles("STUDENT"))
+                        .with(csrf())
+                        .header("X-Requested-With", "XMLHttpRequest")
+                        .param("content", "这是一份通过页面内异步请求提交的完整学生作业正文。")
+                        .param("aiUsage", "NONE")
+                        .param("sourceDeclaration", "课程材料与个人整理")
+                        .param("collaborationDeclaration", "无")
+                        .param("integrityConfirmed", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.redirectUrl").value("/student/assignments/1"));
     }
 
     @Test

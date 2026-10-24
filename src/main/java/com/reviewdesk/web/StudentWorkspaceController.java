@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -191,6 +192,46 @@ public class StudentWorkspaceController {
     }
 
     /**
+     * 页面内异步提交，避免部分内嵌浏览器阻止表单整页跳转。
+     */
+    @PostMapping("/student/assignments/{assignmentId}/submissions/ajax")
+    public ResponseEntity<SubmissionAjaxResponse> submitAjax(
+            @PathVariable long assignmentId,
+            @RequestParam(defaultValue = "") String content,
+            @RequestParam(required = false) String aiUsage,
+            @RequestParam(required = false) String aiTools,
+            @RequestParam(required = false) String aiScope,
+            @RequestParam(required = false) String sourceDeclaration,
+            @RequestParam(required = false) String collaborationDeclaration,
+            @RequestParam(defaultValue = "false") boolean integrityConfirmed,
+            @RequestParam(required = false) MultipartFile[] files,
+            Authentication authentication) {
+        Account student = accountService.current(authentication);
+        try {
+            submissionService.submit(
+                    assignmentId,
+                    student,
+                    content,
+                    aiUsage,
+                    aiTools,
+                    aiScope,
+                    sourceDeclaration,
+                    collaborationDeclaration,
+                    integrityConfirmed,
+                    files);
+            return ResponseEntity.ok(new SubmissionAjaxResponse(
+                    true,
+                    "作业已提交，等待教师审核。",
+                    "/student/assignments/" + assignmentId));
+        } catch (IllegalArgumentException | SecurityException | IOException exception) {
+            return ResponseEntity.badRequest().body(new SubmissionAjaxResponse(
+                    false,
+                    exception.getMessage(),
+                    "/student/assignments/" + assignmentId));
+        }
+    }
+
+    /**
      * 浏览器刷新或直接打开提交接口时回到作业页，避免把只接受 POST 的地址显示成错误页。
      */
     @GetMapping("/student/assignments/{assignmentId}/submissions")
@@ -232,6 +273,10 @@ public class StudentWorkspaceController {
     public record StudentAppealView(String reason, String requestedResolution,
                                     String teacherResponse, String statusText,
                                     String createdAtText) {
+    }
+
+    public record SubmissionAjaxResponse(boolean success, String message,
+                                         String redirectUrl) {
     }
 
     public record StudentAssignmentView(Assignment assignment, Submission latestSubmission,

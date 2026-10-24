@@ -206,7 +206,9 @@
           </p>
         </section>
 
-        <form th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}"
+        <form id="studentSubmissionForm"
+              th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}"
+              th:attr="data-ajax-action=@{/student/assignments/{id}/submissions/ajax(id=${assignment.id})}"
               method="post" enctype="multipart/form-data">
           <div class="student-form-head">
             <div>
@@ -271,13 +273,17 @@
           </section>
           <div class="student-form-foot">
             <p>重复提交会保留为新的提交记录，教师可以对照前后版本。</p>
-            <button type="submit" th:text="${latestSubmission == null ? '提交作业' : '提交修订版本'}">
+            <button id="submissionSubmitButton" type="submit"
+                    th:text="${latestSubmission == null ? '提交作业' : '提交修订版本'}">
               提交作业
             </button>
           </div>
+          <p class="submission-ajax-status" id="submissionAjaxStatus"
+             role="status" aria-live="polite" hidden></p>
         </form>
       </section>
     </div>
   </main>
+  <script th:src="@{/js/student-assignment.js}" defer></script>
 </body>
 </html>
