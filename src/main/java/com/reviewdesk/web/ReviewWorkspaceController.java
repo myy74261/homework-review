@@ -65,7 +65,7 @@ public class ReviewWorkspaceController {
         }
         boolean teacher = authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_TEACHER".equals(authority.getAuthority()));
-        return "redirect:" + (teacher ? "/teacher" : "/student");
+        return "redirect:" + (teacher ? "/app/teacher" : "/app/student");
     }
 
     @GetMapping("/reviews/{submissionId}")

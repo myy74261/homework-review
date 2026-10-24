@@ -64,12 +64,14 @@
 
 ```text
 浏览器
-├── Thymeleaf 服务端渲染页面
-└── 原生 JavaScript 自动保存与交互
+├── React 19 + TypeScript + Vite
+├── Tailwind CSS + shadcn/Radix 基础组件
+├── TanStack Query 服务端状态
+└── Zustand 会话提示与界面状态
         │
 Spring MVC
 ├── 教师端、学生端及审核控制器
-├── REST API
+├── React JSON API 与 OpenAI 兼容模型适配层
 ├── Spring Security 会话与角色权限
 └── 全局异常处理
         │
@@ -105,9 +107,11 @@ Spring Data JPA
 | 后端 | Spring Boot 3.3.5、Spring MVC、Thymeleaf |
 | 安全 | Spring Security 6.3、BCrypt、CSRF、角色权限 |
 | 数据 | Spring Data JPA、Hibernate、H2（开发）、PostgreSQL（部署） |
-| 前端 | HTML5、CSS3、原生 JavaScript |
-| 构建 | Maven 3.10 |
-| 测试 | JUnit 5、Spring Boot Test、MockMvc、Spring Security Test |
+| 前端 | React 19、TypeScript、Vite、Tailwind CSS、Radix/shadcn 基础组件 |
+| 前端状态 | TanStack Query、Zustand |
+| AI 接入 | 可选 OpenAI 兼容 API（默认示例为 DeepSeek） |
+| 构建 | Maven 3.10、Node.js 22、npm 10 |
+| 测试与规范 | JUnit 5、MockMvc、TypeScript、ESLint、Prettier |
 
 ## 项目结构
 
@@ -128,6 +132,10 @@ review-desk/
 │   └── static/
 │       ├── css/
 │       └── js/
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
 ├── src/test/java/com/reviewdesk/web
 ├── docs/
 │   ├── ENVIRONMENT.md             完整环境变量与配置说明
@@ -155,6 +163,7 @@ review-desk/
 
 - JDK 17
 - Maven 3.10
+- Node.js 22 与 npm（仅修改前端时需要）
 - Windows PowerShell
 - 浏览器
 
@@ -171,6 +180,16 @@ mvn -v
 ```
 
 完整环境配置见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)，依赖清单见 [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)。
+
+### 构建 React 前端
+
+```powershell
+cd D:\workspace\Web\review-desk
+.\build-frontend.cmd
+```
+
+生产构建输出到 `src/main/resources/static/app/`，随后由 Maven 打进 JAR。
+登录页继续使用原 Thymeleaf 页面，教师端和学生端由 React 单页应用提供。
 
 ### 初始化环境变量
 
@@ -295,12 +314,33 @@ data/review-desk.mv.db
 src/main/resources/application.yml
 ```
 
+### 可选 AI 模型配置
+
+项目默认使用可解释的确定性规则。若需要启用 AI 增强备课稿，在服务端配置
+OpenAI 兼容接口：
+
+```dotenv
+AI_API_KEY=服务端模型密钥
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-chat
+AI_TIMEOUT_SECONDS=30
+```
+
+密钥不得写入前端代码或提交到 Git。模型失败时系统自动回退到规则稿。
+
 ## 测试与构建
 
 运行全部测试：
 
 ```powershell
 & "D:\Project\apache-maven-3.10.0\bin\mvn.cmd" test
+```
+
+React 页面端到端测试（需要本机 Edge 和已打包 JAR）：
+
+```powershell
+cd frontend
+npm run test:e2e
 ```
 
 跳过测试打包：
@@ -356,7 +396,7 @@ src/main/resources/application.yml
 
 - 本地开发使用 H2，正式部署使用 Docker Compose 中的 PostgreSQL。
 - 课堂讲解建议由确定性规则和教师确认记录生成，不替代教师判断。
-- 当前评分建议为透明的规则计算，不调用外部大模型；建议分仅在教师确认问题后更新。
+- 评分建议始终为透明的规则计算；备课稿在配置模型密钥后可选用 AI 润色，模型失败时回退到规则稿。
 - 诚信标记用于提示教师核验，不构成自动作弊判定；只有已确认结果向学生展示。
 - 临时公网隧道依赖第三方服务，不能作为长期生产部署方案。
 - 演示账号密码和本地化工具路径需要在正式发布前调整。

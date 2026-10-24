@@ -7,6 +7,8 @@ import com.reviewdesk.service.ReviewNotFoundException;
 import com.reviewdesk.service.ReviewVersionNotFoundException;
 import com.reviewdesk.service.SubmissionNotFoundException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -58,6 +60,23 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ApiError forbidden(SecurityException exception) {
         return ApiError.of("FORBIDDEN", exception.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError validation(MethodArgumentNotValidException exception) {
+        String message = exception.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage() == null
+                        ? "请求参数无效" : error.getDefaultMessage())
+                .orElse("请求参数无效");
+        return ApiError.of("VALIDATION_FAILED", message);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError unreadable(HttpMessageNotReadableException exception) {
+        return ApiError.of("INVALID_JSON", "请求数据格式不正确");
     }
 }
 

@@ -28,7 +28,8 @@ public class AuthController {
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             Account account = accountService.requireByUsername(authentication.getName());
-            return "redirect:" + (account.isTeacher() ? "/teacher" : "/student");
+            return "redirect:" + (account.isTeacher()
+                    ? "/app/teacher" : "/app/student");
         }
         return "login";
     }

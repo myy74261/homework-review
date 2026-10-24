@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color: #20322b;
+    background: #f6f7f2;
+    font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    background: #f6f7f2;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background:
+      radial-gradient(1000px 520px at 8% -10%, rgba(255, 255, 255, 0.98), transparent 58%),
+      radial-gradient(700px 420px at 100% 0%, rgba(229, 242, 234, 0.75), transparent 52%), #f6f7f2;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: rgba(57, 123, 99, 0.18);
+  }
+}
+
+@layer components {
+  .page-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-pine-600;
+  }
+
+  .section-title {
+    @apply font-display text-2xl font-semibold tracking-tight text-ink;
+  }
+
+  .prose-copy {
+    @apply whitespace-pre-wrap text-sm leading-7 text-stone-700;
+  }
+
+  .soft-divider {
+    @apply border-t border-line;
+  }
+
+  .metric-number {
+    @apply font-display text-4xl font-medium tracking-tight text-pine-700;
+  }
+
+  .table-row {
+    @apply grid items-center gap-3 border-b border-line px-4 py-3 last:border-b-0;
+  }
+}

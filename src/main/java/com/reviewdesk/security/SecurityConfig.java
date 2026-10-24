@@ -24,6 +24,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/", "/login", "/register",
                                 "/css/**", "/js/**", "/error").permitAll()
+                        .requestMatchers("/app/**").authenticated()
+                        .requestMatchers("/api/app/teacher/**").hasRole("TEACHER")
+                        .requestMatchers("/api/app/student/**").hasRole("STUDENT")
+                        .requestMatchers("/api/app/session").authenticated()
                         .requestMatchers("/teacher/**", "/reviews/**", "/api/**")
                         .hasRole("TEACHER")
                         .requestMatchers("/student/**").hasRole("STUDENT")
@@ -35,7 +39,8 @@ public class SecurityConfig {
                             boolean teacher = authentication.getAuthorities().stream()
                                     .anyMatch(authority ->
                                             "ROLE_TEACHER".equals(authority.getAuthority()));
-                            response.sendRedirect(teacher ? "/teacher" : "/student");
+                            response.sendRedirect(teacher
+                                    ? "/app/teacher" : "/app/student");
                         })
                         .permitAll())
                 .logout(logout -> logout

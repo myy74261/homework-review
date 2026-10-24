@@ -4,11 +4,16 @@
 .maven-repo
 .run
 .tools
+.deploy
 .env
 .env.*
 !.env.production.example
 data
 docs
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/playwright-report
 target
 *.log
 

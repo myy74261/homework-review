@@ -48,7 +48,7 @@ class AccountAndClassroomSecurityTest {
                         .user("chen")
                         .password("Teach1234"))
                 .andExpect(authenticated().withUsername("chen"))
-                .andExpect(redirectedUrl("/teacher"));
+                .andExpect(redirectedUrl("/app/teacher"));
     }
 
     @Test

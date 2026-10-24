@@ -1,0 +1,62 @@
+import { expect, test } from "@playwright/test";
+
+async function login(page: import("@playwright/test").Page, username: string, password: string) {
+  await page.goto("/login");
+  await page.getByLabel("账号").fill(username);
+  await page.getByLabel("密码").fill(password);
+  await page.getByRole("button", { name: "登录并进入课堂" }).click();
+}
+
+test("teacher React workspace renders dashboard, review and lesson pages", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await expect(page).toHaveURL(/\/app\/teacher$/);
+  await expect(page.getByRole("heading", { name: "从提交证据到备课素材" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "已发布作业" })).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
+
+  await page.goto("/app/reviews/1");
+  await expect(page.getByRole("heading", { name: "建议分与最终分" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "可疑线索" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "完整内容" })).toBeVisible();
+  const editor = page.getByLabel("教师审核意见正文");
+  await editor.fill(`${await editor.inputValue()}\n\nReact 审核台自动保存验证。`);
+  await expect(page.getByText(/已保存 ·/)).toBeVisible();
+
+  await page.goto("/app/teacher/assignments/1/lesson-plan");
+  await expect(page.getByText("备课工作台")).toBeVisible();
+  await expect(page.getByText("规则生成模式").or(page.getByText("AI 增强已启用"))).toBeVisible();
+});
+
+test("student React workspace renders assignment and submission details", async ({ page }) => {
+  await login(page, "lin", "Student1234");
+  await expect(page).toHaveURL(/\/app\/student$/);
+  await expect(page.getByRole("heading", { name: "我的作业" })).toBeVisible();
+
+  await page.goto("/app/student/assignments/1");
+  await expect(page.getByText("评分量规")).toBeVisible();
+  await expect(page.getByText("我的提交内容")).toBeVisible();
+  await expect(page.getByText("学术诚信与 AI 使用声明")).toBeVisible();
+  await page.screenshot({ path: "test-results/student-assignment.png", fullPage: true });
+});
+
+test("student workspace remains usable on a phone viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page, "lin", "Student1234");
+  await expect(page.getByRole("heading", { name: "我的作业" })).toBeVisible();
+  await page.goto("/app/student/assignments/1");
+  await expect(page.getByRole("heading", { name: "评价依据" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "提交修订版本" })).toBeVisible();
+  await page.screenshot({ path: "test-results/student-mobile.png", fullPage: true });
+});
+
+test("student can submit through the React async form", async ({ page }) => {
+  await login(page, "lin", "Student1234");
+  await page.goto("/app/student/assignments/1");
+  await page
+    .getByPlaceholder("粘贴或输入完整作业内容……")
+    .fill("这是一份 React 端到端提交验证内容，用于确认异步上传和 CSRF 请求正常。");
+  await page.getByPlaceholder("列出主要文献、数据来源和获取方式").fill("课程材料与个人整理");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "提交修订版本" }).click();
+  await expect(page.getByText("作业已提交，等待教师审核。")).toBeVisible();
+});

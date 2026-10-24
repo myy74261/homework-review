@@ -6,10 +6,13 @@
 | --- | --- | --- |
 | Java | 17 | 编译和运行 |
 | Maven | 3.10 | 依赖管理、测试和打包 |
+| Node.js | 22 | React 前端构建 |
+| npm | 10 | 前端依赖管理 |
 | H2 | 2.2.224 | 本地文件数据库 |
 | 浏览器 | 现代版本 | 访问教师端与学生端 |
 
-前端使用原生 HTML、CSS 和 JavaScript，不依赖 Node.js、npm 或前端打包工具。
+前端使用 React、TypeScript、Vite、Tailwind CSS、Radix/shadcn 基础组件、
+TanStack Query 和 Zustand。依赖锁定在 `frontend/package-lock.json`。
 
 ## 2. Maven 直接依赖
 
@@ -61,7 +64,29 @@
 | `maven-surefire-plugin` | JUnit 5 测试执行 |
 | `spring-boot-maven-plugin` | 生成可执行 Spring Boot JAR |
 
-## 5. 更新依赖
+## 5. 前端主要依赖
+
+| 依赖 | 用途 |
+| --- | --- |
+| React / React DOM | 单页界面 |
+| TypeScript | 静态类型检查 |
+| Vite | 开发服务器与生产构建 |
+| Tailwind CSS | 设计令牌与响应式样式 |
+| Radix UI | 无障碍 Dialog 与 Slot 基础行为 |
+| TanStack Query | 服务端数据获取、缓存与失效刷新 |
+| Zustand | 会话和通知状态 |
+| ESLint / Prettier | 代码规范与格式检查 |
+
+安装与检查：
+
+```powershell
+cd frontend
+npm ci
+npm run lint
+npm run build
+```
+
+## 6. 更新依赖
 
 升级 Spring Boot 时修改 `pom.xml` 中的父工程版本：
 

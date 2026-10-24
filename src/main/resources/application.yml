@@ -40,6 +40,11 @@ server:
 review-desk:
   storage:
     root: ${UPLOAD_ROOT:./data/uploads}
+  ai:
+    api-key: ${AI_API_KEY:}
+    base-url: ${AI_BASE_URL:https://api.deepseek.com}
+    model: ${AI_MODEL:deepseek-chat}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
   ui:
     show-demo-credentials: ${SHOW_DEMO_CREDENTIALS:true}
   demo:

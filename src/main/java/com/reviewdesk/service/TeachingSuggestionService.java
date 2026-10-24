@@ -31,15 +31,18 @@ public class TeachingSuggestionService {
     private final SubmissionRepository submissionRepository;
     private final ReviewIssueRepository issueRepository;
     private final LessonPlanRepository planRepository;
+    private final AiSuggestionClient aiSuggestionClient;
 
     public TeachingSuggestionService(AssignmentService assignmentService,
                                      SubmissionRepository submissionRepository,
                                      ReviewIssueRepository issueRepository,
-                                     LessonPlanRepository planRepository) {
+                                     LessonPlanRepository planRepository,
+                                     AiSuggestionClient aiSuggestionClient) {
         this.assignmentService = assignmentService;
         this.submissionRepository = submissionRepository;
         this.issueRepository = issueRepository;
         this.planRepository = planRepository;
+        this.aiSuggestionClient = aiSuggestionClient;
     }
 
     @Transactional
@@ -81,10 +84,26 @@ public class TeachingSuggestionService {
         List<AssignmentRubric> rubrics = assignmentService.listRubrics(assignmentId);
         List<EvidenceView> evidence = loadEvidence(assignmentId);
         LessonPlan plan = requirePlan(assignmentId);
+        String deterministic = generate(assignment, rubrics, evidence);
+        String content = aiSuggestionClient.enhanceLessonPlan(
+                        assignment.getTitle(),
+                        assignment.getSubmissionFormat(),
+                        deterministic,
+                        evidence.stream()
+                                .limit(12)
+                                .map(item -> "维度：" + item.issue().getRubricName()
+                                        + "；原文：" + singleLine(item.issue().getEvidenceQuote())
+                                        + "；教师判断：" + singleLine(item.issue().getTeacherNote()))
+                                .collect(Collectors.joining("\n")))
+                .orElse(deterministic);
         plan.replaceGenerated(
                 assignment.getTitle() + " · 课堂讲解建议",
-                generate(assignment, rubrics, evidence));
+                content);
         return planRepository.save(plan);
+    }
+
+    public boolean isAiConfigured() {
+        return aiSuggestionClient.isConfigured();
     }
 
     private LessonPlan requirePlan(long assignmentId) {

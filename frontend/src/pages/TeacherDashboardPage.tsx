@@ -1,0 +1,404 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ClipboardCheck,
+  Copy,
+  MessageSquareWarning,
+  Plus,
+} from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { api } from "@/lib/api";
+import { formatDate, formatLabels } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
+import { ErrorState, Loading } from "@/components/ui/loading";
+import { Field, Input } from "@/components/ui/field";
+
+export function TeacherDashboardPage() {
+  const queryClient = useQueryClient();
+  const notify = useAppStore((state) => state.notify);
+  const [classroomOpen, setClassroomOpen] = useState(false);
+  const [classroomName, setClassroomName] = useState("");
+  const [courseName, setCourseName] = useState("");
+  const [appealDrafts, setAppealDrafts] = useState<Record<number, string>>({});
+  const [appealStatus, setAppealStatus] = useState<Record<number, string>>({});
+
+  const dashboard = useQuery({
+    queryKey: ["teacher-dashboard"],
+    queryFn: api.teacherDashboard,
+  });
+
+  const createClassroom = useMutation({
+    mutationFn: () => api.createClassroom({ name: classroomName, courseName }),
+    onSuccess: async () => {
+      notify("课堂已创建，可以分享课堂码。", "success");
+      setClassroomOpen(false);
+      setClassroomName("");
+      setCourseName("");
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const respondAppeal = useMutation({
+    mutationFn: ({ id }: { id: number }) =>
+      api.respondAppeal(id, {
+        status: (appealStatus[id] ?? "UNDER_REVIEW") as "UNDER_REVIEW" | "ACCEPTED" | "REJECTED",
+        teacherResponse: appealDrafts[id] ?? "",
+      }),
+    onSuccess: async () => {
+      notify("申诉复核结果已保存。", "success");
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  if (dashboard.isLoading) return <Loading />;
+  if (dashboard.isError) {
+    return <ErrorState message={dashboard.error.message} retry={() => dashboard.refetch()} />;
+  }
+
+  const data = dashboard.data!;
+  const pendingCount = data.submissions.filter((item) => item.reviewStatus !== "REVIEWED").length;
+
+  return (
+    <div className="space-y-5">
+      <section className="relative isolate overflow-hidden rounded-[28px] border border-white/80 bg-white/80 p-6 shadow-card sm:p-8">
+        <div className="absolute -bottom-14 right-6 -z-10 select-none font-display text-[150px] text-pine-600/[0.045]">
+          明鉴
+        </div>
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div>
+            <p className="page-eyebrow">智慧教学闭环</p>
+            <h1 className="mt-2 max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+              从提交证据到备课素材
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+              先确认学生作业中的共性问题，再让平台整理为可编辑的课堂讲解建议。最终判断始终由教师完成。
+            </p>
+          </div>
+          <Button asChild size="lg">
+            <Link to="/teacher/assignments/new">
+              <Plus className="size-4" />
+              发布新作业
+            </Link>
+          </Button>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            label: "已发布作业",
+            value: data.assignments.length,
+            detail: "课堂任务",
+            icon: BookOpen,
+          },
+          {
+            label: "学生提交",
+            value: data.submissions.length,
+            detail: "全部提交记录",
+            icon: ClipboardCheck,
+          },
+          {
+            label: "待完成审核",
+            value: pendingCount,
+            detail: "需要教师判断",
+            icon: MessageSquareWarning,
+          },
+          {
+            label: "已完成反馈",
+            value: data.reviewedCount,
+            detail: "学生可查看结果",
+            icon: CheckCircle2,
+          },
+        ].map((metric) => {
+          const Icon = metric.icon;
+          return (
+            <Card key={metric.label} className="relative overflow-hidden p-5">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-pine-500/70 to-emerald-100" />
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-muted">{metric.label}</span>
+                <Icon className="size-4 text-pine-600" />
+              </div>
+              <strong className="metric-number mt-4 block">{metric.value}</strong>
+              <small className="mt-1 block text-xs text-stone-500">{metric.detail}</small>
+            </Card>
+          );
+        })}
+      </section>
+
+      <section className="rounded-2xl border border-line bg-white/85 p-5 shadow-card">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="page-eyebrow">我的课堂</p>
+            <h2 className="section-title mt-1">学生通过课堂码加入</h2>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setClassroomOpen(true)}>
+            <Plus className="size-4" />
+            新建课堂
+          </Button>
+        </div>
+        <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+          {data.classrooms.map((classroom) => (
+            <div
+              key={classroom.id}
+              className="flex min-w-[280px] flex-1 items-center justify-between gap-4 rounded-xl border border-line bg-pine-50/55 px-4 py-3"
+            >
+              <div>
+                <strong className="text-sm">{classroom.name}</strong>
+                <p className="mt-1 text-xs text-muted">
+                  {classroom.courseName} · {classroom.memberCount} 名学生
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(classroom.joinCode);
+                  notify(`课堂码 ${classroom.joinCode} 已复制。`, "success");
+                }}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-pine-500/40 bg-white px-2.5 py-2 font-mono text-xs text-pine-700"
+              >
+                {classroom.joinCode}
+                <Copy className="size-3.5" />
+              </button>
+            </div>
+          ))}
+          {data.classrooms.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-line px-4 py-5 text-sm text-muted">
+              还没有课堂，请先创建一个课堂。
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+        <div className="space-y-4">
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="page-eyebrow">教学任务</p>
+                <h2 className="section-title mt-1">已发布作业</h2>
+              </div>
+              <Badge>{data.assignments.length} 项</Badge>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {data.assignments.map(({ assignment, submissionCount }) => (
+                <Card key={assignment.id} className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge>{formatLabels[assignment.submissionFormat]}</Badge>
+                    <span className="text-xs text-muted">{assignment.courseName}</span>
+                  </div>
+                  <h3 className="mt-3 font-display text-xl font-semibold leading-7">
+                    {assignment.title}
+                  </h3>
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
+                    {assignment.instructions}
+                  </p>
+                  <div className="mt-4 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
+                    <span>截止 {formatDate(assignment.dueAt)}</span>
+                    <span>{submissionCount} 份提交</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to={`/teacher/assignments/${assignment.id}/lesson-plan`}>
+                        生成备课建议
+                        <ArrowRight className="size-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+
+          <Card>
+            <CardHeader>
+              <div>
+                <p className="page-eyebrow">审核队列</p>
+                <CardTitle className="mt-1">学生提交</CardTitle>
+              </div>
+              <Badge tone="warning">{pendingCount} 待审核</Badge>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-line">
+                {data.submissions.map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-pine-50 font-display text-pine-700">
+                        {submission.studentName.slice(0, 1)}
+                      </span>
+                      <div className="min-w-0">
+                        <strong className="block truncate text-sm">
+                          {submission.studentName} · {submission.studentNumber}
+                        </strong>
+                        <p className="truncate text-xs text-muted">{submission.assignmentTitle}</p>
+                        <small className="text-[11px] text-stone-400">
+                          第 {submission.attemptNumber} 次 · {formatDate(submission.submittedAt)}
+                        </small>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge tone={submission.reviewStatus === "REVIEWED" ? "default" : "warning"}>
+                        {submission.statusText}
+                      </Badge>
+                      <Button asChild variant="secondary" size="sm">
+                        <Link to={`/reviews/${submission.id}`}>
+                          {submission.reviewStatus === "REVIEWED" ? "查看审核" : "开始审核"}
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {data.submissions.length === 0 ? (
+                  <p className="px-5 py-10 text-center text-sm text-muted">
+                    学生提交后会出现在这里。
+                  </p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div>
+                <p className="page-eyebrow">共性问题</p>
+                <CardTitle className="mt-1">量规薄弱项</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {data.commonIssues.map((issue) => (
+                <div
+                  key={issue.rubricName}
+                  className="flex items-center justify-between rounded-xl bg-clay-50 px-3 py-2.5 text-sm text-clay-600"
+                >
+                  <span>{issue.rubricName}</span>
+                  <strong>{issue.count} 处</strong>
+                </div>
+              ))}
+              {data.commonIssues.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-line p-4 text-center text-sm leading-6 text-muted">
+                  在审核页确认问题后，这里会自动汇总。
+                </p>
+              ) : null}
+              <div className="mt-3 rounded-xl bg-stone-50 p-3 text-xs leading-6 text-muted">
+                平台只整理教师确认的问题，不自动判定学术不端。
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div>
+                <p className="page-eyebrow">反馈复核</p>
+                <CardTitle className="mt-1">学生申诉</CardTitle>
+              </div>
+              <Badge tone={data.appeals.length ? "warning" : "neutral"}>
+                {data.appeals.length} 条
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {data.appeals.map(({ appeal, studentName, assignmentTitle }) => (
+                <div key={appeal.id} className="rounded-xl border border-line p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <strong className="text-sm">{studentName}</strong>
+                      <p className="mt-0.5 text-xs text-muted">{assignmentTitle}</p>
+                    </div>
+                    <Badge tone="warning">{appeal.status}</Badge>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-stone-700">{appeal.reason}</p>
+                  {appeal.teacherResponse ? (
+                    <p className="mt-2 rounded-lg bg-pine-50 p-2 text-xs leading-5 text-pine-700">
+                      当前回复：{appeal.teacherResponse}
+                    </p>
+                  ) : null}
+                  <div className="mt-3 grid gap-2">
+                    <select
+                      value={appealStatus[appeal.id] ?? "UNDER_REVIEW"}
+                      onChange={(event) =>
+                        setAppealStatus((value) => ({
+                          ...value,
+                          [appeal.id]: event.target.value,
+                        }))
+                      }
+                      className="h-9 rounded-lg border border-line bg-white px-2 text-xs"
+                    >
+                      <option value="UNDER_REVIEW">继续复核</option>
+                      <option value="ACCEPTED">采纳申诉</option>
+                      <option value="REJECTED">维持原结果</option>
+                    </select>
+                    <textarea
+                      rows={2}
+                      value={appealDrafts[appeal.id] ?? ""}
+                      onChange={(event) =>
+                        setAppealDrafts((value) => ({
+                          ...value,
+                          [appeal.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="填写复核依据"
+                      className="rounded-lg border border-line px-2 py-2 text-xs leading-5 outline-none focus:border-pine-500"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={respondAppeal.isPending}
+                      onClick={() => respondAppeal.mutate({ id: appeal.id })}
+                    >
+                      保存复核结果
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {data.appeals.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted">当前没有待处理申诉。</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+
+      <Dialog
+        open={classroomOpen}
+        onOpenChange={setClassroomOpen}
+        title="新建课堂"
+        description="课堂码会自动生成，学生加入后才能看到作业。"
+      >
+        <div className="grid gap-4">
+          <Field label="课堂名称">
+            <Input
+              value={classroomName}
+              onChange={(event) => setClassroomName(event.target.value)}
+              placeholder="例如：传播学方法课 · 2026 秋"
+            />
+          </Field>
+          <Field label="课程名称">
+            <Input
+              value={courseName}
+              onChange={(event) => setCourseName(event.target.value)}
+              placeholder="例如：传播学方法课"
+            />
+          </Field>
+          <Button
+            size="lg"
+            disabled={createClassroom.isPending || !classroomName.trim() || !courseName.trim()}
+            onClick={() => createClassroom.mutate()}
+          >
+            {createClassroom.isPending ? "创建中…" : "创建课堂"}
+          </Button>
+        </div>
+      </Dialog>
+    </div>
+  );
+}

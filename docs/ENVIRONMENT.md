@@ -9,7 +9,7 @@
 | Maven | Maven 3.10 或兼容版本 |
 | 数据库 | H2 2.x 文件模式，由项目依赖自动提供 |
 | 浏览器 | Edge、Chrome、Firefox 等现代浏览器 |
-| Node.js | 不需要 |
+| Node.js | 22.x（仅构建或开发 React 前端时需要） |
 
 当前开发电脑的参考路径：
 
@@ -68,6 +68,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `SESSION_COOKIE_SAME_SITE` | `lax` | 会话 Cookie 的 SameSite 策略 |
 | `SPRING_APPLICATION_NAME` | `review-desk` | 应用名称 |
 | `THYMELEAF_CACHE` | `false` | 是否缓存服务端页面模板 |
+| `AI_API_KEY` | 空 | OpenAI 兼容模型密钥；为空时使用规则生成 |
+| `AI_BASE_URL` | `https://api.deepseek.com` | 模型 API 基地址 |
+| `AI_MODEL` | `deepseek-chat` | 模型名称 |
+| `AI_TIMEOUT_SECONDS` | `30` | 模型请求超时秒数 |
 | `SHOW_DEMO_CREDENTIALS` | `true` | 登录页是否显示初始演示账号；生产环境应设为 `false` |
 | `DEMO_TEACHER_USERNAME` | `chen` | 首次启动创建的教师账号 |
 | `DEMO_TEACHER_PASSWORD` | `Teach1234` | 首次启动创建的教师密码 |
@@ -90,6 +94,10 @@ SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
 SPRING_APPLICATION_NAME=review-desk
 THYMELEAF_CACHE=false
+AI_API_KEY=
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-chat
+AI_TIMEOUT_SECONDS=30
 
 DEMO_TEACHER_USERNAME=chen
 DEMO_TEACHER_PASSWORD=Teach1234
@@ -110,6 +118,7 @@ DEMO_STUDENT_PASSWORD=替换为高强度密码
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAME_SITE=lax
 THYMELEAF_CACHE=true
+AI_API_KEY=替换为服务端模型密钥
 ```
 
 注意：
@@ -183,6 +192,15 @@ src/test/resources/application.yml
 ```
 
 测试不会修改本地 `data/review-desk.mv.db`。
+
+React 前端检查与构建：
+
+```powershell
+cd frontend
+npm ci
+npm run lint
+npm run build
+```
 
 运行测试：
 
