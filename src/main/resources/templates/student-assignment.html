@@ -43,6 +43,10 @@
         <p class="eyebrow">作业要求</p>
         <h1 th:text="${assignment.title}">短视频使用与大学生注意力恢复的关系研究</h1>
         <p class="student-instructions" th:text="${assignment.instructions}">作业说明</p>
+        <div class="submission-policy">
+          <span th:text="${submissionFormatText}">混合形式提交</span>
+          <span th:text="${aiPolicyText}">允许 AI 辅助，但必须声明使用范围</span>
+        </div>
         <div class="deadline-card">
           <span>提交截止</span>
           <strong th:text="${dueAtText}">10 月 24 日 23:59</strong>
@@ -91,6 +95,27 @@
             </div>
             <h3 th:text="${reviewFeedback.title}">课程论文审核意见</h3>
             <pre th:text="${reviewFeedback.content}">请补充证据来源。</pre>
+            <div class="student-score-list" th:if="${!reviewScores.isEmpty()}">
+              <div class="student-score-head">
+                <strong>最终评分</strong>
+                <span th:if="${finalScoreTotal != null}" th:text="${finalScoreTotal + ' / 100'}">86 / 100</span>
+              </div>
+              <div class="student-score-row" th:each="score : ${reviewScores}">
+                <span th:text="${score.rubricName}">证据与引用</span>
+                <strong th:text="${score.finalPoints != null
+                                   ? score.finalPoints + ' / ' + score.maxPoints
+                                   : '未评分'}">20 / 25</strong>
+              </div>
+            </div>
+          </section>
+          <section class="student-integrity-result"
+                   th:if="${!confirmedIntegrityFlags.isEmpty()}">
+            <strong>教师已确认的诚信核验结果</strong>
+            <article th:each="flag : ${confirmedIntegrityFlags}">
+              <span th:text="${flag.category}">引用来源</span>
+              <p><b>证据：</b><span th:text="${flag.evidence}">原句</span></p>
+              <p><b>说明：</b><span th:text="${flag.reason}">说明</span></p>
+            </article>
           </section>
         </div>
 
@@ -105,9 +130,84 @@
             <span th:text="${latestSubmission.wordCount + ' 字'}">2,846 字</span>
           </div>
           <pre th:text="${latestSubmission.content}">学生提交的完整作业内容</pre>
+          <div class="attachment-list" th:if="${!attachments.isEmpty()}">
+            <a class="attachment-item"
+               th:each="attachment : ${attachments}"
+               th:href="@{/files/submissions/{submissionId}/attachments/{attachmentId}(submissionId=${latestSubmission.id},attachmentId=${attachment.id})}"
+               target="_blank" rel="noopener">
+              <span th:text="${attachment.attachmentKind}">DOCUMENT</span>
+              <strong th:text="${attachment.originalName}">附件.pdf</strong>
+              <small th:text="${#numbers.formatDecimal(attachment.fileSize / 1024.0, 1, 1) + ' KB'}">120 KB</small>
+            </a>
+          </div>
+          <div class="integrity-declaration">
+            <p><strong>AI 使用：</strong><span th:text="${latestSubmission.aiUsage}">NONE</span></p>
+            <p th:if="${latestSubmission.aiTools}">
+              <strong>工具：</strong><span th:text="${latestSubmission.aiTools}">未使用</span>
+            </p>
+            <p th:if="${latestSubmission.aiScope}">
+              <strong>使用范围：</strong><span th:text="${latestSubmission.aiScope}">无</span>
+            </p>
+            <p th:if="${latestSubmission.sourceDeclaration}">
+              <strong>来源声明：</strong><span th:text="${latestSubmission.sourceDeclaration}">来源说明</span>
+            </p>
+            <p th:if="${latestSubmission.collaborationDeclaration}">
+              <strong>协作说明：</strong><span th:text="${latestSubmission.collaborationDeclaration}">无协作</span>
+            </p>
+          </div>
         </section>
 
-        <form th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}" method="post">
+        <section class="student-appeals" id="appeals"
+                 th:if="${latestSubmission != null
+                         and latestSubmission.reviewStatus == 'REVIEWED'}">
+          <div class="student-form-head">
+            <div>
+              <p class="eyebrow">反馈复核</p>
+              <h2>我的申诉</h2>
+            </div>
+            <span th:text="${assignment.appealAllowed ? '本作业开放申诉' : '本作业未开放申诉'}">
+              本作业开放申诉
+            </span>
+          </div>
+          <div class="appeal-history" th:if="${!appeals.isEmpty()}">
+            <article class="appeal-card" th:each="appeal : ${appeals}">
+              <div>
+                <strong th:text="${appeal.statusText}">已提交，等待复核</strong>
+                <span th:text="${'提交于 ' + appeal.createdAtText}">提交时间</span>
+              </div>
+              <p th:text="${appeal.reason}">申诉理由</p>
+              <div class="appeal-response" th:if="${appeal.teacherResponse}">
+                <b>教师复核：</b><span th:text="${appeal.teacherResponse}">复核说明</span>
+              </div>
+            </article>
+          </div>
+          <form class="appeal-form"
+                th:if="${assignment.appealAllowed and !hasActiveAppeal}"
+                th:action="@{/student/submissions/{id}/appeals(id=${latestSubmission.id})}"
+                method="post">
+            <label class="field">
+              <span>申诉理由</span>
+              <textarea name="reason" rows="3" minlength="10" required
+                        placeholder="请具体说明对评分、反馈或诚信结论的异议"></textarea>
+            </label>
+            <label class="field">
+              <span>希望教师如何处理</span>
+              <textarea name="requestedResolution" rows="2"
+                        placeholder="例如：希望重新核对引用证据"></textarea>
+            </label>
+            <button type="submit">提交申诉</button>
+          </form>
+          <p class="appeal-locked"
+             th:if="${assignment.appealAllowed and hasActiveAppeal}">
+            当前申诉正在处理中，教师回复后会显示在本页。
+          </p>
+          <p class="appeal-locked" th:if="${!assignment.appealAllowed}">
+            教师发布作业时未开放申诉，如对结果有疑问请线下联系教师。
+          </p>
+        </section>
+
+        <form th:action="@{/student/assignments/{id}/submissions(id=${assignment.id})}"
+              method="post" enctype="multipart/form-data">
           <div class="student-form-head">
             <div>
               <p class="eyebrow" th:text="${latestSubmission == null ? '在线提交' : '再次提交'}">
@@ -117,12 +217,58 @@
                 提交你的作业
               </h2>
             </div>
-            <span>至少 20 个字符</span>
+            <span>文字至少 20 字，或上传附件</span>
           </div>
-          <textarea class="student-submission-editor" name="content" required
+          <textarea class="student-submission-editor" name="content"
                     aria-label="作业内容"
                     th:text="${latestSubmission == null ? '' : latestSubmission.content}"
                     placeholder="请粘贴或输入完整作业内容……"></textarea>
+          <label class="file-upload">
+            <span>上传文档、代码或截图</span>
+            <input type="file" name="files" multiple
+                   accept=".pdf,.doc,.docx,.txt,.md,.java,.py,.js,.ts,.html,.css,.zip,.png,.jpg,.jpeg,.webp">
+            <small>最多 8 个附件，单个不超过 10 MB</small>
+          </label>
+
+          <section class="integrity-form">
+            <div class="integrity-form-head">
+              <h3>学术诚信与 AI 使用声明</h3>
+              <span th:text="${aiPolicyText}">AI 政策</span>
+            </div>
+            <label class="field">
+              <span>AI 使用情况</span>
+              <select name="aiUsage" th:required="${assignment.aiDeclarationRequired}">
+                <option value="NONE">未使用</option>
+                <option value="ASSISTED">辅助修改或思路启发</option>
+                <option value="PARTIAL_GENERATION">部分内容由 AI 生成</option>
+                <option value="MAIN_GENERATION">主要内容由 AI 生成</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>使用的 AI 工具</span>
+              <input type="text" name="aiTools" placeholder="未使用可不填">
+            </label>
+            <label class="field">
+              <span>AI 使用范围</span>
+              <textarea name="aiScope" rows="2" placeholder="说明使用了哪些段落和用途"></textarea>
+            </label>
+            <label class="field">
+              <span>文献与数据来源声明</span>
+              <textarea name="sourceDeclaration" rows="3"
+                        th:required="${assignment.sourceDeclarationRequired}"
+                        placeholder="列出主要文献、数据来源和获取方式"></textarea>
+            </label>
+            <label class="field">
+              <span>协作或外部帮助</span>
+              <textarea name="collaborationDeclaration" rows="2"
+                        placeholder="如无，请填写“无”"></textarea>
+            </label>
+            <label class="integrity-confirm">
+              <input type="checkbox" name="integrityConfirmed" value="true"
+                     th:required="${assignment.aiDeclarationRequired || assignment.sourceDeclarationRequired}">
+              我确认以上声明真实，并了解教师可要求补充证据。
+            </label>
+          </section>
           <div class="student-form-foot">
             <p>重复提交会保留为新的提交记录，教师可以对照前后版本。</p>
             <button type="submit" th:text="${latestSubmission == null ? '提交作业' : '提交修订版本'}">

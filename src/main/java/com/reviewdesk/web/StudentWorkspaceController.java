@@ -5,10 +5,15 @@ import com.reviewdesk.domain.Assignment;
 import com.reviewdesk.domain.Classroom;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.service.AccountService;
+import com.reviewdesk.service.AppealService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
+import com.reviewdesk.service.IntegrityService;
+import com.reviewdesk.service.ReviewScoreService;
 import com.reviewdesk.service.ReviewService;
 import com.reviewdesk.service.StudentSubmissionService;
+import com.reviewdesk.service.SubmissionAttachmentService;
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
 import java.util.List;
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -37,17 +43,29 @@ public class StudentWorkspaceController {
     private final ReviewService reviewService;
     private final AccountService accountService;
     private final ClassroomService classroomService;
+    private final SubmissionAttachmentService attachmentService;
+    private final ReviewScoreService scoreService;
+    private final IntegrityService integrityService;
+    private final AppealService appealService;
 
     public StudentWorkspaceController(AssignmentService assignmentService,
                                       StudentSubmissionService submissionService,
                                       ReviewService reviewService,
                                       AccountService accountService,
-                                      ClassroomService classroomService) {
+                                      ClassroomService classroomService,
+                                      SubmissionAttachmentService attachmentService,
+                                      ReviewScoreService scoreService,
+                                      IntegrityService integrityService,
+                                      AppealService appealService) {
         this.assignmentService = assignmentService;
         this.submissionService = submissionService;
         this.reviewService = reviewService;
         this.accountService = accountService;
         this.classroomService = classroomService;
+        this.attachmentService = attachmentService;
+        this.scoreService = scoreService;
+        this.integrityService = integrityService;
+        this.appealService = appealService;
     }
 
     @GetMapping("/student")
@@ -61,9 +79,14 @@ public class StudentWorkspaceController {
                     Submission latest = submissionService
                             .findLatest(assignment.getId(), student)
                             .orElse(null);
+                    boolean activeAppeal = latest != null
+                            && appealService.listForSubmission(latest.getId()).stream()
+                            .anyMatch(appeal -> List.of("SUBMITTED", "UNDER_REVIEW")
+                                    .contains(appeal.getStatus()));
                     return new StudentAssignmentView(
                             assignment,
                             latest,
+                            activeAppeal,
                             formatTime(assignment.getDueAt()));
                 })
                 .toList();
@@ -83,11 +106,24 @@ public class StudentWorkspaceController {
         }
         model.addAttribute("assignment", assignment);
         model.addAttribute("dueAtText", formatTime(assignment.getDueAt()));
+        model.addAttribute("submissionFormatText", switch (assignment.getSubmissionFormat()) {
+            case "CODE" -> "代码提交";
+            case "SCREENSHOT" -> "截图或设计提交";
+            case "MIXED" -> "混合形式提交";
+            default -> "文档提交";
+        });
+        model.addAttribute("aiPolicyText", switch (assignment.getAiPolicy()) {
+            case "NOT_ALLOWED" -> "不允许使用 AI";
+            case "GENERATION_ALLOWED" -> "允许 AI 生成内容，但必须声明";
+            default -> "允许 AI 辅助，但必须声明使用范围";
+        });
         model.addAttribute("rubrics", assignmentService.listRubrics(assignmentId));
         Submission latestSubmission = submissionService
                 .findLatest(assignmentId, student)
                 .orElse(null);
         model.addAttribute("latestSubmission", latestSubmission);
+        model.addAttribute("attachments", latestSubmission == null
+                ? List.of() : attachmentService.list(latestSubmission.getId()));
         model.addAttribute("latestSubmittedAtText",
                 latestSubmission == null ? null : formatTime(latestSubmission.getSubmittedAt()));
         model.addAttribute("reviewedAtText",
@@ -96,19 +132,59 @@ public class StudentWorkspaceController {
                 latestSubmission != null && "REVIEWED".equals(latestSubmission.getReviewStatus())
                         ? reviewService.requireDraft(latestSubmission.getId())
                         : null);
+        model.addAttribute("reviewScores",
+                latestSubmission != null && "REVIEWED".equals(latestSubmission.getReviewStatus())
+                        ? scoreService.list(latestSubmission.getId()) : List.of());
+        model.addAttribute("finalScoreTotal",
+                latestSubmission != null && "REVIEWED".equals(latestSubmission.getReviewStatus())
+                        ? scoreService.finalTotal(latestSubmission.getId()) : null);
+        model.addAttribute("confirmedIntegrityFlags",
+                latestSubmission != null && "REVIEWED".equals(latestSubmission.getReviewStatus())
+                        ? integrityService.confirmedForStudent(latestSubmission.getId())
+                        : List.of());
+        List<com.reviewdesk.domain.Appeal> appealRecords = latestSubmission == null
+                ? List.of() : appealService.listForSubmission(latestSubmission.getId());
+        model.addAttribute("hasActiveAppeal", appealRecords.stream()
+                .anyMatch(appeal -> List.of("SUBMITTED", "UNDER_REVIEW")
+                        .contains(appeal.getStatus())));
+        model.addAttribute("appeals", appealRecords.stream()
+                .map(appeal -> new StudentAppealView(
+                        appeal.getReason(),
+                        appeal.getRequestedResolution(),
+                        appeal.getTeacherResponse(),
+                        appealStatusText(appeal.getStatus()),
+                        formatTime(appeal.getCreatedAt())))
+                .toList());
         return "student-assignment";
     }
 
     @PostMapping("/student/assignments/{assignmentId}/submissions")
     public String submit(@PathVariable long assignmentId,
-                         @RequestParam String content,
+                         @RequestParam(defaultValue = "") String content,
+                         @RequestParam(required = false) String aiUsage,
+                         @RequestParam(required = false) String aiTools,
+                         @RequestParam(required = false) String aiScope,
+                         @RequestParam(required = false) String sourceDeclaration,
+                         @RequestParam(required = false) String collaborationDeclaration,
+                         @RequestParam(defaultValue = "false") boolean integrityConfirmed,
+                         @RequestParam(required = false) MultipartFile[] files,
                          Authentication authentication,
                          RedirectAttributes redirectAttributes) {
         Account student = accountService.current(authentication);
         try {
-            submissionService.submit(assignmentId, student, content);
+            submissionService.submit(
+                    assignmentId,
+                    student,
+                    content,
+                    aiUsage,
+                    aiTools,
+                    aiScope,
+                    sourceDeclaration,
+                    collaborationDeclaration,
+                    integrityConfirmed,
+                    files);
             redirectAttributes.addFlashAttribute("successMessage", "作业已提交，等待教师审核。");
-        } catch (IllegalArgumentException | SecurityException exception) {
+        } catch (IllegalArgumentException | SecurityException | IOException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
         return "redirect:/student/assignments/" + assignmentId;
@@ -136,8 +212,22 @@ public class StudentWorkspaceController {
         return DATE_TIME.format(instant.atZone(DISPLAY_ZONE));
     }
 
+    private String appealStatusText(String status) {
+        return switch (status) {
+            case "UNDER_REVIEW" -> "教师正在复核";
+            case "ACCEPTED" -> "申诉已采纳";
+            case "REJECTED" -> "申诉未采纳";
+            default -> "已提交，等待复核";
+        };
+    }
+
+    public record StudentAppealView(String reason, String requestedResolution,
+                                    String teacherResponse, String statusText,
+                                    String createdAtText) {
+    }
+
     public record StudentAssignmentView(Assignment assignment, Submission latestSubmission,
-                                        String dueAtText) {
+                                        boolean activeAppeal, String dueAtText) {
 
         public boolean isReviewed() {
             return latestSubmission != null
@@ -148,12 +238,18 @@ public class StudentWorkspaceController {
             if (latestSubmission == null) {
                 return "待提交";
             }
+            if (activeAppeal) {
+                return "申诉处理中";
+            }
             return isReviewed() ? "已反馈" : "待审核";
         }
 
         public String getStatusClass() {
             if (latestSubmission == null) {
                 return "status-pending";
+            }
+            if (activeAppeal) {
+                return "status-reviewing";
             }
             return isReviewed() ? "status-submitted" : "status-reviewing";
         }

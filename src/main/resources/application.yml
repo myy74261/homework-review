@@ -11,6 +11,10 @@ spring:
     open-in-view: false
   thymeleaf:
     cache: ${THYMELEAF_CACHE:false}
+  servlet:
+    multipart:
+      max-file-size: ${UPLOAD_MAX_FILE_SIZE:10MB}
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:50MB}
   web:
     resources:
       cache:
@@ -31,6 +35,8 @@ server:
         same-site: ${SESSION_COOKIE_SAME_SITE:lax}
 
 review-desk:
+  storage:
+    root: ${UPLOAD_ROOT:./data/uploads}
   ui:
     show-demo-credentials: ${SHOW_DEMO_CREDENTIALS:true}
   demo:

@@ -78,11 +78,33 @@
             <input type="datetime-local" th:field="*{dueAt}">
             <small class="field-error" th:errors="*{dueAt}"></small>
           </label>
+          <label class="field">
+            <span>作业形式</span>
+            <select th:field="*{submissionFormat}">
+              <option value="DOCUMENT">文档</option>
+              <option value="CODE">代码</option>
+              <option value="SCREENSHOT">截图 / 设计</option>
+              <option value="MIXED">混合形式</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>AI 使用政策</span>
+            <select th:field="*{aiPolicy}">
+              <option value="NOT_ALLOWED">不允许使用</option>
+              <option value="ASSISTED_ALLOWED">允许辅助使用</option>
+              <option value="GENERATION_ALLOWED">允许生成内容并声明</option>
+            </select>
+          </label>
           <label class="field field-wide">
             <span>作业要求</span>
             <textarea rows="5" th:field="*{instructions}"></textarea>
             <small class="field-error" th:errors="*{instructions}"></small>
           </label>
+        </div>
+        <div class="declaration-options">
+          <label><input type="checkbox" th:field="*{aiDeclarationRequired}"> 要求学生声明 AI 使用情况</label>
+          <label><input type="checkbox" th:field="*{sourceDeclarationRequired}"> 要求学生声明文献与数据来源</label>
+          <label><input type="checkbox" th:field="*{appealAllowed}"> 允许学生对最终反馈发起申诉</label>
         </div>
       </section>
 
@@ -91,35 +113,30 @@
           <span>02</span>
           <div>
             <h2>评分量规</h2>
-            <p>四个维度合计必须为 100 分。</p>
+            <p>支持 1–10 个维度，总分必须为 100 分。</p>
+          </div>
+          <span class="rubric-total">总分 <strong id="rubricTotal">100</strong> / 100</span>
+        </div>
+        <div class="rubric-form-list" id="rubricFormList">
+          <div class="rubric-form-row" data-rubric-row th:each="rubric, stat : *{rubrics}">
+            <span class="rubric-order" data-rubric-index th:text="${stat.count}">1</span>
+            <label class="field">
+              <span>维度名称</span>
+              <input type="text" th:field="*{rubrics[__${stat.index}__].name}">
+            </label>
+            <label class="field points-field">
+              <span>分值</span>
+              <input type="number" min="1" max="100" data-points
+                     th:field="*{rubrics[__${stat.index}__].points}">
+            </label>
+            <label class="field">
+              <span>观察说明</span>
+              <input type="text" th:field="*{rubrics[__${stat.index}__].description}">
+            </label>
+            <button class="remove-rubric" type="button" aria-label="删除评分维度">×</button>
           </div>
         </div>
-        <div class="rubric-form-list">
-          <div class="rubric-form-row">
-            <span class="rubric-order">1</span>
-            <label class="field"><span>维度名称</span><input type="text" th:field="*{criterion1Name}"></label>
-            <label class="field points-field"><span>分值</span><input type="number" min="1" max="100" th:field="*{criterion1Points}"></label>
-            <label class="field"><span>观察说明</span><input type="text" th:field="*{criterion1Description}"></label>
-          </div>
-          <div class="rubric-form-row">
-            <span class="rubric-order">2</span>
-            <label class="field"><span>维度名称</span><input type="text" th:field="*{criterion2Name}"></label>
-            <label class="field points-field"><span>分值</span><input type="number" min="1" max="100" th:field="*{criterion2Points}"></label>
-            <label class="field"><span>观察说明</span><input type="text" th:field="*{criterion2Description}"></label>
-          </div>
-          <div class="rubric-form-row">
-            <span class="rubric-order">3</span>
-            <label class="field"><span>维度名称</span><input type="text" th:field="*{criterion3Name}"></label>
-            <label class="field points-field"><span>分值</span><input type="number" min="1" max="100" th:field="*{criterion3Points}"></label>
-            <label class="field"><span>观察说明</span><input type="text" th:field="*{criterion3Description}"></label>
-          </div>
-          <div class="rubric-form-row">
-            <span class="rubric-order">4</span>
-            <label class="field"><span>维度名称</span><input type="text" th:field="*{criterion4Name}"></label>
-            <label class="field points-field"><span>分值</span><input type="number" min="1" max="100" th:field="*{criterion4Points}"></label>
-            <label class="field"><span>观察说明</span><input type="text" th:field="*{criterion4Description}"></label>
-          </div>
-        </div>
+        <button class="add-rubric" id="addRubric" type="button">＋ 增加评分维度</button>
       </section>
 
       <div class="publish-actions">
@@ -128,6 +145,7 @@
       </div>
     </form>
   </main>
+  <script th:src="@{/js/publish-assignment.js}" defer></script>
 </body>
 </html>
 

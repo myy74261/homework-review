@@ -22,7 +22,10 @@ public class ReviewActivityService {
             "VERSION_RESTORED",
             "SUGGESTION_ADOPTED",
             "SUGGESTION_DISMISSED",
-            "REVIEW_COMPLETED");
+            "REVIEW_COMPLETED",
+            "INTEGRITY_FLAGGED",
+            "APPEAL_SUBMITTED",
+            "APPEAL_RESOLVED");
 
     private final ReviewEventRepository eventRepository;
     private final SubmissionRepository submissionRepository;

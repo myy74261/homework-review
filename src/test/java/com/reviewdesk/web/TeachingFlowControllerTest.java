@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -67,20 +68,25 @@ class TeachingFlowControllerTest {
                         .param("classroomId", "1")
                         .param("instructions", "完成一份调查说明，并展示数据来源与核心发现。")
                         .param("dueAt", "2027-01-10T23:59")
-                        .param("criterion1Name", "研究问题")
-                        .param("criterion1Points", "25")
-                        .param("criterion1Description", "研究目标是否清楚")
-                        .param("criterion2Name", "证据")
-                        .param("criterion2Points", "25")
-                        .param("criterion2Description", "引用是否可追溯")
-                        .param("criterion3Name", "方法")
-                        .param("criterion3Points", "30")
-                        .param("criterion3Description", "方法说明是否完整")
-                        .param("criterion4Name", "表达")
-                        .param("criterion4Points", "20")
-                        .param("criterion4Description", "结构是否清晰"))
+                        .param("submissionFormat", "MIXED")
+                        .param("aiPolicy", "ASSISTED_ALLOWED")
+                        .param("aiDeclarationRequired", "true")
+                        .param("sourceDeclarationRequired", "true")
+                        .param("appealAllowed", "true")
+                        .param("rubrics[0].name", "研究问题")
+                        .param("rubrics[0].points", "25")
+                        .param("rubrics[0].description", "研究目标是否清楚")
+                        .param("rubrics[1].name", "证据")
+                        .param("rubrics[1].points", "25")
+                        .param("rubrics[1].description", "引用是否可追溯")
+                        .param("rubrics[2].name", "方法")
+                        .param("rubrics[2].points", "30")
+                        .param("rubrics[2].description", "方法说明是否完整")
+                        .param("rubrics[3].name", "表达")
+                        .param("rubrics[3].points", "20")
+                        .param("rubrics[3].description", "结构是否清晰"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/teacher?published=2"));
+                .andExpect(redirectedUrlPattern("/teacher?published=*"));
     }
 
     @Test
@@ -91,7 +97,11 @@ class TeachingFlowControllerTest {
                         .with(user("lin").roles("STUDENT"))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("content", content))
+                        .param("content", content)
+                        .param("aiUsage", "NONE")
+                        .param("sourceDeclaration", "课程材料与自建问卷")
+                        .param("collaborationDeclaration", "无")
+                        .param("integrityConfirmed", "true"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/student/assignments/1"));
 
@@ -112,7 +122,11 @@ class TeachingFlowControllerTest {
         mockMvc.perform(post("/student/assignments/1/submissions")
                         .with(user("lin").roles("STUDENT"))
                         .with(csrf())
-                        .param("content", content))
+                        .param("content", content)
+                        .param("aiUsage", "NONE")
+                        .param("sourceDeclaration", "课程材料与自建问卷")
+                        .param("collaborationDeclaration", "无")
+                        .param("integrityConfirmed", "true"))
                 .andExpect(status().is3xxRedirection());
 
         long submissionId = submissionRepository.findTopByOrderByIdDesc()

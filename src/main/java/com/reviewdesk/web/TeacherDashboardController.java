@@ -3,7 +3,9 @@ package com.reviewdesk.web;
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.domain.Assignment;
 import com.reviewdesk.domain.Classroom;
+import com.reviewdesk.domain.Submission;
 import com.reviewdesk.service.AccountService;
+import com.reviewdesk.service.AppealService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
 import com.reviewdesk.service.TeachingWorkspaceService;
@@ -33,15 +35,18 @@ public class TeacherDashboardController {
     private final AssignmentService assignmentService;
     private final AccountService accountService;
     private final ClassroomService classroomService;
+    private final AppealService appealService;
 
     public TeacherDashboardController(TeachingWorkspaceService workspaceService,
                                       AssignmentService assignmentService,
                                       AccountService accountService,
-                                      ClassroomService classroomService) {
+                                      ClassroomService classroomService,
+                                      AppealService appealService) {
         this.workspaceService = workspaceService;
         this.assignmentService = assignmentService;
         this.accountService = accountService;
         this.classroomService = classroomService;
+        this.appealService = appealService;
     }
 
     @GetMapping("/teacher")
@@ -61,6 +66,16 @@ public class TeacherDashboardController {
                 .filter(row -> "已审核".equals(row.statusText()))
                 .count());
         model.addAttribute("commonIssues", workspaceService.listCommonIssues(classroomIds));
+        Map<Long, Submission> submissionById = submissions.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> row.submission().getId(),
+                        row -> row.submission()));
+        model.addAttribute("appeals", appealService.listForSubmissions(
+                        submissionById.keySet()).stream()
+                .map(appeal -> new AppealOverview(
+                        appeal,
+                        submissionById.get(appeal.getSubmissionId())))
+                .toList());
         return "teacher-dashboard";
     }
 
@@ -86,30 +101,26 @@ public class TeacherDashboardController {
         if (bindingResult.hasErrors()) {
             return "publish-assignment";
         }
-        if (!classroomService.isTeacherOwner(teacher, form.classroomId())) {
+        if (!classroomService.isTeacherOwner(teacher, form.getClassroomId())) {
             bindingResult.reject("classroom.invalid", "无权向该课堂发布作业");
             return "publish-assignment";
         }
-        List<AssignmentService.RubricDefinition> rubrics = List.of(
-                new AssignmentService.RubricDefinition(
-                        form.criterion1Name(), form.criterion1Points(),
-                        form.criterion1Description()),
-                new AssignmentService.RubricDefinition(
-                        form.criterion2Name(), form.criterion2Points(),
-                        form.criterion2Description()),
-                new AssignmentService.RubricDefinition(
-                        form.criterion3Name(), form.criterion3Points(),
-                        form.criterion3Description()),
-                new AssignmentService.RubricDefinition(
-                        form.criterion4Name(), form.criterion4Points(),
-                        form.criterion4Description()));
+        List<AssignmentService.RubricDefinition> rubrics = form.getRubrics().stream()
+                .map(rubric -> new AssignmentService.RubricDefinition(
+                        rubric.getName(), rubric.getPoints(), rubric.getDescription()))
+                .toList();
         try {
             Assignment assignment = assignmentService.publish(
-                    form.classroomId(),
-                    form.title(),
-                    form.courseName(),
-                    form.instructions(),
-                    form.dueAt().atZone(DISPLAY_ZONE).toInstant(),
+                    form.getClassroomId(),
+                    form.getTitle(),
+                    form.getCourseName(),
+                    form.getInstructions(),
+                    form.getDueAt().atZone(DISPLAY_ZONE).toInstant(),
+                    form.getSubmissionFormat(),
+                    form.getAiPolicy(),
+                    form.isAiDeclarationRequired(),
+                    form.isSourceDeclarationRequired(),
+                    form.isAppealAllowed(),
                     rubrics);
             return "redirect:/teacher?published=" + assignment.getId();
         } catch (IllegalArgumentException exception) {
@@ -130,6 +141,10 @@ public class TeacherDashboardController {
         Account teacher = accountService.current(authentication);
         classroomService.create(teacher, name, courseName);
         return "redirect:/teacher?classroomCreated";
+    }
+
+    public record AppealOverview(com.reviewdesk.domain.Appeal appeal,
+                                 Submission submission) {
     }
 }
 

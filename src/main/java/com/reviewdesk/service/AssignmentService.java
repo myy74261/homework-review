@@ -42,6 +42,21 @@ public class AssignmentService {
     public Assignment publish(Long classroomId, String title, String courseName,
                               String instructions, Instant dueAt,
                               List<RubricDefinition> rubrics) {
+        return publish(classroomId, title, courseName, instructions, dueAt,
+                "DOCUMENT", "ASSISTED_ALLOWED", true, true, true, rubrics);
+    }
+
+    /**
+     * 发布作业并保存作业形式、AI 政策和诚信声明要求。
+     */
+    @Transactional
+    public Assignment publish(Long classroomId, String title, String courseName,
+                              String instructions, Instant dueAt,
+                              String submissionFormat, String aiPolicy,
+                              boolean aiDeclarationRequired,
+                              boolean sourceDeclarationRequired,
+                              boolean appealAllowed,
+                              List<RubricDefinition> rubrics) {
         if (rubrics.isEmpty()) {
             throw new IllegalArgumentException("至少需要一个评分维度");
         }
@@ -58,7 +73,12 @@ public class AssignmentService {
                 title.strip(),
                 courseName.strip(),
                 instructions.strip(),
-                dueAt));
+                dueAt,
+                submissionFormat,
+                aiPolicy,
+                aiDeclarationRequired,
+                sourceDeclarationRequired,
+                appealAllowed));
         for (int index = 0; index < rubrics.size(); index++) {
             RubricDefinition rubric = rubrics.get(index);
             rubricRepository.save(new AssignmentRubric(

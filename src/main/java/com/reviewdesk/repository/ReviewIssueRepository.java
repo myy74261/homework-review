@@ -11,5 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ReviewIssueRepository extends JpaRepository<ReviewIssue, Long> {
 
     List<ReviewIssue> findBySubmissionIdInOrderByCreatedAtDesc(Collection<Long> submissionIds);
+
+    long countBySubmissionIdAndRubricName(Long submissionId, String rubricName);
 }
 

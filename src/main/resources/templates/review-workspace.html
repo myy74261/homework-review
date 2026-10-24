@@ -139,9 +139,11 @@
 
       <section class="submission-preview" aria-label="学生作业预览">
         <div class="preview-meta">
-          <span class="submission-label">学生提交 · V2</span>
-          <span>课程论文 / 调查报告</span>
-          <span class="attachment" th:text="${submission.attachmentName}">问卷与编码表.pdf</span>
+          <span class="submission-label" th:text="'学生提交 · 第 ' + ${submission.attemptNumber} + ' 次'">
+            学生提交 · 第 2 次
+          </span>
+          <span th:text="${formatText}">混合形式提交</span>
+          <span th:text="${submission.wordCount + ' 字'}">2,846 字</span>
         </div>
         <p class="submission-text" th:text="${submission.content}">摘要
 
@@ -150,6 +152,32 @@
 二、研究方法
 
 本研究采用问卷调查法，以某高校在校本科生为研究对象。</p>
+        <div class="review-attachment-list" th:if="${!attachments.isEmpty()}">
+          <span>提交附件</span>
+          <a th:each="attachment : ${attachments}"
+             th:href="@{/files/submissions/{submissionId}/attachments/{attachmentId}(submissionId=${submission.id},attachmentId=${attachment.id})}"
+             target="_blank" rel="noopener">
+            <strong th:text="${attachment.originalName}">作业附件.pdf</strong>
+            <small th:text="${attachment.attachmentKind}">DOCUMENT</small>
+          </a>
+        </div>
+        <div class="integrity-declaration">
+          <p><strong>AI 使用：</strong><span th:text="${submission.aiUsage}">NONE</span></p>
+          <p th:if="${submission.aiTools}">
+            <strong>工具：</strong><span th:text="${submission.aiTools}">未填写</span>
+          </p>
+          <p th:if="${submission.aiScope}">
+            <strong>使用范围：</strong><span th:text="${submission.aiScope}">未填写</span>
+          </p>
+          <p><strong>来源声明：</strong>
+            <span th:text="${submission.sourceDeclaration != null
+                            ? submission.sourceDeclaration : '未提交来源声明'}">未提交来源声明</span>
+          </p>
+          <p><strong>协作说明：</strong>
+            <span th:text="${submission.collaborationDeclaration != null
+                            ? submission.collaborationDeclaration : '无额外协作说明'}">无额外协作说明</span>
+          </p>
+        </div>
       </section>
 
       <section class="feedback-workspace" aria-label="教师审核意见">
@@ -184,60 +212,114 @@
     <aside class="panel assistant-panel" id="assistantPanel" aria-label="审核助手">
       <div class="assistant-heading">
         <div>
-          <p class="eyebrow">审核助手</p>
-          <h2>把判断落在证据上</h2>
-          <p>根据评分量规提示可能的薄弱项，由教师决定是否采纳。</p>
+          <p class="eyebrow">量规评分</p>
+          <h2>建议分可解释、可修改</h2>
+          <p>建议由已确认问题按规则计算，教师最终分独立保存。</p>
         </div>
-        <span class="assistant-count" id="assistantCount" aria-label="2 条审核提示">2</span>
+        <span class="assistant-count" id="assistantCount"
+              th:attr="aria-label=${scores.size() + ' 个评分维度'}"
+              th:text="${scores.size()}">4</span>
       </div>
 
-      <div class="assistant-list">
-        <article class="assistant-card" data-assistant-card>
-          <div class="card-labels">
-            <span class="card-label">证据与引用</span>
-            <span class="card-weight">量规 25 分</span>
+      <section class="review-guide">
+        <span th:text="'审核重点 · ' + ${formatText}">审核重点 · 混合形式提交</span>
+        <ol>
+          <li th:each="item : ${reviewChecklist}" th:text="${item}">先核对附件证据。</li>
+        </ol>
+      </section>
+
+      <form class="score-suggestion-form"
+            th:action="@{/teacher/submissions/{id}/scores(id=${submission.id})}"
+            method="post">
+        <div class="assistant-list">
+          <article class="assistant-card" th:each="score : ${scores}">
+            <div class="card-labels">
+              <span class="card-label" th:text="${score.rubricName}">证据与引用</span>
+              <span class="card-weight"
+                    th:text="'建议 ' + ${score.suggestedPoints} + ' / ' + ${score.maxPoints}">建议 20 / 25</span>
+            </div>
+            <p class="card-explanation" th:text="${score.suggestion}">已确认问题后给出的规则建议。</p>
+            <label class="score-input">
+              <span>教师最终分</span>
+              <input type="number" min="0" th:max="${score.maxPoints}"
+                     th:name="'score_' + ${score.id}"
+                     th:value="${score.finalPoints}"
+                     placeholder="0–${score.maxPoints}">
+            </label>
+          </article>
+        </div>
+        <div class="score-submit-row">
+          <span th:text="${finalScoreTotal != null ? '当前总分 ' + finalScoreTotal + ' 分' : '填写全部维度后生成总分'}">
+            当前总分 0 分
+          </span>
+          <button type="submit">保存最终评分</button>
+        </div>
+      </form>
+
+      <section class="integrity-review" id="integrity">
+        <div class="section-inline-head">
+          <div>
+            <p class="eyebrow">学术诚信</p>
+            <h2>可疑线索与核验</h2>
           </div>
-          <h3>概括性结论缺少来源</h3>
-          <blockquote>已有研究表明，短视频使用会影响注意力恢复。</blockquote>
-          <p class="card-explanation">这里概括了一项研究结论，但没有标明具体文献、样本或效应大小。</p>
-          <div class="card-action-copy">
-            <span>建议反馈</span>
-            <p>请为“已有研究表明”补充具体文献来源，并在正文中标注引用。</p>
+          <span th:text="${integrityFlags.size() + ' 条'}">0 条</span>
+        </div>
+        <p class="integrity-caution">
+          标记仅代表待核实线索。学生只会在教师确认后看到结果，并可在开放申诉时提出异议。
+        </p>
+
+        <article class="integrity-flag-card" th:each="flag : ${integrityFlags}">
+          <div class="integrity-flag-head">
+            <strong th:text="${flag.category}">引用来源</strong>
+            <span class="flag-status"
+                  th:classappend="${' status-' + #strings.toLowerCase(flag.status)}"
+                  th:text="${flag.status == 'SUSPECTED' ? '待核实'
+                            : (flag.status == 'CONFIRMED' ? '已确认' : '已排除')}">待核实</span>
           </div>
-          <div class="card-buttons">
-            <button class="primary-action" type="button" data-card-action="adopt"
-                    data-rubric-name="证据与引用"
-                    data-evidence="已有研究表明，短视频使用会影响注意力恢复。"
-                    data-suggestion="4. 请为“已有研究表明”补充具体文献来源，并在正文中标注引用。">写入意见</button>
-            <button class="secondary-action" type="button" data-card-action="dismiss"
-                    data-rubric-name="证据与引用">教师已核验</button>
-          </div>
+          <p><strong>证据：</strong><span th:text="${flag.evidence}">可疑文本</span></p>
+          <p><strong>教师判断：</strong><span th:text="${flag.reason}">判断依据</span></p>
+          <form th:if="${flag.status == 'SUSPECTED'}"
+                th:action="@{/teacher/integrity-flags/{flagId}/resolve(flagId=${flag.id})}"
+                method="post">
+            <input type="hidden" name="submissionId" th:value="${submission.id}">
+            <button name="status" value="CONFIRMED" type="submit">确认问题</button>
+            <button class="secondary-action" name="status" value="CLEARED" type="submit">排除线索</button>
+          </form>
         </article>
 
-        <article class="assistant-card" data-assistant-card>
-          <div class="card-labels">
-            <span class="card-label">方法与数据</span>
-            <span class="card-weight">量规 30 分</span>
-          </div>
-          <h3>样本说明不够完整</h3>
-          <blockquote>问卷通过班级群发放，最终获得有效样本 326 份。</blockquote>
-          <p class="card-explanation">提交只报告了有效样本量，没有说明回收率、筛选标准和样本构成。</p>
-          <div class="card-action-copy">
-            <span>建议反馈</span>
-            <p>请补充问卷回收率、有效样本筛选标准和受访者年级分布。</p>
-          </div>
-          <div class="card-buttons">
-            <button class="primary-action" type="button" data-card-action="adopt"
-                    data-rubric-name="方法与数据"
-                    data-evidence="问卷通过班级群发放，最终获得有效样本 326 份。"
-                    data-suggestion="5. 请在“研究方法”中补充问卷回收率、有效样本筛选标准和受访者年级分布。">写入意见</button>
-            <button class="secondary-action" type="button" data-card-action="dismiss"
-                    data-rubric-name="方法与数据">教师已核验</button>
-          </div>
-        </article>
-      </div>
-
-      <p class="assistant-foot">当前为静态量规提示，动态审核规则将在第三阶段接入。</p>
+        <details class="integrity-create">
+          <summary>＋ 记录新的可疑线索</summary>
+          <form th:action="@{/teacher/submissions/{id}/integrity-flags(id=${submission.id})}"
+                method="post">
+            <label class="field">
+              <span>类型</span>
+              <select name="category">
+                <option value="引用来源">引用来源</option>
+                <option value="署名或协作">署名或协作</option>
+                <option value="AI 使用声明">AI 使用声明</option>
+                <option value="内容重复">内容重复</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>严重程度</span>
+              <select name="severity">
+                <option value="LOW">低</option>
+                <option value="MEDIUM" selected>中</option>
+                <option value="HIGH">高</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>可疑证据</span>
+              <textarea name="evidence" rows="2" required placeholder="引用原文或指出具体位置"></textarea>
+            </label>
+            <label class="field">
+              <span>核验依据</span>
+              <textarea name="reason" rows="2" required placeholder="说明为何需要进一步核验"></textarea>
+            </label>
+            <button type="submit">保存为待核实线索</button>
+          </form>
+        </details>
+      </section>
     </aside>
 
     <div class="scrim" id="scrim" aria-hidden="true"></div>

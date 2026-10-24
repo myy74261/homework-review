@@ -42,12 +42,32 @@ public class Assignment {
     @Column(nullable = false, length = 20)
     private String status;
 
+    @Column(length = 20)
+    private String submissionFormat;
+
+    @Column(length = 30)
+    private String aiPolicy;
+
+    private Boolean aiDeclarationRequired;
+
+    private Boolean sourceDeclarationRequired;
+
+    private Boolean appealAllowed;
+
     protected Assignment() {
         // JPA 需要的无参构造方法
     }
 
     public Assignment(Long classroomId, String title, String courseName,
                       String instructions, Instant dueAt) {
+        this(classroomId, title, courseName, instructions, dueAt,
+                "DOCUMENT", "ASSISTED_ALLOWED", true, true, true);
+    }
+
+    public Assignment(Long classroomId, String title, String courseName,
+                      String instructions, Instant dueAt, String submissionFormat,
+                      String aiPolicy, boolean aiDeclarationRequired,
+                      boolean sourceDeclarationRequired, boolean appealAllowed) {
         this.classroomId = classroomId;
         this.title = title;
         this.courseName = courseName;
@@ -55,6 +75,11 @@ public class Assignment {
         this.dueAt = dueAt;
         this.publishedAt = Instant.now();
         this.status = "PUBLISHED";
+        this.submissionFormat = submissionFormat;
+        this.aiPolicy = aiPolicy;
+        this.aiDeclarationRequired = aiDeclarationRequired;
+        this.sourceDeclarationRequired = sourceDeclarationRequired;
+        this.appealAllowed = appealAllowed;
     }
 
     public Long getId() {
@@ -87,6 +112,26 @@ public class Assignment {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getSubmissionFormat() {
+        return submissionFormat == null ? "DOCUMENT" : submissionFormat;
+    }
+
+    public String getAiPolicy() {
+        return aiPolicy == null ? "ASSISTED_ALLOWED" : aiPolicy;
+    }
+
+    public boolean isAiDeclarationRequired() {
+        return Boolean.TRUE.equals(aiDeclarationRequired);
+    }
+
+    public boolean isSourceDeclarationRequired() {
+        return Boolean.TRUE.equals(sourceDeclarationRequired);
+    }
+
+    public boolean isAppealAllowed() {
+        return !Boolean.FALSE.equals(appealAllowed);
     }
 }
 

@@ -62,6 +62,23 @@ public class Submission {
     @Column
     private Instant reviewedAt;
 
+    @Column(length = 40)
+    private String aiUsage;
+
+    @Lob
+    private String aiTools;
+
+    @Lob
+    private String aiScope;
+
+    @Lob
+    private String sourceDeclaration;
+
+    @Lob
+    private String collaborationDeclaration;
+
+    private Boolean integrityConfirmed;
+
     protected Submission() {
         // JPA 需要的无参构造方法
     }
@@ -70,6 +87,18 @@ public class Submission {
                       String assignmentTitle, String courseName, String studentName,
                       String studentNumber, String content, int wordCount, int attemptNumber,
                       String attachmentName, Instant dueAt, Instant submittedAt) {
+        this(id, assignmentId, studentAccountId, assignmentTitle, courseName, studentName,
+                studentNumber, content, wordCount, attemptNumber, attachmentName, dueAt,
+                submittedAt, "NONE", null, null, null, null, false);
+    }
+
+    public Submission(Long id, Long assignmentId, Long studentAccountId,
+                      String assignmentTitle, String courseName, String studentName,
+                      String studentNumber, String content, int wordCount, int attemptNumber,
+                      String attachmentName, Instant dueAt, Instant submittedAt,
+                      String aiUsage, String aiTools, String aiScope,
+                      String sourceDeclaration, String collaborationDeclaration,
+                      boolean integrityConfirmed) {
         this.id = id;
         this.assignmentId = assignmentId;
         this.studentAccountId = studentAccountId;
@@ -84,6 +113,12 @@ public class Submission {
         this.dueAt = dueAt;
         this.submittedAt = submittedAt;
         this.reviewStatus = "PENDING";
+        this.aiUsage = aiUsage;
+        this.aiTools = aiTools;
+        this.aiScope = aiScope;
+        this.sourceDeclaration = sourceDeclaration;
+        this.collaborationDeclaration = collaborationDeclaration;
+        this.integrityConfirmed = integrityConfirmed;
     }
 
     public Long getId() {
@@ -152,6 +187,30 @@ public class Submission {
 
     public Instant getReviewedAt() {
         return reviewedAt;
+    }
+
+    public String getAiUsage() {
+        return aiUsage == null ? "NONE" : aiUsage;
+    }
+
+    public String getAiTools() {
+        return aiTools;
+    }
+
+    public String getAiScope() {
+        return aiScope;
+    }
+
+    public String getSourceDeclaration() {
+        return sourceDeclaration;
+    }
+
+    public String getCollaborationDeclaration() {
+        return collaborationDeclaration;
+    }
+
+    public boolean isIntegrityConfirmed() {
+        return Boolean.TRUE.equals(integrityConfirmed);
     }
 }
 

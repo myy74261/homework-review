@@ -48,6 +48,9 @@
     <p class="success-banner" th:if="${param.classroomCreated}">
       新课堂已创建，可以把课堂码分享给学生。
     </p>
+    <p class="success-banner" th:if="${appealMessage}" th:text="${appealMessage}">
+      申诉复核结果已保存。
+    </p>
 
     <section class="classroom-bar" th:if="${!classrooms.isEmpty()}">
       <div class="classroom-bar-head">
@@ -195,6 +198,65 @@
         </div>
       </aside>
     </div>
+
+    <section class="portal-section appeal-section" th:if="${!appeals.isEmpty()}">
+      <div class="portal-section-head">
+        <div>
+          <p class="eyebrow">反馈复核</p>
+          <h2>学生申诉队列</h2>
+        </div>
+        <span class="section-count" th:text="${appeals.size() + ' 条'}">1 条</span>
+      </div>
+      <div class="appeal-queue">
+        <article class="teacher-appeal-card"
+                 th:each="overview : ${appeals}"
+                 th:id="'appeal-' + ${overview.appeal.id}">
+          <div class="teacher-appeal-head">
+            <div>
+              <strong th:text="${overview.submission.studentName + ' · ' + overview.submission.assignmentTitle}">
+                林清和 · 课程论文
+              </strong>
+              <span th:text="${overview.appeal.status == 'SUBMITTED' ? '待受理'
+                                : (overview.appeal.status == 'UNDER_REVIEW' ? '复核中'
+                                : (overview.appeal.status == 'ACCEPTED' ? '已采纳' : '未采纳'))}">
+                待受理
+              </span>
+            </div>
+            <a th:href="@{/reviews/{id}(id=${overview.submission.id})}">打开作业审核</a>
+          </div>
+          <p th:text="${overview.appeal.reason}">学生申诉理由</p>
+          <p class="requested-resolution" th:if="${overview.appeal.requestedResolution}">
+            <strong>学生期望：</strong>
+            <span th:text="${overview.appeal.requestedResolution}">重新核对评分</span>
+          </p>
+          <div class="existing-appeal-response" th:if="${overview.appeal.teacherResponse}">
+            <strong>当前复核说明：</strong>
+            <span th:text="${overview.appeal.teacherResponse}">说明</span>
+          </div>
+          <form class="appeal-response-form"
+                th:action="@{/teacher/appeals/{id}/respond(id=${overview.appeal.id})}"
+                method="post">
+            <label class="field">
+              <span>复核结论</span>
+              <select name="status">
+                <option value="UNDER_REVIEW"
+                        th:selected="${overview.appeal.status == 'UNDER_REVIEW'}">继续复核</option>
+                <option value="ACCEPTED"
+                        th:selected="${overview.appeal.status == 'ACCEPTED'}">采纳申诉</option>
+                <option value="REJECTED"
+                        th:selected="${overview.appeal.status == 'REJECTED'}">维持原结果</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>复核说明</span>
+              <textarea name="teacherResponse" rows="2" required
+                        placeholder="说明核对了哪些证据，以及最终处理依据"></textarea>
+            </label>
+            <button type="submit">保存复核结果</button>
+          </form>
+        </article>
+      </div>
+    </section>
   </main>
   <script th:src="@{/js/portal.js}" defer></script>
 </body>

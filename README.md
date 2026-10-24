@@ -32,11 +32,18 @@
 
 - 注册、登录和退出，只能访问自己的课堂数据。
 - 创建课堂并生成唯一课堂码。
-- 发布作业，配置四项总分 100 分的评分量规。
+- 发布作业，选择文档、代码、截图/设计或混合提交形式。
+- 配置 1–10 项总分 100 分的动态评分量规。
+- 设置 AI 使用政策，并决定是否要求学生声明 AI、文献来源和协作情况。
 - 查看提交队列、审核状态和共性问题。
+- 查看学生上传的文档、源代码、压缩包或截图，并按附件权限安全下载。
+- 根据作业形式显示精简后的审核重点，减少重复检查。
 - 自动保存审核意见，检测版本冲突。
 - 创建反馈版本，逐行对比并恢复历史反馈。
 - 确认学生问题，保留原文证据和教师修改建议。
+- 根据已确认问题生成可解释的规则评分建议，教师可独立填写最终分。
+- 记录待核实的诚信线索，只有教师确认后才向学生展示。
+- 处理学生申诉，保留复核结论和教师说明。
 - 根据共性问题生成课堂目标、错例分析、追问和练习。
 - 编辑并自动保存备课稿，支持重新生成。
 - 导出 Word 兼容 `.doc` 和 Markdown 文档。
@@ -47,9 +54,11 @@
 - 注册、登录和退出。
 - 使用教师提供的课堂码加入课堂。
 - 查看教师发布的作业要求和评分量规。
-- 在线提交和重新提交作业。
+- 在线提交文字，并上传文档、代码、截图或压缩包。
+- 声明 AI 使用情况、工具、使用范围、文献与数据来源、协作情况。
 - 每次提交保留为独立记录。
-- 审核完成后查看教师最终反馈。
+- 审核完成后查看教师最终反馈、各维度评分和已确认的诚信核验结果。
+- 在教师开放申诉时提交异议，并查看复核状态与处理说明。
 
 ## 技术架构
 
@@ -66,18 +75,20 @@ Spring MVC
         │
 业务服务层
 ├── 账号与课堂
-├── 作业发布与学生提交
+├── 作业发布、混合附件与 AI 政策
 ├── 审核意见与历史版本
+├── 可解释评分、诚信核验与申诉
 ├── 问题汇总与备课建议
 └── 导出与访问边界校验
         │
 Spring Data JPA
-└── H2 文件数据库
+├── H2 文件数据库（本地开发）
+└── PostgreSQL（生产部署）
 ```
 
 | 模块 | 职责 |
 | --- | --- |
-| `domain` | 账号、课堂、作业、提交、审核、事件、问题与备课稿实体 |
+| `domain` | 账号、课堂、作业、提交、附件、评分、诚信核验、申诉、审核与备课实体 |
 | `repository` | JPA 仓储接口，集中声明数据访问方法 |
 | `service` | 业务规则、权限边界、版本控制、问题汇总与建议生成 |
 | `security` | Spring Security 用户加载、会话和角色路由 |
@@ -266,6 +277,9 @@ data/review-desk.mv.db
 - 备份网站数据时复制该数据库文件即可。
 - 清除演示数据时，先停止网站，再删除该文件；下次启动会自动重新初始化演示数据。
 
+学生提交附件默认保存在 `data/uploads/`。生产环境通过 `UPLOAD_ROOT`
+指定独立目录；数据库备份和上传目录需要同时备份。
+
 应用配置位于：
 
 ```text
@@ -286,7 +300,9 @@ src/main/resources/application.yml
 & "D:\Project\apache-maven-3.10.0\bin\mvn.cmd" -DskipTests package
 ```
 
-测试覆盖账号注册登录、角色隔离、课堂码加入、跨教师数据边界、作业发布、学生提交、审核保存、版本对比与恢复、问题汇总、备课生成编辑和文档导出。
+测试覆盖账号注册登录、角色隔离、课堂码加入、跨教师数据边界、动态量规、
+混合附件提交、AI 与来源声明校验、审核保存、版本对比与恢复、可解释评分、
+诚信核验可见性、学生申诉、问题汇总、备课生成编辑和文档导出。
 
 ## 主要接口
 
@@ -298,11 +314,17 @@ src/main/resources/application.yml
 | POST | `/student/join` | 使用课堂码加入课堂 |
 | POST | `/teacher/assignments` | 发布作业 |
 | POST | `/student/assignments/{id}/submissions` | 提交作业 |
+| GET | `/files/submissions/{id}/attachments/{attachmentId}` | 权限校验后读取附件 |
+| POST | `/teacher/submissions/{id}/scores` | 保存各维度最终评分 |
+| POST | `/teacher/submissions/{id}/integrity-flags` | 记录待核实诚信线索 |
+| POST | `/teacher/integrity-flags/{id}/resolve` | 确认或排除诚信线索 |
 | GET/PUT | `/api/submissions/{id}/review` | 读取或保存审核意见 |
 | POST | `/api/submissions/{id}/review/versions` | 创建反馈版本 |
 | GET | `/api/submissions/{id}/review/versions/{versionId}/diff` | 对比反馈版本 |
 | POST | `/api/submissions/{id}/review/complete` | 完成审核 |
 | POST | `/api/submissions/{id}/issues` | 保存教师确认的问题 |
+| POST | `/student/submissions/{id}/appeals` | 学生提交申诉 |
+| POST | `/teacher/appeals/{id}/respond` | 教师回复申诉 |
 | GET/PUT | `/api/assignments/{id}/lesson-plan` | 读取或保存备课稿 |
 | POST | `/api/assignments/{id}/lesson-plan/regenerate` | 重新生成备课稿 |
 | GET | `/teacher/assignments/{id}/lesson-plan/export.doc` | 导出 Word 兼容文档 |
@@ -325,6 +347,8 @@ src/main/resources/application.yml
 
 - 本地开发使用 H2，正式部署使用 Docker Compose 中的 PostgreSQL。
 - 课堂讲解建议由确定性规则和教师确认记录生成，不替代教师判断。
+- 当前评分建议为透明的规则计算，不调用外部大模型；建议分仅在教师确认问题后更新。
+- 诚信标记用于提示教师核验，不构成自动作弊判定；只有已确认结果向学生展示。
 - 临时公网隧道依赖第三方服务，不能作为长期生产部署方案。
 - 演示账号密码和本地化工具路径需要在正式发布前调整。
 

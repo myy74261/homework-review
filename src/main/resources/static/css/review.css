@@ -1400,3 +1400,261 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- 混合提交、评分建议与诚信核验 ---------- */
+
+.review-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.review-attachment-list > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.review-attachment-list a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--green-dark);
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.review-attachment-list small {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.integrity-declaration {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: var(--green-soft);
+}
+
+.integrity-declaration p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.review-guide {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--paper-warm);
+}
+
+.review-guide > span {
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.review-guide ol {
+  margin: 7px 0 0;
+  padding-left: 16px;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.7;
+}
+
+.score-suggestion-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.score-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.score-input input {
+  width: 74px;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: #fffefb;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.score-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.score-submit-row button,
+.integrity-create button,
+.integrity-flag-card form button {
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 9px;
+}
+
+.integrity-review {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.section-inline-head,
+.integrity-flag-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.section-inline-head h2 {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 17px;
+}
+
+.section-inline-head > span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.integrity-caution {
+  margin: 8px 0 11px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.65;
+}
+
+.integrity-flag-card {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #ead9ce;
+  border-radius: 10px;
+  background: #fffaf7;
+}
+
+.integrity-flag-head strong {
+  font-size: 10px;
+}
+
+.flag-status {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-size: 8px;
+}
+
+.flag-status.status-confirmed {
+  background: var(--rust-soft);
+  color: var(--rust);
+}
+
+.flag-status.status-cleared {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.integrity-flag-card p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.integrity-flag-card form {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.integrity-flag-card form .secondary-action {
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.integrity-create {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+}
+
+.integrity-create summary {
+  color: var(--green);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.integrity-create form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.integrity-create .field {
+  gap: 4px;
+}
+
+.integrity-create .field > span {
+  font-size: 8px;
+}
+
+.integrity-create input,
+.integrity-create select,
+.integrity-create textarea {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: #fffefb;
+  color: var(--ink);
+  font: inherit;
+  font-size: 9px;
+  resize: vertical;
+}
+
+@media (max-width: 899px) {
+  .integrity-declaration {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .score-submit-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
