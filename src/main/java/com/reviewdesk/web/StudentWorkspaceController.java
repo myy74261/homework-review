@@ -190,6 +190,14 @@ public class StudentWorkspaceController {
         return "redirect:/student/assignments/" + assignmentId;
     }
 
+    /**
+     * 浏览器刷新或直接打开提交接口时回到作业页，避免把只接受 POST 的地址显示成错误页。
+     */
+    @GetMapping("/student/assignments/{assignmentId}/submissions")
+    public String submissionRefresh(@PathVariable long assignmentId) {
+        return "redirect:/student/assignments/" + assignmentId;
+    }
+
     @PostMapping("/student/join")
     public String joinClassroom(@RequestParam String joinCode,
                                 Authentication authentication,

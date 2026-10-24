@@ -33,6 +33,9 @@ server:
         http-only: true
         secure: ${SESSION_COOKIE_SECURE:false}
         same-site: ${SESSION_COOKIE_SAME_SITE:lax}
+  error:
+    whitelabel:
+      enabled: false
 
 review-desk:
   storage:

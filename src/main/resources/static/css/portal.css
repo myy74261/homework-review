@@ -2101,6 +2101,96 @@ body.portal-page:not(.auth-page) {
   }
 }
 
+/* ---------- 友好错误页 ---------- */
+
+.error-shell {
+  width: min(760px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 34px 0 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.error-brand {
+  width: fit-content;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.error-card {
+  position: relative;
+  overflow: hidden;
+  margin-top: 24px;
+  padding: 46px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    radial-gradient(420px 260px at 100% 0, rgba(237, 246, 241, 0.95), transparent 72%),
+    var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.error-card h1 {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: clamp(30px, 6vw, 48px);
+  font-weight: 600;
+}
+
+.error-card > p:not(.eyebrow) {
+  max-width: 520px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.error-code {
+  position: absolute;
+  right: 32px;
+  top: 12px;
+  color: rgba(47, 114, 94, 0.08);
+  font-family: var(--font-reading);
+  font-size: 112px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.error-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.error-actions button {
+  min-height: 44px;
+  padding: 0 17px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+@media (max-width: 700px) {
+  .error-card {
+    padding: 30px 22px;
+  }
+
+  .error-code {
+    right: 18px;
+    font-size: 78px;
+  }
+
+  .error-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 700px) {
   .auth-page {
     place-items: start center;

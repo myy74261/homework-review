@@ -158,6 +158,24 @@ class AdvancedReviewFeaturesTest {
     }
 
     @Test
+    void refreshingSubmissionEndpointReturnsToAssignmentInsteadOf405() throws Exception {
+        mockMvc.perform(get("/student/assignments/1/submissions")
+                        .with(user("lin").roles("STUDENT")))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/student/assignments/1"));
+    }
+
+    @Test
+    void errorPageUsesFriendlyChineseFallback() throws Exception {
+        mockMvc.perform(get("/error")
+                        .requestAttr("jakarta.servlet.error.status_code", 405)
+                        .with(user("lin").roles("STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("操作方式不正确")))
+                .andExpect(content().string(containsString("返回我的工作台")));
+    }
+
+    @Test
     void suggestionsAreExplainableAndTeacherFinalScoresAreIndependent() throws Exception {
         mockMvc.perform(get("/reviews/1").with(user("chen").roles("TEACHER")))
                 .andExpect(status().isOk())
