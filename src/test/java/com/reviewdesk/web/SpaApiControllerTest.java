@@ -9,7 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.reviewdesk.domain.AiReviewRun;
+import com.reviewdesk.domain.AiReviewSuggestion;
 import com.reviewdesk.repository.AccountRepository;
+import com.reviewdesk.repository.AiReviewRunRepository;
+import com.reviewdesk.repository.AiReviewSuggestionRepository;
+import com.reviewdesk.repository.ReviewIssueRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,6 +40,15 @@ class SpaApiControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AiReviewRunRepository aiReviewRunRepository;
+
+    @Autowired
+    private AiReviewSuggestionRepository aiReviewSuggestionRepository;
+
+    @Autowired
+    private ReviewIssueRepository reviewIssueRepository;
 
     @Test
     void reactEntryAndTeacherSessionAreAvailable() throws Exception {
@@ -69,7 +83,9 @@ class SpaApiControllerTest {
                 .andExpect(jsonPath("$.submission.id").value(1))
                 .andExpect(jsonPath("$.review.revision").value(0))
                 .andExpect(jsonPath("$.scores.length()").value(4))
-                .andExpect(jsonPath("$.reviewChecklist.length()").isNotEmpty());
+                .andExpect(jsonPath("$.reviewChecklist.length()").isNotEmpty())
+                .andExpect(jsonPath("$.aiConfigured").value(false))
+                .andExpect(jsonPath("$.aiReviews.length()").value(0));
 
         mockMvc.perform(get("/api/app/teacher/assignments/1/lesson-plan")
                         .with(user("chen").roles("TEACHER")))
@@ -151,5 +167,49 @@ class SpaApiControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("当前密码不正确"));
+    }
+
+    @Test
+    void teacherCanReviewAiTraceAndExplicitlyAdoptSuggestion() throws Exception {
+        AiReviewRun run = aiReviewRunRepository.save(new AiReviewRun(
+                1L, "deepseek-chat", "模型认为引用需要进一步核对，最终由教师判断。"));
+        AiReviewSuggestion suggestion = aiReviewSuggestionRepository.save(
+                new AiReviewSuggestion(
+                        run.getId(),
+                        1L,
+                        "证据与引用",
+                        "已有研究表明，短视频使用会影响注意力恢复。",
+                        "该结论缺少可追溯来源，请教师核对后决定是否要求补充引用。",
+                        20));
+
+        mockMvc.perform(get("/api/app/teacher/reviews/1")
+                        .with(user("chen").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aiReviews[0].model").value("deepseek-chat"))
+                .andExpect(jsonPath("$.aiReviews[0].suggestions[0].status")
+                        .value("PENDING"))
+                .andExpect(jsonPath("$.aiReviews[0].suggestions[0].suggestedPoints")
+                        .value(20));
+
+        mockMvc.perform(post("/api/app/teacher/ai-review/suggestions/{id}/adopt",
+                                suggestion.getId())
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ADOPTED"));
+        org.assertj.core.api.Assertions.assertThat(
+                        reviewIssueRepository.countBySubmissionIdAndRubricName(
+                                1L, "证据与引用"))
+                .isEqualTo(2);
+    }
+
+    @Test
+    void aiGenerationReturnsClearConfigurationErrorWhenKeyIsMissing() throws Exception {
+        mockMvc.perform(post("/api/app/teacher/reviews/1/ai-review")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "AI 模型尚未配置，请在服务器设置 AI_API_KEY 后重启服务"));
     }
 }

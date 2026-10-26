@@ -19,6 +19,17 @@ try {
   const url = page.url();
   if (url.endsWith("/app/teacher")) {
     await page.getByRole("heading", { name: "从提交证据到备课素材" }).waitFor();
+    const dashboard = await page.evaluate(async () => {
+      const response = await fetch("/api/app/teacher/dashboard");
+      return response.json();
+    });
+    const submissionId = dashboard.submissions?.[0]?.id;
+    if (submissionId) {
+      await page.goto(`${baseUrl}/app/reviews/${submissionId}`);
+      await page
+        .getByRole("heading", { name: "建议由模型生成，结论由教师决定" })
+        .waitFor();
+    }
   } else {
     await page.getByRole("heading", { name: "我的作业" }).waitFor();
   }

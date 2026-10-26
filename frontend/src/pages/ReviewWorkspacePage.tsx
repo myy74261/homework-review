@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Bot,
   Check,
   FileText,
   Flag,
@@ -152,6 +153,36 @@ export function ReviewWorkspacePage() {
     mutationFn: () => api.saveVersion(id),
     onSuccess: async (version) => {
       notify(`已保存反馈版本 V${version.versionNumber}。`, "success");
+      await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const generateAiReview = useMutation({
+    mutationFn: () => api.generateAiReview(id),
+    onSuccess: async (run) => {
+      notify(`AI 预审完成，生成 ${run.suggestions.length} 条待核实建议。`, "success");
+      await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const adoptAiSuggestion = useMutation({
+    mutationFn: (suggestionId: number) => api.adoptAiSuggestion(suggestionId),
+    onSuccess: async (suggestion) => {
+      const separator = content.trim() ? "\n\n" : "";
+      setContent(`${content}${separator}【${suggestion.rubricName}】${suggestion.suggestion}`);
+      setDirty(true);
+      notify("已采纳为教师问题并写入反馈草稿，请继续人工核对。", "success");
+      await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const dismissAiSuggestion = useMutation({
+    mutationFn: (suggestionId: number) => api.dismissAiSuggestion(suggestionId),
+    onSuccess: async () => {
+      notify("已忽略该 AI 建议，处理记录仍会保留。", "info");
       await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
     },
     onError: (error: Error) => notify(error.message, "error"),
@@ -309,6 +340,110 @@ export function ReviewWorkspacePage() {
         </Card>
 
         <div className="space-y-4">
+          <Card className="border-pine-500/25 bg-gradient-to-br from-white to-pine-50/50">
+            <CardHeader>
+              <div>
+                <p className="page-eyebrow">AI 辅助预审</p>
+                <CardTitle className="mt-1">建议由模型生成，结论由教师决定</CardTitle>
+              </div>
+              <Bot className="size-5 text-pine-600" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
+                AI
+                只提供待核实线索，不会自动修改最终评分、反馈或诚信结论。教师采纳后才会转为教师问题。
+              </p>
+              {!data.aiConfigured ? (
+                <div className="rounded-xl border border-dashed border-line p-3 text-xs leading-6 text-muted">
+                  当前服务器尚未配置 AI 模型密钥。配置 `AI_API_KEY` 后，这里会出现“生成 AI
+                  预审”按钮。
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  className="w-full"
+                  disabled={generateAiReview.isPending || reviewed}
+                  onClick={() => generateAiReview.mutate()}
+                >
+                  <Bot className="size-3.5" />
+                  {generateAiReview.isPending
+                    ? "模型正在预审…"
+                    : data.aiReviews.length
+                      ? "重新生成 AI 预审"
+                      : "生成 AI 预审"}
+                </Button>
+              )}
+
+              {data.aiReviews.slice(0, 3).map((run, runIndex) => (
+                <section key={run.id} className="rounded-xl border border-line bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <strong className="text-xs">
+                        {runIndex === 0 ? "最新 AI 预审" : "历史 AI 预审"}
+                      </strong>
+                      <p className="mt-1 text-[11px] text-muted">
+                        {run.model} · {formatDate(run.createdAt)}
+                      </p>
+                    </div>
+                    <Badge tone="warning">AI 建议</Badge>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-stone-600">{run.summary}</p>
+                  <div className="mt-3 space-y-2">
+                    {run.suggestions.map((suggestion) => (
+                      <article
+                        key={suggestion.id}
+                        className="rounded-lg border border-line bg-stone-50 p-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <strong className="text-xs">{suggestion.rubricName}</strong>
+                          <span className="text-[10px] text-muted">
+                            {suggestion.status === "PENDING"
+                              ? "待教师决定"
+                              : suggestion.status === "ADOPTED"
+                                ? "已采纳"
+                                : suggestion.status === "DISMISSED"
+                                  ? "已忽略"
+                                  : "已被新预审替代"}
+                          </span>
+                        </div>
+                        <blockquote className="mt-2 border-l-2 border-clay-500/40 pl-2 text-[11px] leading-5 text-stone-600">
+                          “{suggestion.evidenceQuote}”
+                        </blockquote>
+                        <p className="mt-2 text-xs leading-5 text-stone-700">
+                          {suggestion.suggestion}
+                        </p>
+                        {suggestion.suggestedPoints != null ? (
+                          <span className="mt-2 inline-block rounded-md bg-white px-2 py-1 text-[10px] text-pine-700">
+                            AI 参考分：{suggestion.suggestedPoints}
+                          </span>
+                        ) : null}
+                        {suggestion.status === "PENDING" && !reviewed ? (
+                          <div className="mt-2 flex gap-2">
+                            <Button
+                              size="sm"
+                              disabled={adoptAiSuggestion.isPending}
+                              onClick={() => adoptAiSuggestion.mutate(suggestion.id)}
+                            >
+                              采纳为教师问题
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={dismissAiSuggestion.isPending}
+                              onClick={() => dismissAiSuggestion.mutate(suggestion.id)}
+                            >
+                              忽略
+                            </Button>
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div>

@@ -122,6 +122,25 @@ export interface Issue {
   createdAt: string;
 }
 
+export interface AiReviewSuggestion {
+  id: number;
+  rubricName: string;
+  evidenceQuote: string;
+  suggestion: string;
+  suggestedPoints: number | null;
+  status: "PENDING" | "ADOPTED" | "DISMISSED" | "SUPERSEDED";
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface AiReviewRun {
+  id: number;
+  model: string;
+  summary: string;
+  createdAt: string;
+  suggestions: AiReviewSuggestion[];
+}
+
 export interface AssignmentOverview {
   assignment: Assignment;
   submissionCount: number;
@@ -170,6 +189,8 @@ export interface TeacherReviewWorkspace {
   integrityFlags: IntegrityFlag[];
   issues: Issue[];
   reviewChecklist: string[];
+  aiConfigured: boolean;
+  aiReviews: AiReviewRun[];
 }
 
 export interface StudentAssignmentOverview {

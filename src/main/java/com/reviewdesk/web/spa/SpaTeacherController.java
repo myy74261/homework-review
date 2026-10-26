@@ -15,6 +15,7 @@ import com.reviewdesk.repository.ReviewIssueRepository;
 import com.reviewdesk.service.AccessControlService;
 import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AppealService;
+import com.reviewdesk.service.AiReviewService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
 import com.reviewdesk.service.IntegrityService;
@@ -58,6 +59,7 @@ public class SpaTeacherController {
     private final IntegrityService integrityService;
     private final SubmissionAttachmentService attachmentService;
     private final AppealService appealService;
+    private final AiReviewService aiReviewService;
     private final ReviewIssueRepository issueRepository;
     private final ReviewActivityService activityService;
     private final AccessControlService accessControlService;
@@ -73,6 +75,7 @@ public class SpaTeacherController {
             IntegrityService integrityService,
             SubmissionAttachmentService attachmentService,
             AppealService appealService,
+            AiReviewService aiReviewService,
             ReviewIssueRepository issueRepository,
             ReviewActivityService activityService,
             AccessControlService accessControlService,
@@ -86,6 +89,7 @@ public class SpaTeacherController {
         this.integrityService = integrityService;
         this.attachmentService = attachmentService;
         this.appealService = appealService;
+        this.aiReviewService = aiReviewService;
         this.issueRepository = issueRepository;
         this.activityService = activityService;
         this.accessControlService = accessControlService;
@@ -228,7 +232,38 @@ public class SpaTeacherController {
                                 List.of(submissionId)).stream()
                         .map(this::toIssue)
                         .toList(),
-                reviewChecklist(assignment.getSubmissionFormat()));
+                reviewChecklist(assignment.getSubmissionFormat()),
+                aiReviewService.isConfigured(),
+                aiReviewService.list(submissionId).stream()
+                        .map(this::toAiReview)
+                        .toList());
+    }
+
+    @PostMapping("/reviews/{submissionId}/ai-review")
+    public SpaViewModels.AiReviewRunView generateAiReview(
+            @PathVariable long submissionId,
+            Authentication authentication) {
+        return toAiReview(aiReviewService.generate(
+                authentication.getName(), submissionId));
+    }
+
+    @PostMapping("/ai-review/suggestions/{suggestionId}/adopt")
+    public SpaViewModels.AiReviewSuggestionView adoptAiSuggestion(
+            @PathVariable long suggestionId,
+            Authentication authentication,
+            @RequestBody(required = false) AiSuggestionDecisionRequest request) {
+        return toAiSuggestion(aiReviewService.adopt(
+                authentication.getName(),
+                suggestionId,
+                request == null ? null : request.teacherNote()));
+    }
+
+    @PostMapping("/ai-review/suggestions/{suggestionId}/dismiss")
+    public SpaViewModels.AiReviewSuggestionView dismissAiSuggestion(
+            @PathVariable long suggestionId,
+            Authentication authentication) {
+        return toAiSuggestion(aiReviewService.dismiss(
+                authentication.getName(), suggestionId));
     }
 
     @PutMapping("/submissions/{submissionId}/scores")
@@ -388,6 +423,31 @@ public class SpaTeacherController {
                 issue.getTeacherNote(), issue.getCreatedAt());
     }
 
+    private SpaViewModels.AiReviewRunView toAiReview(
+            AiReviewService.ReviewRunView review) {
+        return new SpaViewModels.AiReviewRunView(
+                review.run().getId(),
+                review.run().getModel(),
+                review.run().getSummary(),
+                review.run().getCreatedAt(),
+                review.suggestions().stream()
+                        .map(this::toAiSuggestion)
+                        .toList());
+    }
+
+    private SpaViewModels.AiReviewSuggestionView toAiSuggestion(
+            com.reviewdesk.domain.AiReviewSuggestion suggestion) {
+        return new SpaViewModels.AiReviewSuggestionView(
+                suggestion.getId(),
+                suggestion.getRubricName(),
+                suggestion.getEvidenceQuote(),
+                suggestion.getSuggestion(),
+                suggestion.getSuggestedPoints(),
+                suggestion.getStatus(),
+                suggestion.getCreatedAt(),
+                suggestion.getDecidedAt());
+    }
+
     private List<String> reviewChecklist(String submissionFormat) {
         return switch (submissionFormat) {
             case "CODE" -> List.of(
@@ -430,5 +490,8 @@ public class SpaTeacherController {
     public record AppealResponseRequest(
             @NotBlank String status,
             @NotBlank String teacherResponse) {
+    }
+
+    public record AiSuggestionDecisionRequest(String teacherNote) {
     }
 }

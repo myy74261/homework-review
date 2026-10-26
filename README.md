@@ -42,6 +42,8 @@
 - 自动保存审核意见，检测版本冲突。
 - 创建反馈版本，逐行对比并恢复历史反馈。
 - 确认学生问题，保留原文证据和教师修改建议。
+- 调用可选 AI 模型生成逐条预审建议，保存模型、时间和处理状态。
+- 教师逐条采纳或忽略 AI 建议；采纳后才转为教师确认问题并写入反馈草稿。
 - 根据已确认问题生成可解释的规则评分建议，教师可独立填写最终分。
 - 记录待核实的诚信线索，只有教师确认后才向学生展示。
 - 处理学生申诉，保留复核结论和教师说明。
@@ -317,7 +319,7 @@ src/main/resources/application.yml
 
 ### 可选 AI 模型配置
 
-项目默认使用可解释的确定性规则。若需要启用 AI 增强备课稿，在服务端配置
+项目默认使用可解释的确定性规则。配置模型后，可启用 AI 作业预审和 AI 增强备课稿；在服务端配置
 OpenAI 兼容接口：
 
 ```dotenv
@@ -328,6 +330,7 @@ AI_TIMEOUT_SECONDS=30
 ```
 
 密钥不得写入前端代码或提交到 Git。模型失败时系统自动回退到规则稿。
+AI 预审建议不会直接修改评分、最终反馈或诚信结论，只有教师主动采纳后才会进入教师问题记录。
 
 ## 测试与构建
 
@@ -376,6 +379,9 @@ npm run test:e2e
 | POST | `/student/submissions/{id}/appeals` | 学生提交申诉 |
 | POST | `/teacher/appeals/{id}/respond` | 教师回复申诉 |
 | PUT | `/api/app/account/password` | 教师或学生校验旧密码后修改密码 |
+| POST | `/api/app/teacher/reviews/{id}/ai-review` | 生成并留痕 AI 预审建议 |
+| POST | `/api/app/teacher/ai-review/suggestions/{id}/adopt` | 教师采纳 AI 建议 |
+| POST | `/api/app/teacher/ai-review/suggestions/{id}/dismiss` | 教师忽略 AI 建议 |
 | GET/PUT | `/api/assignments/{id}/lesson-plan` | 读取或保存备课稿 |
 | POST | `/api/assignments/{id}/lesson-plan/regenerate` | 重新生成备课稿 |
 | GET | `/teacher/assignments/{id}/lesson-plan/export.doc` | 导出 Word 兼容文档 |
@@ -398,7 +404,7 @@ npm run test:e2e
 
 - 本地开发使用 H2，正式部署使用 Docker Compose 中的 PostgreSQL。
 - 课堂讲解建议由确定性规则和教师确认记录生成，不替代教师判断。
-- 评分建议始终为透明的规则计算；备课稿在配置模型密钥后可选用 AI 润色，模型失败时回退到规则稿。
+- 评分建议始终由教师决定；AI 只生成待核实线索。AI 预审和备课增强必须配置模型密钥，调用失败时不会改变教师最终结果。
 - 诚信标记用于提示教师核验，不构成自动作弊判定；只有已确认结果向学生展示。
 - 临时公网隧道依赖第三方服务，不能作为长期生产部署方案。
 - 演示账号密码和本地化工具路径需要在正式发布前调整。

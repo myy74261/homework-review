@@ -89,6 +89,27 @@ public final class SpaViewModels {
                                  String assignmentTitle) {
     }
 
+    public record AiReviewSuggestionView(
+            long id,
+            String rubricName,
+            String evidenceQuote,
+            String suggestion,
+            Integer suggestedPoints,
+            String status,
+            Instant createdAt,
+            Instant decidedAt
+    ) {
+    }
+
+    public record AiReviewRunView(
+            long id,
+            String model,
+            String summary,
+            Instant createdAt,
+            List<AiReviewSuggestionView> suggestions
+    ) {
+    }
+
     public record TeacherDashboard(UserView user, List<ClassroomView> classrooms,
                                    List<AssignmentOverview> assignments,
                                    List<SubmissionOverview> submissions,
@@ -106,7 +127,9 @@ public final class SpaViewModels {
             Integer finalScoreTotal,
             List<IntegrityFlagView> integrityFlags,
             List<IssueView> issues,
-            List<String> reviewChecklist
+            List<String> reviewChecklist,
+            boolean aiConfigured,
+            List<AiReviewRunView> aiReviews
     ) {
     }
 

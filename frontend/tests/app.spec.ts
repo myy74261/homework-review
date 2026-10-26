@@ -15,6 +15,8 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
 
   await page.goto("/app/reviews/1");
+  await expect(page.getByRole("heading", { name: "建议由模型生成，结论由教师决定" })).toBeVisible();
+  await expect(page.getByText(/服务器尚未配置 AI 模型密钥/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "建议分与最终分" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "可疑线索" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "完整内容" })).toBeVisible();

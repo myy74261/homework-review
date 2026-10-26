@@ -1,5 +1,7 @@
 import { useAppStore } from "@/store/app-store";
 import type {
+  AiReviewRun,
+  AiReviewSuggestion,
   Appeal,
   Classroom,
   IntegrityFlag,
@@ -135,6 +137,17 @@ export const api = {
     request<Appeal>(`/api/app/teacher/appeals/${appealId}/respond`, {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  generateAiReview: (submissionId: number) =>
+    request<AiReviewRun>(`/api/app/teacher/reviews/${submissionId}/ai-review`, { method: "POST" }),
+  adoptAiSuggestion: (suggestionId: number, teacherNote?: string) =>
+    request<AiReviewSuggestion>(`/api/app/teacher/ai-review/suggestions/${suggestionId}/adopt`, {
+      method: "POST",
+      body: teacherNote ? JSON.stringify({ teacherNote }) : undefined,
+    }),
+  dismissAiSuggestion: (suggestionId: number) =>
+    request<AiReviewSuggestion>(`/api/app/teacher/ai-review/suggestions/${suggestionId}/dismiss`, {
+      method: "POST",
     }),
   lessonWorkspace: (assignmentId: number) =>
     request<LessonWorkspace>(`/api/app/teacher/assignments/${assignmentId}/lesson-plan`),
