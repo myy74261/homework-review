@@ -18,6 +18,50 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { ErrorState, Loading } from "@/components/ui/loading";
 
+const MAX_FILES = 8;
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const ALLOWED_EXTENSIONS = new Set([
+  "pdf",
+  "doc",
+  "docx",
+  "ppt",
+  "pptx",
+  "xls",
+  "xlsx",
+  "csv",
+  "rtf",
+  "odt",
+  "ods",
+  "odp",
+  "txt",
+  "md",
+  "java",
+  "py",
+  "js",
+  "ts",
+  "c",
+  "cpp",
+  "h",
+  "cs",
+  "go",
+  "rs",
+  "sql",
+  "json",
+  "xml",
+  "yml",
+  "yaml",
+  "ipynb",
+  "html",
+  "css",
+  "zip",
+  "rar",
+  "7z",
+  "png",
+  "jpg",
+  "jpeg",
+  "webp",
+]);
+
 export function StudentAssignmentPage() {
   const { assignmentId } = useParams();
   const id = Number(assignmentId);
@@ -95,6 +139,27 @@ export function StudentAssignmentPage() {
     },
     onError: (error: Error) => notify(error.message, "error"),
   });
+
+  function validateFiles() {
+    if (files.length > MAX_FILES) {
+      notify(`一次最多上传 ${MAX_FILES} 个附件。`, "error");
+      return false;
+    }
+    const unsupported = files.find((file) => {
+      const extension = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+      return !ALLOWED_EXTENSIONS.has(extension);
+    });
+    if (unsupported) {
+      notify(`不支持附件类型：${unsupported.name}`, "error");
+      return false;
+    }
+    const oversized = files.find((file) => file.size > MAX_FILE_BYTES);
+    if (oversized) {
+      notify(`附件 ${oversized.name} 超过 25 MB，请压缩后重试。`, "error");
+      return false;
+    }
+    return true;
+  }
 
   if (assignment.isLoading) return <Loading label="正在打开作业…" />;
   if (assignment.isError) {
@@ -328,6 +393,7 @@ export function StudentAssignmentPage() {
                 className="space-y-4"
                 onSubmit={(event) => {
                   event.preventDefault();
+                  if (!validateFiles()) return;
                   submit.mutate();
                 }}
               >
@@ -339,16 +405,26 @@ export function StudentAssignmentPage() {
                     placeholder="粘贴或输入完整作业内容……"
                   />
                 </Field>
-                <Field label="文档、代码或截图" hint="最多 8 个附件，单个不超过 10 MB。">
+                <Field label="文档、代码或截图" hint="最多 8 个附件，单个不超过 25 MB。">
                   <input
                     type="file"
                     name="files"
                     multiple
-                    accept=".pdf,.doc,.docx,.txt,.md,.java,.py,.js,.ts,.html,.css,.zip,.png,.jpg,.jpeg,.webp"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.rtf,.odt,.ods,.odp,.txt,.md,.java,.py,.js,.ts,.c,.cpp,.h,.cs,.go,.rs,.sql,.json,.xml,.yml,.yaml,.ipynb,.html,.css,.zip,.rar,.7z,.png,.jpg,.jpeg,.webp"
                     onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
                     className="block w-full rounded-xl border border-dashed border-line bg-stone-50 p-3 text-xs text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-pine-600 file:px-3 file:py-2 file:text-white"
                   />
                 </Field>
+                {files.length ? (
+                  <ul className="space-y-1 rounded-xl bg-pine-50 p-3 text-xs text-pine-700">
+                    {files.map((file) => (
+                      <li key={`${file.name}-${file.size}`} className="flex justify-between gap-3">
+                        <span className="truncate">{file.name}</span>
+                        <span className="shrink-0">{formatFileSize(file.size)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 <div className="space-y-3 rounded-xl bg-stone-50 p-4">
                   <h3 className="text-sm font-semibold">学术诚信与 AI 使用声明</h3>
                   <Field label="AI 使用情况">

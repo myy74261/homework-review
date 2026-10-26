@@ -96,8 +96,14 @@ class AdvancedReviewFeaturesTest {
                 "prototype.png",
                 "image/png",
                 "fake-png-content".getBytes(StandardCharsets.UTF_8));
+        MockMultipartFile slides = new MockMultipartFile(
+                "files",
+                "design-review.pptx",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "fake-pptx-content".getBytes(StandardCharsets.UTF_8));
         mockMvc.perform(multipart("/student/assignments/{id}/submissions", assignment.getId())
                         .file(screenshot)
+                        .file(slides)
                         .with(user("lin").roles("STUDENT"))
                         .with(csrf())
                         .param("content", "这是设计说明正文，包含用户场景、关键流程与验证结论。")
@@ -114,10 +120,14 @@ class AdvancedReviewFeaturesTest {
                         assignment.getId(), student().getId())
                 .orElseThrow();
         assertThat(attachmentRepository.findBySubmissionIdOrderByIdAsc(submission.getId()))
-                .singleElement()
-                .satisfies(attachment -> {
+                .hasSize(2)
+                .anySatisfy(attachment -> {
                     assertThat(attachment.getAttachmentKind()).isEqualTo("SCREENSHOT");
                     assertThat(attachment.getOriginalName()).isEqualTo("prototype.png");
+                })
+                .anySatisfy(attachment -> {
+                    assertThat(attachment.getAttachmentKind()).isEqualTo("DOCUMENT");
+                    assertThat(attachment.getOriginalName()).isEqualTo("design-review.pptx");
                 });
     }
 

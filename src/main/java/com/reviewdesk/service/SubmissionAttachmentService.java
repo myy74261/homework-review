@@ -28,20 +28,43 @@ import org.springframework.web.multipart.MultipartFile;
 public class SubmissionAttachmentService {
 
     private static final int MAX_FILES = 8;
-    private static final long MAX_FILE_BYTES = 10L * 1024 * 1024;
+    private static final long MAX_FILE_BYTES = 25L * 1024 * 1024;
     private static final Map<String, String> ALLOWED_EXTENSIONS = Map.ofEntries(
             Map.entry("pdf", "DOCUMENT"),
             Map.entry("doc", "DOCUMENT"),
             Map.entry("docx", "DOCUMENT"),
+            Map.entry("ppt", "DOCUMENT"),
+            Map.entry("pptx", "DOCUMENT"),
+            Map.entry("xls", "DOCUMENT"),
+            Map.entry("xlsx", "DOCUMENT"),
+            Map.entry("csv", "DOCUMENT"),
+            Map.entry("rtf", "DOCUMENT"),
+            Map.entry("odt", "DOCUMENT"),
+            Map.entry("ods", "DOCUMENT"),
+            Map.entry("odp", "DOCUMENT"),
             Map.entry("txt", "DOCUMENT"),
             Map.entry("md", "DOCUMENT"),
             Map.entry("java", "CODE"),
             Map.entry("py", "CODE"),
             Map.entry("js", "CODE"),
             Map.entry("ts", "CODE"),
+            Map.entry("c", "CODE"),
+            Map.entry("cpp", "CODE"),
+            Map.entry("h", "CODE"),
+            Map.entry("cs", "CODE"),
+            Map.entry("go", "CODE"),
+            Map.entry("rs", "CODE"),
+            Map.entry("sql", "CODE"),
+            Map.entry("json", "CODE"),
+            Map.entry("xml", "CODE"),
+            Map.entry("yml", "CODE"),
+            Map.entry("yaml", "CODE"),
+            Map.entry("ipynb", "CODE"),
             Map.entry("html", "CODE"),
             Map.entry("css", "CODE"),
             Map.entry("zip", "ARCHIVE"),
+            Map.entry("rar", "ARCHIVE"),
+            Map.entry("7z", "ARCHIVE"),
             Map.entry("png", "SCREENSHOT"),
             Map.entry("jpg", "SCREENSHOT"),
             Map.entry("jpeg", "SCREENSHOT"),
@@ -80,7 +103,7 @@ public class SubmissionAttachmentService {
                 throw new IllegalArgumentException("不支持的附件类型：" + extension);
             }
             if (file.getSize() > MAX_FILE_BYTES) {
-                throw new IllegalArgumentException("单个附件不能超过 10 MB");
+                throw new IllegalArgumentException("单个附件不能超过 25 MB");
             }
             extensions.add(extension);
         }

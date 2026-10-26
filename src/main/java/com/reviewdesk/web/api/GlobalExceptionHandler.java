@@ -9,6 +9,7 @@ import com.reviewdesk.service.SubmissionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -77,6 +78,14 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError unreadable(HttpMessageNotReadableException exception) {
         return ApiError.of("INVALID_JSON", "请求数据格式不正确");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError uploadTooLarge(MaxUploadSizeExceededException exception) {
+        return ApiError.of(
+                "UPLOAD_TOO_LARGE",
+                "上传内容超过服务器限制，请将单个文件控制在 25 MB 以内");
     }
 }
 

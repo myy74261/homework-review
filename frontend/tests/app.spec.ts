@@ -56,9 +56,15 @@ test("student can submit through the React async form", async ({ page }) => {
     .getByPlaceholder("粘贴或输入完整作业内容……")
     .fill("这是一份 React 端到端提交验证内容，用于确认异步上传和 CSRF 请求正常。");
   await page.getByPlaceholder("列出主要文献、数据来源和获取方式").fill("课程材料与个人整理");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "react-upload.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from("# React 文件上传验证\n\n这是一份用于端到端测试的附件。"),
+  });
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "提交修订版本" }).click();
   await expect(page.getByText("作业已提交，等待教师审核。")).toBeVisible();
+  await expect(page.getByText("react-upload.md")).toBeVisible();
 });
 
 test("authenticated user can change their password from account settings", async ({ page }) => {
