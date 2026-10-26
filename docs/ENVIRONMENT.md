@@ -72,6 +72,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `AI_BASE_URL` | `https://api.deepseek.com` | 模型 API 基地址 |
 | `AI_MODEL` | `deepseek-chat` | 模型名称 |
 | `AI_TIMEOUT_SECONDS` | `30` | 模型请求超时秒数 |
+| `AI_SETTINGS_SECRET` | 本地开发默认值 | 加密教师在页面中填写的 API Key；生产必须更换 |
 | `SHOW_DEMO_CREDENTIALS` | `true` | 登录页是否显示初始演示账号；生产环境应设为 `false` |
 | `DEMO_TEACHER_USERNAME` | `chen` | 首次启动创建的教师账号 |
 | `DEMO_TEACHER_PASSWORD` | `Teach1234` | 首次启动创建的教师密码 |
@@ -98,6 +99,7 @@ AI_API_KEY=
 AI_BASE_URL=https://api.deepseek.com
 AI_MODEL=deepseek-chat
 AI_TIMEOUT_SECONDS=30
+AI_SETTINGS_SECRET=change-this-local-encryption-secret
 
 DEMO_TEACHER_USERNAME=chen
 DEMO_TEACHER_PASSWORD=Teach1234
@@ -119,6 +121,7 @@ SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAME_SITE=lax
 THYMELEAF_CACHE=true
 AI_API_KEY=替换为服务端模型密钥
+AI_SETTINGS_SECRET=替换为长随机加密密钥
 ```
 
 注意：

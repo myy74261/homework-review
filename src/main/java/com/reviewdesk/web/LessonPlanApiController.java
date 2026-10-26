@@ -54,7 +54,8 @@ public class LessonPlanApiController {
     public LessonPlanResponse regenerate(@PathVariable long assignmentId,
                                          Authentication authentication) {
         accessControlService.requireTeacherAssignment(authentication.getName(), assignmentId);
-        LessonPlan plan = suggestionService.regenerate(assignmentId);
+        LessonPlan plan = suggestionService.regenerate(
+                assignmentId, authentication.getName());
         return LessonPlanResponse.from(
                 suggestionService.getOrCreateWorkspace(plan.getAssignmentId()));
     }

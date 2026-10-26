@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 /**
  * OpenAI 兼容的模型 API 适配层，默认可用于 DeepSeek 等服务。
  *
- * <p>密钥只保存在服务端环境变量中。模型输出只作为建议，最终判断由教师完成。</p>
+ * <p>密钥来自服务端环境变量或教师加密配置，不返回浏览器。模型输出只作为建议，最终判断由教师完成。</p>
  */
 @Service
 public class AiSuggestionClient {
@@ -57,6 +57,10 @@ public class AiSuggestionClient {
         return model;
     }
 
+    public ProviderConfig defaultProvider() {
+        return new ProviderConfig(apiKey, baseUrl, model, "SERVER", "ENVIRONMENT");
+    }
+
     /**
      * 让模型只基于教师确认的证据润色备课稿。任何失败都返回空结果。
      */
@@ -64,7 +68,21 @@ public class AiSuggestionClient {
                                               String submissionFormat,
                                               String deterministicDraft,
                                               String evidenceSummary) {
-        if (!isConfigured()) {
+        return enhanceLessonPlan(
+                defaultProvider(),
+                assignmentTitle,
+                submissionFormat,
+                deterministicDraft,
+                evidenceSummary);
+    }
+
+    public Optional<String> enhanceLessonPlan(
+            ProviderConfig config,
+            String assignmentTitle,
+            String submissionFormat,
+            String deterministicDraft,
+            String evidenceSummary) {
+        if (!config.configured()) {
             return Optional.empty();
         }
         String source = """
@@ -81,7 +99,7 @@ public class AiSuggestionClient {
                 submissionFormat,
                 limit(deterministicDraft),
                 limit(evidenceSummary));
-        return chat("""
+        return chat(config, """
                 你是教师的备课整理助手。只能依据用户提供的“教师确认证据”整理课堂建议，
                 不得新增学生事实、不得推断学生是否独立完成作业、不得直接判定学术不端。
                 输出应保留原有标题层级，包含课堂目标、共性问题、讲解步骤、追问和练习。
@@ -102,7 +120,31 @@ public class AiSuggestionClient {
             String sourceDeclaration,
             String collaborationDeclaration,
             String rubricSummary) {
-        if (!isConfigured()) {
+        return reviewSubmission(
+                defaultProvider(),
+                assignmentTitle,
+                submissionFormat,
+                submissionContent,
+                aiUsage,
+                aiTools,
+                aiScope,
+                sourceDeclaration,
+                collaborationDeclaration,
+                rubricSummary);
+    }
+
+    public Optional<ReviewResult> reviewSubmission(
+            ProviderConfig config,
+            String assignmentTitle,
+            String submissionFormat,
+            String submissionContent,
+            String aiUsage,
+            String aiTools,
+            String aiScope,
+            String sourceDeclaration,
+            String collaborationDeclaration,
+            String rubricSummary) {
+        if (!config.configured()) {
             return Optional.empty();
         }
         String source = """
@@ -129,7 +171,7 @@ public class AiSuggestionClient {
                 valueOrNone(collaborationDeclaration),
                 limit(rubricSummary),
                 limit(submissionContent));
-        Optional<String> raw = chat("""
+        Optional<String> raw = chat(config, """
                 你是教师的作业预审助手。你的结论只是候选意见，不能代替教师，也不能自动扣分。
                 只分析用户提供的作业正文，不得捏造引用、数据或学生信息。
                 只能依据给定评分量规，指出可核验的薄弱点，并引用学生原文作为证据。
@@ -178,19 +220,30 @@ public class AiSuggestionClient {
         }
     }
 
-    private Optional<String> chat(String systemPrompt, String userContent) {
+    public boolean testConnection(ProviderConfig config) {
+        if (!config.configured()) {
+            return false;
+        }
+        return chat(config, "你是连接测试助手，只回复 OK。", "回复 OK")
+                .map(content -> !content.isBlank())
+                .orElse(false);
+    }
+
+    private Optional<String> chat(ProviderConfig config,
+                                  String systemPrompt,
+                                  String userContent) {
         try {
             ObjectNode payload = objectMapper.createObjectNode();
-            payload.put("model", model);
+            payload.put("model", config.model());
             payload.put("temperature", 0.2);
             ArrayNode messages = payload.putArray("messages");
             messages.addObject().put("role", "system").put("content", systemPrompt);
             messages.addObject().put("role", "user").put("content", userContent);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/chat/completions"))
+                    .uri(URI.create(config.baseUrl() + "/chat/completions"))
                     .timeout(timeout)
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + config.apiKey())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(
                             objectMapper.writeValueAsString(payload)))
@@ -236,5 +289,17 @@ public class AiSuggestionClient {
 
     public record ReviewSuggestion(String rubricName, String evidenceQuote,
                                    String suggestion, Integer suggestedPoints) {
+    }
+
+    public record ProviderConfig(
+            String apiKey,
+            String baseUrl,
+            String model,
+            String source,
+            String provider
+    ) {
+        public boolean configured() {
+            return apiKey != null && !apiKey.isBlank();
+        }
     }
 }

@@ -1,21 +1,42 @@
-import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, KeyRound, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Bot, CheckCircle2, KeyRound, PlugZap, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 
 export function AccountPage() {
   const session = useAppStore((state) => state.session)!;
   const notify = useAppStore((state) => state.notify);
+  const queryClient = useQueryClient();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState("");
+  const [aiProvider, setAiProvider] = useState("");
+  const [aiModel, setAiModel] = useState("");
+  const [aiApiKey, setAiApiKey] = useState("");
+  const [aiInitialized, setAiInitialized] = useState(false);
+  const aiSettings = useQuery({
+    queryKey: ["ai-settings"],
+    queryFn: api.getAiSettings,
+    enabled: session.user.role === "TEACHER",
+  });
+
+  useEffect(() => {
+    if (!aiSettings.data || aiInitialized) return;
+    setAiProvider(
+      aiSettings.data.provider === "ENVIRONMENT"
+        ? (aiSettings.data.providers[0]?.code ?? "DEEPSEEK")
+        : aiSettings.data.provider,
+    );
+    setAiModel(aiSettings.data.model || "");
+    setAiInitialized(true);
+  }, [aiInitialized, aiSettings.data]);
 
   const changePassword = useMutation({
     mutationFn: () =>
@@ -31,6 +52,34 @@ export function AccountPage() {
       notify("密码已更新，下次登录时请使用新密码。", "success");
     },
     onError: (error: Error) => setFormError(error.message),
+  });
+
+  const saveAiSettings = useMutation({
+    mutationFn: () =>
+      api.saveAiSettings({
+        provider: aiProvider,
+        model: aiModel,
+        apiKey: aiApiKey,
+      }),
+    onSuccess: async (settings) => {
+      setAiApiKey("");
+      notify("AI 接口配置已加密保存。", "success");
+      await queryClient.invalidateQueries({ queryKey: ["ai-settings"] });
+      await queryClient.invalidateQueries({ queryKey: ["review-workspace"] });
+      if (settings.configured) setAiInitialized(false);
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const testAiSettings = useMutation({
+    mutationFn: () =>
+      api.testAiSettings({
+        provider: aiProvider,
+        model: aiModel,
+        apiKey: aiApiKey,
+      }),
+    onSuccess: (result) => notify(result.message, result.success ? "success" : "error"),
+    onError: (error: Error) => notify(error.message, "error"),
   });
 
   function submit(event: React.FormEvent) {
@@ -151,6 +200,118 @@ export function AccountPage() {
           </CardContent>
         </Card>
       </div>
+
+      {session.user.role === "TEACHER" ? (
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-pine-50 to-white">
+            <div>
+              <p className="page-eyebrow">教师专属配置</p>
+              <CardTitle className="mt-1">AI 接口设置</CardTitle>
+              <p className="mt-1 text-xs leading-5 text-muted">
+                学生端不可访问。API Key 使用 AES-GCM 加密保存，页面只显示末四位。
+              </p>
+            </div>
+            <Bot className="size-6 text-pine-600" />
+          </CardHeader>
+          <CardContent className="space-y-4 pt-5">
+            {aiSettings.isError ? (
+              <p className="rounded-xl bg-clay-50 p-3 text-sm text-clay-600">
+                {aiSettings.error.message}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge tone={aiSettings.data?.configured ? "default" : "warning"}>
+                {aiSettings.data?.configured ? "已接入" : "未接入"}
+              </Badge>
+              {aiSettings.data?.configured ? (
+                <span className="flex items-center gap-1 text-pine-700">
+                  <CheckCircle2 className="size-3.5" />
+                  {aiSettings.data.providerName} · {aiSettings.data.model} ·{" "}
+                  {aiSettings.data.maskedKey}
+                </span>
+              ) : (
+                <span className="text-muted">填写接口信息后才能生成 AI 预审建议。</span>
+              )}
+              {aiSettings.data?.source === "SERVER" ? (
+                <span className="text-muted">当前使用服务器环境变量配置</span>
+              ) : null}
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="模型服务">
+                <Select
+                  value={aiProvider}
+                  onChange={(event) => {
+                    const code = event.target.value;
+                    setAiProvider(code);
+                    const provider = aiSettings.data?.providers.find((item) => item.code === code);
+                    if (provider) setAiModel(provider.defaultModel);
+                  }}
+                >
+                  {(aiSettings.data?.providers ?? []).map((provider) => (
+                    <option key={provider.code} value={provider.code}>
+                      {provider.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="模型名称">
+                <Input
+                  value={aiModel}
+                  onChange={(event) => setAiModel(event.target.value)}
+                  placeholder="例如 deepseek-chat"
+                />
+              </Field>
+              <Field
+                label="API Key"
+                className="md:col-span-2"
+                hint={
+                  aiSettings.data?.configured
+                    ? "留空表示继续使用当前密钥；填写新值会覆盖旧密钥。"
+                    : "首次接入必须填写。密钥不会返回浏览器明文。"
+                }
+              >
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={aiApiKey}
+                  onChange={(event) => setAiApiKey(event.target.value)}
+                  placeholder={aiSettings.data?.configured ? "留空保持不变" : "输入 API Key"}
+                />
+              </Field>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                disabled={
+                  testAiSettings.isPending ||
+                  !aiProvider ||
+                  !aiModel ||
+                  (!aiApiKey && !aiSettings.data?.configured)
+                }
+                onClick={() => testAiSettings.mutate()}
+              >
+                <PlugZap className="size-4" />
+                {testAiSettings.isPending ? "测试中…" : "测试连接"}
+              </Button>
+              <Button
+                disabled={
+                  saveAiSettings.isPending ||
+                  !aiProvider ||
+                  !aiModel ||
+                  (!aiApiKey && !aiSettings.data?.configured)
+                }
+                onClick={() => saveAiSettings.mutate()}
+              >
+                {saveAiSettings.isPending ? "保存中…" : "加密保存配置"}
+              </Button>
+            </div>
+            <p className="rounded-xl bg-stone-50 p-3 text-xs leading-5 text-muted">
+              服务地址由后端白名单固定，避免教师配置被利用访问服务器内网。测试连接会向模型发送一条极短的“回复
+              OK”请求。
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

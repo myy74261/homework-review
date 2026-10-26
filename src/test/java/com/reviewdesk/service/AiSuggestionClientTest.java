@@ -67,6 +67,7 @@ class AiSuggestionClientTest {
                 assertThat(suggestion.rubricName()).isEqualTo("证据与引用");
                 assertThat(suggestion.suggestedPoints()).isEqualTo(20);
             });
+            assertThat(client.testConnection(client.defaultProvider())).isTrue();
         } finally {
             server.stop(0);
         }

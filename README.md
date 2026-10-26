@@ -319,7 +319,11 @@ src/main/resources/application.yml
 
 ### 可选 AI 模型配置
 
-项目默认使用可解释的确定性规则。配置模型后，可启用 AI 作业预审和 AI 增强备课稿；在服务端配置
+项目默认使用可解释的确定性规则。教师登录后可在“个人中心 → AI 接口设置”中选择
+DeepSeek、OpenAI、通义千问、智谱或 Moonshot，并填写自己的模型密钥。
+学生端不显示该配置入口，服务端也会拒绝学生访问教师 AI 配置接口。
+
+教师 API Key 使用 AES-GCM 加密后保存，页面只显示末四位。服务端也可以通过环境变量提供默认
 OpenAI 兼容接口：
 
 ```dotenv
@@ -327,6 +331,7 @@ AI_API_KEY=服务端模型密钥
 AI_BASE_URL=https://api.deepseek.com
 AI_MODEL=deepseek-chat
 AI_TIMEOUT_SECONDS=30
+AI_SETTINGS_SECRET=用于加密教师 API Key 的长随机字符串
 ```
 
 密钥不得写入前端代码或提交到 Git。模型失败时系统自动回退到规则稿。
@@ -379,6 +384,8 @@ npm run test:e2e
 | POST | `/student/submissions/{id}/appeals` | 学生提交申诉 |
 | POST | `/teacher/appeals/{id}/respond` | 教师回复申诉 |
 | PUT | `/api/app/account/password` | 教师或学生校验旧密码后修改密码 |
+| GET/PUT | `/api/app/teacher/ai-settings` | 教师读取或加密保存 AI 接口配置 |
+| POST | `/api/app/teacher/ai-settings/test` | 教师测试模型连接 |
 | POST | `/api/app/teacher/reviews/{id}/ai-review` | 生成并留痕 AI 预审建议 |
 | POST | `/api/app/teacher/ai-review/suggestions/{id}/adopt` | 教师采纳 AI 建议 |
 | POST | `/api/app/teacher/ai-review/suggestions/{id}/dismiss` | 教师忽略 AI 建议 |

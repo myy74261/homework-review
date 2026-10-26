@@ -16,6 +16,7 @@ import com.reviewdesk.service.AccessControlService;
 import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AppealService;
 import com.reviewdesk.service.AiReviewService;
+import com.reviewdesk.service.AiSettingsService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
 import com.reviewdesk.service.IntegrityService;
@@ -60,6 +61,7 @@ public class SpaTeacherController {
     private final SubmissionAttachmentService attachmentService;
     private final AppealService appealService;
     private final AiReviewService aiReviewService;
+    private final AiSettingsService aiSettingsService;
     private final ReviewIssueRepository issueRepository;
     private final ReviewActivityService activityService;
     private final AccessControlService accessControlService;
@@ -76,6 +78,7 @@ public class SpaTeacherController {
             SubmissionAttachmentService attachmentService,
             AppealService appealService,
             AiReviewService aiReviewService,
+            AiSettingsService aiSettingsService,
             ReviewIssueRepository issueRepository,
             ReviewActivityService activityService,
             AccessControlService accessControlService,
@@ -90,6 +93,7 @@ public class SpaTeacherController {
         this.attachmentService = attachmentService;
         this.appealService = appealService;
         this.aiReviewService = aiReviewService;
+        this.aiSettingsService = aiSettingsService;
         this.issueRepository = issueRepository;
         this.activityService = activityService;
         this.accessControlService = accessControlService;
@@ -233,7 +237,7 @@ public class SpaTeacherController {
                         .map(this::toIssue)
                         .toList(),
                 reviewChecklist(assignment.getSubmissionFormat()),
-                aiReviewService.isConfigured(),
+                aiReviewService.isConfigured(authentication.getName()),
                 aiReviewService.list(submissionId).stream()
                         .map(this::toAiReview)
                         .toList());
@@ -245,6 +249,33 @@ public class SpaTeacherController {
             Authentication authentication) {
         return toAiReview(aiReviewService.generate(
                 authentication.getName(), submissionId));
+    }
+
+    @GetMapping("/ai-settings")
+    public AiSettingsService.SettingsView aiSettings(Authentication authentication) {
+        return aiSettingsService.view(authentication.getName());
+    }
+
+    @PutMapping("/ai-settings")
+    public AiSettingsService.SettingsView saveAiSettings(
+            Authentication authentication,
+            @Valid @RequestBody AiSettingsRequest request) {
+        return aiSettingsService.save(
+                authentication.getName(),
+                request.provider(),
+                request.model(),
+                request.apiKey());
+    }
+
+    @PostMapping("/ai-settings/test")
+    public AiSettingsService.ConnectionResult testAiSettings(
+            Authentication authentication,
+            @RequestBody AiSettingsRequest request) {
+        return aiSettingsService.test(
+                authentication.getName(),
+                request.provider(),
+                request.model(),
+                request.apiKey());
     }
 
     @PostMapping("/ai-review/suggestions/{suggestionId}/adopt")
@@ -339,7 +370,7 @@ public class SpaTeacherController {
                         .map(group -> new SpaViewModels.LessonIssueGroup(
                                 group.rubricName(), group.count(), group.teacherNotes()))
                         .toList(),
-                suggestionService.isAiConfigured());
+                suggestionService.isAiConfigured(authentication.getName()));
     }
 
     private SpaViewModels.UserView toUser(Account account) {
@@ -493,5 +524,11 @@ public class SpaTeacherController {
     }
 
     public record AiSuggestionDecisionRequest(String teacherNote) {
+    }
+
+    public record AiSettingsRequest(
+            @NotBlank String provider,
+            String model,
+            String apiKey) {
     }
 }

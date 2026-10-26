@@ -141,6 +141,30 @@ export interface AiReviewRun {
   suggestions: AiReviewSuggestion[];
 }
 
+export interface AiProviderOption {
+  code: string;
+  name: string;
+  baseUrl: string;
+  defaultModel: string;
+}
+
+export interface AiSettings {
+  configured: boolean;
+  source: "TEACHER" | "SERVER";
+  provider: string;
+  providerName: string;
+  baseUrl: string;
+  model: string;
+  maskedKey: string;
+  updatedAt: string | null;
+  providers: AiProviderOption[];
+}
+
+export interface AiConnectionResult {
+  success: boolean;
+  message: string;
+}
+
 export interface AssignmentOverview {
   assignment: Assignment;
   submissionCount: number;

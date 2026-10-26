@@ -26,15 +26,18 @@ try {
     const submissionId = dashboard.submissions?.[0]?.id;
     if (submissionId) {
       await page.goto(`${baseUrl}/app/reviews/${submissionId}`);
-      await page
-        .getByRole("heading", { name: "建议由模型生成，结论由教师决定" })
-        .waitFor();
+      await page.getByRole("heading", { name: "建议由模型生成，结论由教师决定" }).waitFor();
     }
   } else {
     await page.getByRole("heading", { name: "我的作业" }).waitFor();
   }
   await page.goto(`${baseUrl}/app/account`);
   await page.getByRole("heading", { name: "个人中心" }).waitFor();
+  if (url.endsWith("/app/teacher")) {
+    await page.getByRole("heading", { name: "AI 接口设置" }).waitFor();
+  } else {
+    await page.getByRole("heading", { name: "AI 接口设置" }).waitFor({ state: "detached" });
+  }
   console.log(`Production React smoke test passed: ${new URL(url).pathname}`);
 } finally {
   await browser.close();

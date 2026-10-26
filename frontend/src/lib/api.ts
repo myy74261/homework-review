@@ -2,6 +2,8 @@ import { useAppStore } from "@/store/app-store";
 import type {
   AiReviewRun,
   AiReviewSuggestion,
+  AiSettings,
+  AiConnectionResult,
   Appeal,
   Classroom,
   IntegrityFlag,
@@ -162,6 +164,17 @@ export const api = {
         body: JSON.stringify(payload),
       },
     ),
+  getAiSettings: () => request<AiSettings>("/api/app/teacher/ai-settings"),
+  saveAiSettings: (payload: { provider: string; model: string; apiKey: string }) =>
+    request<AiSettings>("/api/app/teacher/ai-settings", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  testAiSettings: (payload: { provider: string; model: string; apiKey: string }) =>
+    request<AiConnectionResult>("/api/app/teacher/ai-settings/test", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   regenerateLessonPlan: (assignmentId: number) =>
     request<{ revision: number; updatedAt: string }>(
       `/api/assignments/${assignmentId}/lesson-plan/regenerate`,

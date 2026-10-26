@@ -14,6 +14,7 @@ import com.reviewdesk.domain.AiReviewSuggestion;
 import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.repository.AiReviewRunRepository;
 import com.reviewdesk.repository.AiReviewSuggestionRepository;
+import com.reviewdesk.repository.AiProviderSettingRepository;
 import com.reviewdesk.repository.ReviewIssueRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,9 @@ class SpaApiControllerTest {
 
     @Autowired
     private ReviewIssueRepository reviewIssueRepository;
+
+    @Autowired
+    private AiProviderSettingRepository aiProviderSettingRepository;
 
     @Test
     void reactEntryAndTeacherSessionAreAvailable() throws Exception {
@@ -210,6 +214,38 @@ class SpaApiControllerTest {
                         .with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(
-                        "AI 模型尚未配置，请在服务器设置 AI_API_KEY 后重启服务"));
+                        "AI 模型尚未配置，请在教师端“个人中心 → AI 接口设置”中接入"));
+    }
+
+    @Test
+    void teacherCanStoreEncryptedAiProviderConfiguration() throws Exception {
+        mockMvc.perform(get("/api/app/teacher/ai-settings")
+                        .with(user("chen").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configured").value(false))
+                .andExpect(jsonPath("$.providers.length()").value(5));
+
+        mockMvc.perform(put("/api/app/teacher/ai-settings")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "DEEPSEEK",
+                                  "model": "deepseek-chat",
+                                  "apiKey": "test-secret-api-key-1234"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configured").value(true))
+                .andExpect(jsonPath("$.source").value("TEACHER"))
+                .andExpect(jsonPath("$.providerName").value("DeepSeek"))
+                .andExpect(jsonPath("$.maskedKey").value("••••1234"));
+
+        var teacher = accountRepository.findByUsername("chen").orElseThrow();
+        var stored = aiProviderSettingRepository
+                .findByTeacherId(teacher.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(stored.getEncryptedApiKey())
+                .doesNotContain("test-secret-api-key-1234");
     }
 }

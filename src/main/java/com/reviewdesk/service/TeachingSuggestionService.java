@@ -32,17 +32,20 @@ public class TeachingSuggestionService {
     private final ReviewIssueRepository issueRepository;
     private final LessonPlanRepository planRepository;
     private final AiSuggestionClient aiSuggestionClient;
+    private final AiSettingsService aiSettingsService;
 
     public TeachingSuggestionService(AssignmentService assignmentService,
                                      SubmissionRepository submissionRepository,
                                      ReviewIssueRepository issueRepository,
                                      LessonPlanRepository planRepository,
-                                     AiSuggestionClient aiSuggestionClient) {
+                                     AiSuggestionClient aiSuggestionClient,
+                                     AiSettingsService aiSettingsService) {
         this.assignmentService = assignmentService;
         this.submissionRepository = submissionRepository;
         this.issueRepository = issueRepository;
         this.planRepository = planRepository;
         this.aiSuggestionClient = aiSuggestionClient;
+        this.aiSettingsService = aiSettingsService;
     }
 
     @Transactional
@@ -80,12 +83,23 @@ public class TeachingSuggestionService {
      */
     @Transactional
     public LessonPlan regenerate(long assignmentId) {
+        return regenerate(assignmentId, aiSuggestionClient.defaultProvider());
+    }
+
+    @Transactional
+    public LessonPlan regenerate(long assignmentId, String teacherUsername) {
+        return regenerate(assignmentId, aiSettingsService.resolve(teacherUsername));
+    }
+
+    private LessonPlan regenerate(
+            long assignmentId, AiSuggestionClient.ProviderConfig provider) {
         Assignment assignment = assignmentService.requireAssignment(assignmentId);
         List<AssignmentRubric> rubrics = assignmentService.listRubrics(assignmentId);
         List<EvidenceView> evidence = loadEvidence(assignmentId);
         LessonPlan plan = requirePlan(assignmentId);
         String deterministic = generate(assignment, rubrics, evidence);
         String content = aiSuggestionClient.enhanceLessonPlan(
+                        provider,
                         assignment.getTitle(),
                         assignment.getSubmissionFormat(),
                         deterministic,
@@ -102,8 +116,8 @@ public class TeachingSuggestionService {
         return planRepository.save(plan);
     }
 
-    public boolean isAiConfigured() {
-        return aiSuggestionClient.isConfigured();
+    public boolean isAiConfigured(String teacherUsername) {
+        return aiSettingsService.resolve(teacherUsername).configured();
     }
 
     private LessonPlan requirePlan(long assignmentId) {

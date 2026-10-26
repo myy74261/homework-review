@@ -30,6 +30,7 @@ public class AiReviewService {
     private final AssignmentService assignmentService;
     private final ReviewIssueService issueService;
     private final ReviewActivityService activityService;
+    private final AiSettingsService settingsService;
 
     public AiReviewService(
             AiSuggestionClient client,
@@ -39,7 +40,8 @@ public class AiReviewService {
             ReviewService reviewService,
             AssignmentService assignmentService,
             ReviewIssueService issueService,
-            ReviewActivityService activityService) {
+            ReviewActivityService activityService,
+            AiSettingsService settingsService) {
         this.client = client;
         this.runRepository = runRepository;
         this.suggestionRepository = suggestionRepository;
@@ -48,10 +50,11 @@ public class AiReviewService {
         this.assignmentService = assignmentService;
         this.issueService = issueService;
         this.activityService = activityService;
+        this.settingsService = settingsService;
     }
 
-    public boolean isConfigured() {
-        return client.isConfigured();
+    public boolean isConfigured(String teacherUsername) {
+        return settingsService.isConfigured(teacherUsername);
     }
 
     public List<ReviewRunView> list(long submissionId) {
@@ -64,9 +67,11 @@ public class AiReviewService {
 
     @Transactional
     public ReviewRunView generate(String teacherUsername, long submissionId) {
-        if (!client.isConfigured()) {
+        AiSuggestionClient.ProviderConfig provider =
+                settingsService.resolve(teacherUsername);
+        if (!provider.configured()) {
             throw new IllegalStateException(
-                    "AI 模型尚未配置，请在服务器设置 AI_API_KEY 后重启服务");
+                    "AI 模型尚未配置，请在教师端“个人中心 → AI 接口设置”中接入");
         }
         accessControlService.requireTeacherSubmission(teacherUsername, submissionId);
         Submission submission = reviewService.requireSubmission(submissionId);
@@ -82,6 +87,7 @@ public class AiReviewService {
                 .orElse("");
 
         AiSuggestionClient.ReviewResult result = client.reviewSubmission(
+                        provider,
                         assignment.getTitle(),
                         assignment.getSubmissionFormat(),
                         submission.getContent(),
@@ -100,7 +106,7 @@ public class AiReviewService {
                     suggestionRepository.save(suggestion);
                 });
         AiReviewRun run = runRepository.save(new AiReviewRun(
-                submissionId, client.getModel(), result.summary()));
+                submissionId, provider.model(), result.summary()));
         List<AiReviewSuggestion> suggestions = result.suggestions().stream()
                 .map(item -> toSuggestion(run, submissionId, rubrics, item))
                 .flatMap(Optional::stream)
@@ -112,7 +118,7 @@ public class AiReviewService {
         activityService.record(
                 submissionId,
                 "AI_REVIEW_GENERATED",
-                client.getModel() + " 生成 " + suggestions.size() + " 条预审建议");
+                provider.model() + " 生成 " + suggestions.size() + " 条预审建议");
         return new ReviewRunView(run, suggestions);
     }
 
