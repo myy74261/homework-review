@@ -197,11 +197,7 @@ export function StudentAssignmentPage() {
         </div>
       </section>
 
-      <div
-        className={
-          latest ? "grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]" : "grid gap-4"
-        }
-      >
+      <div className={latest ? "grid items-start gap-4 xl:grid-cols-2" : "grid gap-4"}>
         <div className="order-2 space-y-4">
           {latest ? (
             <Card>
@@ -359,10 +355,8 @@ export function StudentAssignmentPage() {
               </CardContent>
             </Card>
           ) : null}
-        </div>
 
-        <div className="order-1 flex flex-col gap-4">
-          <Card className="order-2 h-fit">
+          <Card className="h-fit">
             <CardHeader>
               <div>
                 <p className="page-eyebrow">评分量规</p>
@@ -382,8 +376,10 @@ export function StudentAssignmentPage() {
               ))}
             </CardContent>
           </Card>
+        </div>
 
-          <Card className="order-1">
+        <div className="order-1">
+          <Card>
             <CardHeader>
               <div>
                 <p className="page-eyebrow">{latest ? "再次提交" : "在线提交"}</p>
