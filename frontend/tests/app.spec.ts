@@ -62,7 +62,16 @@ test("teacher can withdraw, edit and republish an assignment", async ({ page }) 
 test("student React workspace renders assignment and submission details", async ({ page }) => {
   await login(page, "lin", "Student1234");
   await expect(page).toHaveURL(/\/app\/student$/);
-  await expect(page.getByRole("heading", { name: "我的作业" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "我加入的课堂" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "待办任务", exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /全部课堂/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  const classroomTab = page.getByRole("tab", { name: /传播学方法课/ });
+  await classroomTab.click();
+  await expect(classroomTab).toHaveAttribute("aria-selected", "true");
+  await page.screenshot({ path: "test-results/student-home.png", fullPage: true });
 
   await page.goto("/app/student/assignments/1");
   await expect(page.getByText("评分量规")).toBeVisible();
@@ -77,7 +86,7 @@ test("student React workspace renders assignment and submission details", async 
 test("student workspace remains usable on a phone viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page, "lin", "Student1234");
-  await expect(page.getByRole("heading", { name: "我的作业" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "待办任务", exact: true })).toBeVisible();
   await page.goto("/app/student/assignments/1");
   await expect(page.getByRole("heading", { name: "评分标准" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "提交修订版本" })).toBeVisible();
