@@ -14,24 +14,24 @@
         <span class="brand-seal" aria-hidden="true">鉴</span>
         <span class="brand-copy">
           <strong>明鉴</strong>
-          <small>智慧教学闭环</small>
+          <small>作业审核平台</small>
         </span>
       </a>
       <div>
-        <p class="eyebrow">从教学证据到课堂行动</p>
-        <h1>让教师看清问题，<br>让学生看见依据。</h1>
-        <p>教师管理课堂与备课建议，学生加入课堂并提交作业。每个角色只访问自己的教学数据。</p>
+          <p class="eyebrow">教学与反馈</p>
+          <h1>作业审核与<br>学习反馈</h1>
+          <p>教师创建课堂、发布作业并完成审核；学生加入课堂、提交作业并查看反馈。</p>
       </div>
       <div class="auth-flow">
-        <span>发布作业</span><i>→</i><span>学生提交</span><i>→</i><span>教师审核</span><i>→</i><span>备课导出</span>
+        <span>发布作业</span><i>→</i><span>学生提交</span><i>→</i><span>教师审核</span><i>→</i><span>导出备课</span>
       </div>
     </section>
 
     <section class="auth-card">
       <div class="auth-card-head">
         <p class="eyebrow">账号登录</p>
-        <h2>进入你的课堂</h2>
-        <p>教师和学生使用同一入口，系统会自动识别角色。</p>
+        <h2>登录账号</h2>
+        <p>教师和学生使用同一个登录入口。</p>
       </div>
 
       <p class="error-banner" th:if="${param.error}">账号或密码不正确，请重新输入。</p>
@@ -49,7 +49,7 @@
           <span>密码</span>
           <input type="password" name="password" autocomplete="current-password" required>
         </label>
-        <button class="auth-submit" type="submit">登录并进入课堂</button>
+        <button class="auth-submit" type="submit">登录</button>
       </form>
 
       <p class="auth-switch">还没有账号？<a th:href="@{/register}">创建教师或学生账号</a></p>

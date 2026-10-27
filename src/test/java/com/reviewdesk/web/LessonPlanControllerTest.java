@@ -43,7 +43,7 @@ class LessonPlanControllerTest {
     void lessonPlanPageRendersWithEvidence() throws Exception {
         mockMvc.perform(get("/teacher/assignments/1/lesson-plan"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("可解释备课建议")))
+                .andExpect(content().string(containsString("备课建议")))
                 .andExpect(content().string(containsString("证据链")))
                 .andExpect(content().string(containsString("典型错例与证据")))
                 .andExpect(content().string(containsString("请为“已有研究表明”补充具体文献来源")));

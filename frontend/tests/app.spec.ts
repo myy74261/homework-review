@@ -4,34 +4,34 @@ async function login(page: import("@playwright/test").Page, username: string, pa
   await page.goto("/login");
   await page.getByLabel("账号").fill(username);
   await page.getByLabel("密码").fill(password);
-  await page.getByRole("button", { name: "登录并进入课堂" }).click();
+  await page.getByRole("button", { name: "登录", exact: true }).click();
 }
 
 test("teacher React workspace renders dashboard, review and lesson pages", async ({ page }) => {
   await login(page, "chen", "Teach1234");
   await expect(page).toHaveURL(/\/app\/teacher$/);
-  await expect(page.getByRole("heading", { name: "从提交证据到备课素材" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "作业审核与课堂反馈" })).toBeVisible();
   await expect(page.getByRole("tab", { name: /概览/ })).toHaveAttribute("aria-selected", "true");
   await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
 
   await page.getByRole("tab", { name: /作业管理/ }).click();
   await expect(page.getByRole("heading", { name: "已发布作业" })).toBeVisible();
-  await page.getByRole("tab", { name: /AI 批审/ }).click();
-  await expect(page.getByRole("heading", { name: "AI 批量预审" })).toBeVisible();
-  await expect(page.getByText(/作业截止后自动排队，无需教师手动启动|尚未接入模型/)).toBeVisible();
+  await page.getByRole("tab", { name: /AI 预审/ }).click();
+  await expect(page.getByRole("heading", { name: "批量预审进度" })).toBeVisible();
+  await expect(page.getByText(/作业截止后自动开始|尚未接入模型/)).toBeVisible();
 
   await page.goto("/app/reviews/1");
-  await expect(page.getByRole("heading", { name: "建议由模型生成，结论由教师决定" })).toBeVisible();
-  await expect(page.getByText(/服务器尚未配置 AI 模型密钥/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "建议分与最终分" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "可疑线索" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "完整内容" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "预审建议" })).toBeVisible();
+  await expect(page.getByText(/当前未配置 AI 接口/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "评分建议" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "诚信核验" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "提交内容" })).toBeVisible();
   const editor = page.getByLabel("教师审核意见正文");
   await editor.fill(`${await editor.inputValue()}\n\nReact 审核台自动保存验证。`);
   await expect(page.getByText(/已保存 ·/)).toBeVisible();
 
   await page.goto("/app/teacher/assignments/1/lesson-plan");
-  await expect(page.getByText("备课工作台")).toBeVisible();
+  await expect(page.getByText("备课建议")).toBeVisible();
   await expect(page.getByText("规则生成模式").or(page.getByText("AI 增强已启用"))).toBeVisible();
 });
 
@@ -52,7 +52,7 @@ test("student workspace remains usable on a phone viewport", async ({ page }) =>
   await login(page, "lin", "Student1234");
   await expect(page.getByRole("heading", { name: "我的作业" })).toBeVisible();
   await page.goto("/app/student/assignments/1");
-  await expect(page.getByRole("heading", { name: "评价依据" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "评分标准" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "提交修订版本" })).toBeVisible();
   await page.screenshot({ path: "test-results/student-mobile.png", fullPage: true });
 });

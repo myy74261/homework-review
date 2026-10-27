@@ -95,10 +95,10 @@ export function PublishAssignmentPage() {
       <section>
         <p className="page-eyebrow">发布作业</p>
         <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
-          先定义任务，再开始收集证据
+          创建新的课程作业
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-          评分量规会同步到学生端，并成为共性问题汇总、评分建议与备课素材的依据。
+          设置提交要求、截止时间和评分标准。发布后学生即可查看并提交。
         </p>
       </section>
 
@@ -211,7 +211,7 @@ export function PublishAssignmentPage() {
             <CardHeader>
               <div>
                 <p className="page-eyebrow">02 · 评分量规</p>
-                <CardTitle className="mt-1">动态评分维度</CardTitle>
+                <CardTitle className="mt-1">评分项目</CardTitle>
                 <p className="mt-1 text-xs text-muted">支持 1–10 个维度，总分必须为 100。</p>
               </div>
               <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs">

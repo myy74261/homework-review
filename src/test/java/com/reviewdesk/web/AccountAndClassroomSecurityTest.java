@@ -42,7 +42,7 @@ class AccountAndClassroomSecurityTest {
     void demoTeacherCanLogIn() throws Exception {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("进入你的课堂")));
+                .andExpect(content().string(containsString("登录账号")));
 
         mockMvc.perform(formLogin("/login")
                         .user("chen")

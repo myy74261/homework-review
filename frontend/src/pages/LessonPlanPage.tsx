@@ -71,7 +71,7 @@ export function LessonPlanPage() {
 
       <section className="flex flex-col justify-between gap-4 rounded-[26px] border border-line bg-white/85 p-6 shadow-card lg:flex-row lg:items-end">
         <div>
-          <p className="page-eyebrow">备课工作台</p>
+          <p className="page-eyebrow">备课建议</p>
           <h1 className="mt-2 font-display text-3xl font-semibold">{data.assignment.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {data.evidenceCount} 条教师确认证据 · 最后更新 {formatDate(data.updatedAt)} ·{" "}
@@ -131,7 +131,7 @@ export function LessonPlanPage() {
           <Card>
             <CardHeader>
               <div>
-                <p className="page-eyebrow">证据依据</p>
+                <p className="page-eyebrow">问题汇总</p>
                 <CardTitle className="mt-1">共性问题</CardTitle>
               </div>
               <Badge>{data.issueGroups.length} 类</Badge>
@@ -163,8 +163,8 @@ export function LessonPlanPage() {
           <Card className="bg-pine-50/70">
             <CardContent className="pt-5 text-xs leading-6 text-pine-700">
               {data.aiConfigured
-                ? "AI 仅基于教师确认的证据润色备课稿，不新增学生事实，也不会自动评价学生是否独立完成作业。"
-                : "当前未配置模型密钥，备课稿由确定性规则整理教师确认的证据生成，不会自动评价学生是否独立完成作业。"}
+                ? "AI 根据教师确认的问题整理备课稿，最终内容由教师修改后使用。"
+                : "当前使用规则整理教师确认的问题，最终内容由教师修改后使用。"}
             </CardContent>
           </Card>
         </aside>

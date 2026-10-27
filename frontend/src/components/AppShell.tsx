@@ -43,7 +43,7 @@ export function AppShell() {
             <span>
               <strong className="block font-display text-lg leading-tight">明鉴</strong>
               <small className="hidden text-[11px] tracking-[0.16em] text-muted sm:block">
-                智慧教学工作台
+                作业审核平台
               </small>
             </span>
           </button>

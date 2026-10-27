@@ -80,18 +80,18 @@ export function TeacherDashboardPage() {
         </div>
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div>
-            <p className="page-eyebrow">智慧教学闭环</p>
+            <p className="page-eyebrow">教学概览</p>
             <h1 className="mt-2 max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              从提交证据到备课素材
+              作业审核与课堂反馈
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-              先确认学生作业中的共性问题，再让平台整理为可编辑的课堂讲解建议。最终判断始终由教师完成。
+              查看学生提交，完成作业审核，并整理课堂反馈。
             </p>
           </div>
           <Button asChild size="lg">
             <Link to="/teacher/assignments/new">
               <Plus className="size-4" />
-              发布新作业
+              发布作业
             </Link>
           </Button>
         </div>
@@ -117,10 +117,10 @@ export function TeacherDashboardPage() {
               icon: ClipboardCheck,
               count: pendingCount,
             },
-            { id: "ai", label: "AI 批审", icon: Bot, count: null },
+            { id: "ai", label: "AI 预审", icon: Bot, count: null },
             {
               id: "appeals",
-              label: "申诉处理",
+              label: "申诉",
               icon: MessageSquareWarning,
               count: data.appeals.length,
             },
@@ -170,19 +170,19 @@ export function TeacherDashboardPage() {
                   {
                     label: "学生提交",
                     value: data.submissions.length,
-                    detail: "全部提交记录",
+                    detail: "提交记录",
                     icon: ClipboardCheck,
                   },
                   {
                     label: "待完成审核",
                     value: pendingCount,
-                    detail: "需要教师判断",
+                    detail: "需要处理",
                     icon: MessageSquareWarning,
                   },
                   {
                     label: "已完成反馈",
                     value: data.reviewedCount,
-                    detail: "学生可查看结果",
+                    detail: "反馈已发布",
                     icon: CheckCircle2,
                   },
                 ].map((metric) => {
@@ -205,7 +205,7 @@ export function TeacherDashboardPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="page-eyebrow">我的课堂</p>
-                    <h2 className="section-title mt-1">学生通过课堂码加入</h2>
+                    <h2 className="section-title mt-1">课堂与加入码</h2>
                   </div>
                   <Button variant="secondary" size="sm" onClick={() => setClassroomOpen(true)}>
                     <Plus className="size-4" />
@@ -253,7 +253,7 @@ export function TeacherDashboardPage() {
                 <section hidden={activeTab !== "assignments"}>
                   <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <p className="page-eyebrow">教学任务</p>
+                      <p className="page-eyebrow">作业</p>
                       <h2 className="section-title mt-1">已发布作业</h2>
                     </div>
                     <Badge>{data.assignments.length} 项</Badge>
@@ -291,7 +291,7 @@ export function TeacherDashboardPage() {
                 <Card hidden={activeTab !== "submissions"}>
                   <CardHeader>
                     <div>
-                      <p className="page-eyebrow">审核队列</p>
+                      <p className="page-eyebrow">待审核</p>
                       <CardTitle className="mt-1">学生提交</CardTitle>
                     </div>
                     <Badge tone="warning">{pendingCount} 待审核</Badge>
@@ -349,7 +349,7 @@ export function TeacherDashboardPage() {
                   <CardHeader>
                     <div>
                       <p className="page-eyebrow">共性问题</p>
-                      <CardTitle className="mt-1">量规薄弱项</CardTitle>
+                      <CardTitle className="mt-1">常见问题</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -376,19 +376,19 @@ export function TeacherDashboardPage() {
                 <Card hidden={activeTab !== "ai"}>
                   <CardHeader>
                     <div>
-                      <p className="page-eyebrow">自动执行</p>
-                      <CardTitle className="mt-1">AI 批量预审</CardTitle>
+                      <p className="page-eyebrow">AI 预审</p>
+                      <CardTitle className="mt-1">批量预审进度</CardTitle>
                     </div>
                     <Bot className="size-5 text-pine-600" />
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {!data.aiConfigured ? (
                       <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-700">
-                        尚未接入模型。完成教师端 AI 接口设置后，系统会在作业截止后自动开始预审。
+                        尚未接入模型。配置 AI 接口后，作业截止时会自动开始预审。
                       </p>
                     ) : (
                       <p className="rounded-xl bg-pine-50 p-3 text-xs leading-5 text-pine-700">
-                        作业截止后自动排队，无需教师手动启动。AI 只生成待确认建议，不会发布成绩。
+                        作业截止后自动开始。AI 只生成待确认建议，不会发布成绩。
                       </p>
                     )}
                     {data.assignments.map(({ assignment }) => {
@@ -439,7 +439,7 @@ export function TeacherDashboardPage() {
                   <CardHeader>
                     <div>
                       <p className="page-eyebrow">反馈复核</p>
-                      <CardTitle className="mt-1">学生申诉</CardTitle>
+                      <CardTitle className="mt-1">申诉</CardTitle>
                     </div>
                     <Badge tone={data.appeals.length ? "warning" : "neutral"}>
                       {data.appeals.length} 条

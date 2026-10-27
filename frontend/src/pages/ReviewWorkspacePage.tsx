@@ -161,7 +161,7 @@ export function ReviewWorkspacePage() {
   const generateAiReview = useMutation({
     mutationFn: () => api.generateAiReview(id),
     onSuccess: async (run) => {
-      notify(`AI 预审完成，生成 ${run.suggestions.length} 条待核实建议。`, "success");
+      notify(`预审完成，生成 ${run.suggestions.length} 条建议。`, "success");
       await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
     },
     onError: (error: Error) => notify(error.message, "error"),
@@ -173,7 +173,7 @@ export function ReviewWorkspacePage() {
       const separator = content.trim() ? "\n\n" : "";
       setContent(`${content}${separator}【${suggestion.rubricName}】${suggestion.suggestion}`);
       setDirty(true);
-      notify("已采纳为教师问题并写入反馈草稿，请继续人工核对。", "success");
+      notify("已加入教师意见，请核对后保存。", "success");
       await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
     },
     onError: (error: Error) => notify(error.message, "error"),
@@ -182,7 +182,7 @@ export function ReviewWorkspacePage() {
   const dismissAiSuggestion = useMutation({
     mutationFn: (suggestionId: number) => api.dismissAiSuggestion(suggestionId),
     onSuccess: async () => {
-      notify("已忽略该 AI 建议，处理记录仍会保留。", "info");
+      notify("已忽略该建议，记录已保留。", "info");
       await queryClient.invalidateQueries({ queryKey: ["review-workspace", id] });
     },
     onError: (error: Error) => notify(error.message, "error"),
@@ -258,7 +258,7 @@ export function ReviewWorkspacePage() {
           <CardHeader>
             <div>
               <p className="page-eyebrow">学生提交</p>
-              <CardTitle className="mt-1">完整内容</CardTitle>
+              <CardTitle className="mt-1">提交内容</CardTitle>
             </div>
             <FileText className="size-5 text-pine-600" />
           </CardHeader>
@@ -343,20 +343,18 @@ export function ReviewWorkspacePage() {
           <Card className="border-pine-500/25 bg-gradient-to-br from-white to-pine-50/50">
             <CardHeader>
               <div>
-                <p className="page-eyebrow">AI 辅助预审</p>
-                <CardTitle className="mt-1">建议由模型生成，结论由教师决定</CardTitle>
+                <p className="page-eyebrow">AI 预审</p>
+                <CardTitle className="mt-1">预审建议</CardTitle>
               </div>
               <Bot className="size-5 text-pine-600" />
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
-                AI
-                只提供待核实线索，不会自动修改最终评分、反馈或诚信结论。教师采纳后才会转为教师问题。
+                建议仅供参考。是否采纳、评分和发布反馈均由教师决定。
               </p>
               {!data.aiConfigured ? (
                 <div className="rounded-xl border border-dashed border-line p-3 text-xs leading-6 text-muted">
-                  当前服务器尚未配置 AI 模型密钥。配置 `AI_API_KEY` 后，这里会出现“生成 AI
-                  预审”按钮。
+                  当前未配置 AI 接口，请到个人中心设置。
                 </div>
               ) : (
                 <Button
@@ -367,10 +365,10 @@ export function ReviewWorkspacePage() {
                 >
                   <Bot className="size-3.5" />
                   {generateAiReview.isPending
-                    ? "模型正在预审…"
+                    ? "正在预审…"
                     : data.aiReviews.length
-                      ? "重新生成 AI 预审"
-                      : "生成 AI 预审"}
+                      ? "重新预审"
+                      : "开始预审"}
                 </Button>
               )}
 
@@ -379,13 +377,13 @@ export function ReviewWorkspacePage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <strong className="text-xs">
-                        {runIndex === 0 ? "最新 AI 预审" : "历史 AI 预审"}
+                        {runIndex === 0 ? "最新预审" : "历史预审"}
                       </strong>
                       <p className="mt-1 text-[11px] text-muted">
                         {run.model} · {formatDate(run.createdAt)}
                       </p>
                     </div>
-                    <Badge tone="warning">AI 建议</Badge>
+                    <Badge tone="warning">待核实</Badge>
                   </div>
                   <p className="mt-2 text-xs leading-5 text-stone-600">{run.summary}</p>
                   <div className="mt-3 space-y-2">
@@ -414,7 +412,7 @@ export function ReviewWorkspacePage() {
                         </p>
                         {suggestion.suggestedPoints != null ? (
                           <span className="mt-2 inline-block rounded-md bg-white px-2 py-1 text-[10px] text-pine-700">
-                            AI 参考分：{suggestion.suggestedPoints}
+                            参考分：{suggestion.suggestedPoints}
                           </span>
                         ) : null}
                         {suggestion.status === "PENDING" && !reviewed ? (
@@ -424,7 +422,7 @@ export function ReviewWorkspacePage() {
                               disabled={adoptAiSuggestion.isPending}
                               onClick={() => adoptAiSuggestion.mutate(suggestion.id)}
                             >
-                              采纳为教师问题
+                              采用建议
                             </Button>
                             <Button
                               size="sm"
@@ -447,8 +445,8 @@ export function ReviewWorkspacePage() {
           <Card>
             <CardHeader>
               <div>
-                <p className="page-eyebrow">量规评分</p>
-                <CardTitle className="mt-1">建议分与最终分</CardTitle>
+                <p className="page-eyebrow">评分</p>
+                <CardTitle className="mt-1">评分建议</CardTitle>
               </div>
               <Sparkles className="size-5 text-pine-600" />
             </CardHeader>
@@ -507,7 +505,7 @@ export function ReviewWorkspacePage() {
             <CardHeader>
               <div>
                 <p className="page-eyebrow">学术诚信</p>
-                <CardTitle className="mt-1">可疑线索</CardTitle>
+                <CardTitle className="mt-1">诚信核验</CardTitle>
               </div>
               <ShieldCheck className="size-5 text-clay-500" />
             </CardHeader>

@@ -45,12 +45,10 @@ export function StudentHomePage() {
         <div>
           <p className="page-eyebrow">你好，{data.user.displayName}</p>
           <h1 className="mt-2 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            按时提交，
-            <br />
-            也看清评价依据
+            作业与反馈
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-7 text-muted">
-            作业要求、评分量规和教师最终反馈都在这里公开。平台不会根据写作过程自动判定诚信问题。
+            查看作业要求、提交记录和教师反馈。
           </p>
           <div className="mt-5 flex gap-3">
             <Badge>{data.assignments.length} 项作业</Badge>

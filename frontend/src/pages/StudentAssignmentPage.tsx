@@ -249,7 +249,7 @@ export function StudentAssignmentPage() {
             <Card className="border-pine-500/20">
               <CardHeader>
                 <div>
-                  <p className="page-eyebrow">教师最终反馈</p>
+                  <p className="page-eyebrow">教师反馈</p>
                   <CardTitle className="mt-1">{data.review.title}</CardTitle>
                 </div>
                 <CheckCircle2 className="size-5 text-pine-600" />
@@ -362,7 +362,7 @@ export function StudentAssignmentPage() {
             <CardHeader>
               <div>
                 <p className="page-eyebrow">评分量规</p>
-                <CardTitle className="mt-1">评价依据</CardTitle>
+                <CardTitle className="mt-1">评分标准</CardTitle>
               </div>
               <span className="text-xs text-muted">100 分</span>
             </CardHeader>

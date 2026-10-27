@@ -205,10 +205,10 @@ export function AccountPage() {
         <Card className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-pine-50 to-white">
             <div>
-              <p className="page-eyebrow">教师专属配置</p>
+              <p className="page-eyebrow">模型连接</p>
               <CardTitle className="mt-1">AI 接口设置</CardTitle>
               <p className="mt-1 text-xs leading-5 text-muted">
-                学生端不可访问。API Key 使用 AES-GCM 加密保存，页面只显示末四位。
+                仅教师可用。API Key 加密保存，页面只显示末四位。
               </p>
             </div>
             <Bot className="size-6 text-pine-600" />
@@ -230,7 +230,7 @@ export function AccountPage() {
                   {aiSettings.data.maskedKey}
                 </span>
               ) : (
-                <span className="text-muted">填写接口信息后才能生成 AI 预审建议。</span>
+                <span className="text-muted">填写接口信息后即可使用 AI 预审。</span>
               )}
               {aiSettings.data?.source === "SERVER" ? (
                 <span className="text-muted">当前使用服务器环境变量配置</span>
@@ -306,8 +306,7 @@ export function AccountPage() {
               </Button>
             </div>
             <p className="rounded-xl bg-stone-50 p-3 text-xs leading-5 text-muted">
-              服务地址由后端白名单固定，避免教师配置被利用访问服务器内网。测试连接会向模型发送一条极短的“回复
-              OK”请求。
+              服务地址由系统固定。测试连接会发送一条简短的“回复 OK”请求。
             </p>
           </CardContent>
         </Card>
