@@ -44,6 +44,9 @@ test("student React workspace renders assignment and submission details", async 
   await expect(page.getByText("评分量规")).toBeVisible();
   await expect(page.getByText("我的提交内容")).toBeVisible();
   await expect(page.getByText("学术诚信与 AI 使用声明")).toBeVisible();
+  const submissionForm = await page.getByRole("heading", { name: "提交修订版本" }).boundingBox();
+  const submissionHistory = await page.getByRole("heading", { name: /次提交全文/ }).boundingBox();
+  expect(submissionForm?.x ?? -1).toBeLessThan(submissionHistory?.x ?? Number.POSITIVE_INFINITY);
   await page.screenshot({ path: "test-results/student-assignment.png", fullPage: true });
 });
 
