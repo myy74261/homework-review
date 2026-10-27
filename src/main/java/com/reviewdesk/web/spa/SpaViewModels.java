@@ -30,10 +30,15 @@ public final class SpaViewModels {
                                  Instant dueAt, String submissionFormat,
                                  String aiPolicy, boolean aiDeclarationRequired,
                                  boolean sourceDeclarationRequired,
-                                 boolean appealAllowed) {
+                                 boolean appealAllowed, String status) {
     }
 
     public record RubricView(long id, String name, int points, String description) {
+    }
+
+    public record EditableAssignmentView(AssignmentView assignment,
+                                         List<RubricView> rubrics,
+                                         long submissionCount) {
     }
 
     public record SubmissionView(long id, long assignmentId, String assignmentTitle,

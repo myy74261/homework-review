@@ -118,7 +118,7 @@ public class SpaStudentController {
             @PathVariable long assignmentId,
             Authentication authentication) {
         Account student = accountService.current(authentication);
-        Assignment assignment = assignmentService.requireAssignment(assignmentId);
+        Assignment assignment = assignmentService.requirePublishedAssignment(assignmentId);
         if (!classroomService.isStudentMember(student, assignment.getClassroomId())) {
             throw new SecurityException("尚未加入该作业所属课堂");
         }
@@ -205,7 +205,8 @@ public class SpaStudentController {
                 assignment.getCourseName(), assignment.getInstructions(),
                 assignment.getDueAt(), assignment.getSubmissionFormat(),
                 assignment.getAiPolicy(), assignment.isAiDeclarationRequired(),
-                assignment.isSourceDeclarationRequired(), assignment.isAppealAllowed());
+                assignment.isSourceDeclarationRequired(), assignment.isAppealAllowed(),
+                assignment.getStatus());
     }
 
     private SpaViewModels.SubmissionView toSubmission(Submission submission) {

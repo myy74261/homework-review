@@ -9,9 +9,10 @@ import {
   LayoutDashboard,
   MessageSquareWarning,
   Plus,
+  Undo2,
 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { formatDate, formatLabels } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
@@ -23,6 +24,7 @@ import { ErrorState, Loading } from "@/components/ui/loading";
 import { Field, Input } from "@/components/ui/field";
 
 export function TeacherDashboardPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const notify = useAppStore((state) => state.notify);
   const [classroomOpen, setClassroomOpen] = useState(false);
@@ -33,6 +35,11 @@ export function TeacherDashboardPage() {
   const [courseName, setCourseName] = useState("");
   const [appealDrafts, setAppealDrafts] = useState<Record<number, string>>({});
   const [appealStatus, setAppealStatus] = useState<Record<number, string>>({});
+  const [withdrawTarget, setWithdrawTarget] = useState<{
+    id: number;
+    title: string;
+    submissionCount: number;
+  } | null>(null);
 
   const dashboard = useQuery({
     queryKey: ["teacher-dashboard"],
@@ -64,6 +71,17 @@ export function TeacherDashboardPage() {
     onError: (error: Error) => notify(error.message, "error"),
   });
 
+  const withdrawAssignment = useMutation({
+    mutationFn: (assignmentId: number) => api.withdrawAssignment(assignmentId),
+    onSuccess: async (result) => {
+      setWithdrawTarget(null);
+      notify("作业已撤回，学生端暂时隐藏。请修改后重新发布。", "success");
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      navigate(result.redirectPath.replace("/app", ""));
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
   if (dashboard.isLoading) return <Loading />;
   if (dashboard.isError) {
     return <ErrorState message={dashboard.error.message} retry={() => dashboard.refetch()} />;
@@ -71,6 +89,9 @@ export function TeacherDashboardPage() {
 
   const data = dashboard.data!;
   const pendingCount = data.submissions.filter((item) => item.reviewStatus !== "REVIEWED").length;
+  const publishedCount = data.assignments.filter(
+    ({ assignment }) => assignment.status === "PUBLISHED",
+  ).length;
 
   return (
     <div className="space-y-5">
@@ -163,7 +184,7 @@ export function TeacherDashboardPage() {
                 {[
                   {
                     label: "已发布作业",
-                    value: data.assignments.length,
+                    value: publishedCount,
                     detail: "课堂任务",
                     icon: BookOpen,
                   },
@@ -260,9 +281,18 @@ export function TeacherDashboardPage() {
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     {data.assignments.map(({ assignment, submissionCount }) => (
-                      <Card key={assignment.id} className="p-5">
+                      <Card
+                        key={assignment.id}
+                        data-testid={`assignment-card-${assignment.id}`}
+                        className="p-5"
+                      >
                         <div className="flex items-center justify-between gap-3">
-                          <Badge>{formatLabels[assignment.submissionFormat]}</Badge>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge>{formatLabels[assignment.submissionFormat]}</Badge>
+                            <Badge tone={assignment.status === "PUBLISHED" ? "default" : "warning"}>
+                              {assignment.status === "PUBLISHED" ? "已发布" : "已撤回"}
+                            </Badge>
+                          </div>
                           <span className="text-xs text-muted">{assignment.courseName}</span>
                         </div>
                         <h3 className="mt-3 font-display text-xl font-semibold leading-7">
@@ -275,13 +305,35 @@ export function TeacherDashboardPage() {
                           <span>截止 {formatDate(assignment.dueAt)}</span>
                           <span>{submissionCount} 份提交</span>
                         </div>
-                        <div className="mt-3 flex items-center justify-between gap-2">
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <Button asChild variant="ghost" size="sm">
                             <Link to={`/teacher/assignments/${assignment.id}/lesson-plan`}>
                               生成备课建议
                               <ArrowRight className="size-3.5" />
                             </Link>
                           </Button>
+                          {assignment.status === "WITHDRAWN" ? (
+                            <Button asChild variant="secondary" size="sm">
+                              <Link to={`/teacher/assignments/${assignment.id}/edit`}>
+                                继续编辑
+                              </Link>
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setWithdrawTarget({
+                                  id: assignment.id,
+                                  title: assignment.title,
+                                  submissionCount,
+                                })
+                              }
+                            >
+                              <Undo2 className="size-3.5" />
+                              撤回并修改
+                            </Button>
+                          )}
                         </div>
                       </Card>
                     ))}
@@ -537,6 +589,46 @@ export function TeacherDashboardPage() {
           >
             {createClassroom.isPending ? "创建中…" : "创建课堂"}
           </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={withdrawTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setWithdrawTarget(null);
+        }}
+        title="撤回作业并修改"
+        description={
+          withdrawTarget
+            ? `《${withdrawTarget.title}》撤回后将从学生端暂时隐藏，教师可修改内容后重新发布。`
+            : undefined
+        }
+      >
+        <div className="space-y-4">
+          {withdrawTarget?.submissionCount ? (
+            <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-700">
+              该作业已有 {withdrawTarget.submissionCount} 份提交。撤回不会删除提交和审核记录；
+              修改截止时间或评分标准前，请确认不会影响已完成的工作。
+            </p>
+          ) : (
+            <p className="rounded-xl bg-pine-50 p-3 text-xs leading-6 text-pine-700">
+              当前还没有学生提交，可以安全撤回并修改。
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setWithdrawTarget(null)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={withdrawAssignment.isPending}
+              onClick={() => {
+                if (withdrawTarget) withdrawAssignment.mutate(withdrawTarget.id);
+              }}
+            >
+              {withdrawAssignment.isPending ? "撤回中…" : "确认撤回"}
+            </Button>
+          </div>
         </div>
       </Dialog>
     </div>

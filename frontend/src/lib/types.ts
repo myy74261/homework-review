@@ -35,6 +35,7 @@ export interface Assignment {
   aiDeclarationRequired: boolean;
   sourceDeclarationRequired: boolean;
   appealAllowed: boolean;
+  status: "PUBLISHED" | "WITHDRAWN";
 }
 
 export interface Rubric {
@@ -167,6 +168,12 @@ export interface AiConnectionResult {
 
 export interface AssignmentOverview {
   assignment: Assignment;
+  submissionCount: number;
+}
+
+export interface EditableAssignment {
+  assignment: Assignment;
+  rubrics: Rubric[];
   submissionCount: number;
 }
 

@@ -67,7 +67,7 @@ public class StudentSubmissionService {
                              String sourceDeclaration, String collaborationDeclaration,
                              boolean integrityConfirmed, MultipartFile[] files)
             throws IOException {
-        Assignment assignment = assignmentService.requireAssignment(assignmentId);
+        Assignment assignment = assignmentService.requirePublishedAssignment(assignmentId);
         if (!classroomService.isStudentMember(student, assignment.getClassroomId())) {
             throw new SecurityException("尚未加入该作业所属课堂");
         }

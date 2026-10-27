@@ -105,7 +105,7 @@ public class StudentWorkspaceController {
     public String assignment(@PathVariable long assignmentId,
                              Authentication authentication, Model model) {
         Account student = accountService.current(authentication);
-        Assignment assignment = assignmentService.requireAssignment(assignmentId);
+        Assignment assignment = assignmentService.requirePublishedAssignment(assignmentId);
         if (!classroomService.isStudentMember(student, assignment.getClassroomId())) {
             throw new SecurityException("尚未加入该作业所属课堂");
         }

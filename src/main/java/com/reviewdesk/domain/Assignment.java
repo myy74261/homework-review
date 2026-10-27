@@ -133,5 +133,35 @@ public class Assignment {
     public boolean isAppealAllowed() {
         return !Boolean.FALSE.equals(appealAllowed);
     }
+
+    /**
+     * 撤回已发布作业。学生端在重新发布前不再展示该作业。
+     */
+    public void withdraw() {
+        this.status = "WITHDRAWN";
+    }
+
+    /**
+     * 使用教师修改后的内容重新发布，并保留原作业编号。
+     */
+    public void updateAndRepublish(Long classroomId, String title, String courseName,
+                                   String instructions, Instant dueAt,
+                                   String submissionFormat, String aiPolicy,
+                                   boolean aiDeclarationRequired,
+                                   boolean sourceDeclarationRequired,
+                                   boolean appealAllowed) {
+        this.classroomId = classroomId;
+        this.title = title;
+        this.courseName = courseName;
+        this.instructions = instructions;
+        this.dueAt = dueAt;
+        this.publishedAt = Instant.now();
+        this.status = "PUBLISHED";
+        this.submissionFormat = submissionFormat;
+        this.aiPolicy = aiPolicy;
+        this.aiDeclarationRequired = aiDeclarationRequired;
+        this.sourceDeclarationRequired = sourceDeclarationRequired;
+        this.appealAllowed = appealAllowed;
+    }
 }
 

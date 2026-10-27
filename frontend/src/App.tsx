@@ -74,6 +74,14 @@ export default function App() {
           }
         />
         <Route
+          path="teacher/assignments/:assignmentId/edit"
+          element={
+            <TeacherOnly>
+              <PublishAssignmentPage />
+            </TeacherOnly>
+          }
+        />
+        <Route
           path="teacher/assignments/:assignmentId/lesson-plan"
           element={
             <TeacherOnly>

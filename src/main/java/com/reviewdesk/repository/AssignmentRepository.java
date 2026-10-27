@@ -11,5 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByClassroomIdInOrderByPublishedAtDesc(Collection<Long> classroomIds);
+
+    List<Assignment> findByClassroomIdInAndStatusOrderByPublishedAtDesc(
+            Collection<Long> classroomIds, String status);
 }
 

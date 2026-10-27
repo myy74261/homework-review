@@ -35,6 +35,29 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await expect(page.getByText("规则生成模式").or(page.getByText("AI 增强已启用"))).toBeVisible();
 });
 
+test("teacher can withdraw, edit and republish an assignment", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.getByRole("tab", { name: /作业管理/ }).click();
+
+  const assignmentCard = page.getByTestId("assignment-card-1");
+  await expect(assignmentCard.getByText("已发布")).toBeVisible();
+  await assignmentCard.getByRole("button", { name: "撤回并修改" }).click();
+  await expect(page.getByRole("heading", { name: "撤回作业并修改" })).toBeVisible();
+  await page.getByRole("button", { name: "确认撤回" }).click();
+
+  await expect(page).toHaveURL(/\/app\/teacher\/assignments\/1\/edit$/);
+  await expect(page.getByRole("heading", { name: "修改后重新发布" })).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-assignment-edit.png", fullPage: true });
+  await page.getByLabel("作业名称").fill("短视频使用与注意力恢复（修订版）");
+  await page.getByLabel("截止时间").fill("2099-06-30T23:59");
+  await page.getByRole("button", { name: "保存修改并重新发布" }).click();
+
+  await expect(page).toHaveURL(/\/app\/teacher$/);
+  await page.getByRole("tab", { name: /作业管理/ }).click();
+  await expect(page.getByTestId("assignment-card-1").getByText("修订版")).toBeVisible();
+  await expect(page.getByTestId("assignment-card-1").getByText("已发布")).toBeVisible();
+});
+
 test("student React workspace renders assignment and submission details", async ({ page }) => {
   await login(page, "lin", "Student1234");
   await expect(page).toHaveURL(/\/app\/student$/);

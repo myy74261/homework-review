@@ -123,6 +123,86 @@ class SpaApiControllerTest {
     }
 
     @Test
+    void teacherCanWithdrawEditAndRepublishAnAssignment() throws Exception {
+        mockMvc.perform(post("/api/app/teacher/assignments/1/withdraw")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.redirectPath")
+                        .value("/app/teacher/assignments/1/edit"));
+
+        mockMvc.perform(get("/api/app/student/dashboard")
+                        .with(user("lin").roles("STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignments.length()").value(0));
+
+        mockMvc.perform(get("/api/app/student/assignments/1")
+                        .with(user("lin").roles("STUDENT")))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/app/teacher/assignments/1/edit")
+                        .with(user("chen").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignment.status").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.assignment.title")
+                        .value("短视频使用与大学生注意力恢复的关系研究"))
+                .andExpect(jsonPath("$.submissionCount").value(1))
+                .andExpect(jsonPath("$.rubrics.length()").value(4));
+
+        mockMvc.perform(put("/api/app/teacher/assignments/1")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "短视频使用与注意力恢复（修订版）",
+                                  "courseName": "传播学方法课",
+                                  "classroomId": 1,
+                                  "instructions": "修订后的作业要求。",
+                                  "dueAt": "2099-06-30T23:59",
+                                  "submissionFormat": "MIXED",
+                                  "aiPolicy": "ASSISTED_ALLOWED",
+                                  "aiDeclarationRequired": true,
+                                  "sourceDeclarationRequired": true,
+                                  "appealAllowed": true,
+                                  "rubrics": [
+                                    {
+                                      "name": "研究问题与目标",
+                                      "points": 25,
+                                      "description": "问题、目标与研究边界是否清楚"
+                                    },
+                                    {
+                                      "name": "证据与引用",
+                                      "points": 25,
+                                      "description": "结论是否有可追溯的数据或文献支持"
+                                    },
+                                    {
+                                      "name": "方法与数据",
+                                      "points": 30,
+                                      "description": "样本、抽样、回收率与统计过程是否透明"
+                                    },
+                                    {
+                                      "name": "结构与表达",
+                                      "points": 20,
+                                      "description": "论证顺序、段落衔接与学术表达是否清晰"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.redirectPath").value("/app/teacher"));
+
+        mockMvc.perform(get("/api/app/student/dashboard")
+                        .with(user("lin").roles("STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignments.length()").value(1))
+                .andExpect(jsonPath("$.assignments[0].assignment.title")
+                        .value("短视频使用与注意力恢复（修订版）"));
+    }
+
+    @Test
     void reactClientCanCreateClassroomThroughJsonApi() throws Exception {
         mockMvc.perform(post("/api/app/teacher/classrooms")
                         .with(user("chen").roles("TEACHER"))

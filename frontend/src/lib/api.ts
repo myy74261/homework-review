@@ -6,6 +6,7 @@ import type {
   AiConnectionResult,
   Appeal,
   Classroom,
+  EditableAssignment,
   IntegrityFlag,
   LessonWorkspace,
   Score,
@@ -94,10 +95,27 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   publishAssignment: (payload: unknown) =>
-    request<{ id: number; redirectPath: string }>("/api/app/teacher/assignments", {
+    request<{ id: number; status: string; redirectPath: string }>("/api/app/teacher/assignments", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  editableAssignment: (assignmentId: number) =>
+    request<EditableAssignment>(`/api/app/teacher/assignments/${assignmentId}/edit`),
+  withdrawAssignment: (assignmentId: number) =>
+    request<{ id: number; status: string; redirectPath: string }>(
+      `/api/app/teacher/assignments/${assignmentId}/withdraw`,
+      {
+        method: "POST",
+      },
+    ),
+  updateAssignment: (assignmentId: number, payload: unknown) =>
+    request<{ id: number; status: string; redirectPath: string }>(
+      `/api/app/teacher/assignments/${assignmentId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    ),
   reviewWorkspace: (submissionId: number) =>
     request<TeacherReviewWorkspace>(`/api/app/teacher/reviews/${submissionId}`),
   saveReview: (

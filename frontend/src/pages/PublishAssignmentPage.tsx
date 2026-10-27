@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/app-store";
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,28 @@ function localDateTime(days = 7) {
   return new Date(value.getTime() - offset).toISOString().slice(0, 16);
 }
 
+function toLocalDateTimeInput(value: string) {
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function PublishAssignmentPage() {
+  const { assignmentId } = useParams();
+  const parsedAssignmentId = Number(assignmentId);
+  const editId = Number.isFinite(parsedAssignmentId) ? parsedAssignmentId : null;
+  const isEditing = assignmentId != null;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const notify = useAppStore((state) => state.notify);
   const classrooms = useQuery({
     queryKey: ["teacher-classrooms"],
     queryFn: api.teacherClassrooms,
+  });
+  const editableAssignment = useQuery({
+    queryKey: ["editable-assignment", editId],
+    queryFn: () => api.editableAssignment(editId!),
+    enabled: editId != null,
   });
   const [title, setTitle] = useState("短视频使用与大学生注意力恢复的关系研究");
   const [courseName, setCourseName] = useState("传播学方法课");
@@ -49,16 +65,41 @@ export function PublishAssignmentPage() {
   const [sourceDeclarationRequired, setSourceDeclarationRequired] = useState(true);
   const [appealAllowed, setAppealAllowed] = useState(true);
   const [rubrics, setRubrics] = useState<RubricDraft[]>(defaults);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!editableAssignment.data || initialized) return;
+    const { assignment, rubrics: savedRubrics } = editableAssignment.data;
+    setTitle(assignment.title);
+    setCourseName(assignment.courseName);
+    setClassroomId(assignment.classroomId);
+    setInstructions(assignment.instructions);
+    setDueAt(toLocalDateTimeInput(assignment.dueAt));
+    setSubmissionFormat(assignment.submissionFormat);
+    setAiPolicy(assignment.aiPolicy);
+    setAiDeclarationRequired(assignment.aiDeclarationRequired);
+    setSourceDeclarationRequired(assignment.sourceDeclarationRequired);
+    setAppealAllowed(assignment.appealAllowed);
+    setRubrics(
+      savedRubrics.map((rubric) => ({
+        name: rubric.name,
+        points: rubric.points,
+        description: rubric.description,
+      })),
+    );
+    setInitialized(true);
+  }, [editableAssignment.data, initialized]);
 
   const selectedClassroom = classroomId || classrooms.data?.[0]?.id || "";
+  const rubricLocked = (editableAssignment.data?.submissionCount ?? 0) > 0;
   const total = useMemo(
     () => rubrics.reduce((sum, rubric) => sum + Number(rubric.points || 0), 0),
     [rubrics],
   );
 
   const publish = useMutation({
-    mutationFn: () =>
-      api.publishAssignment({
+    mutationFn: () => {
+      const payload = {
         title,
         courseName,
         classroomId: selectedClassroom,
@@ -70,17 +111,37 @@ export function PublishAssignmentPage() {
         sourceDeclarationRequired,
         appealAllowed,
         rubrics,
-      }),
-    onSuccess: (result) => {
-      notify("作业已发布，学生端现在可以查看。", "success");
+      };
+      return editId == null
+        ? api.publishAssignment(payload)
+        : api.updateAssignment(editId, payload);
+    },
+    onSuccess: async (result) => {
+      notify(
+        isEditing ? "作业已修改并重新发布，学生端已恢复显示。" : "作业已发布，学生端现在可以查看。",
+        "success",
+      );
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["editable-assignment", editId] });
       navigate(result.redirectPath.replace("/app", ""));
     },
     onError: (error: Error) => notify(error.message, "error"),
   });
 
-  if (classrooms.isLoading) return <Loading />;
+  if (classrooms.isLoading || editableAssignment.isLoading) return <Loading />;
   if (classrooms.isError) {
     return <ErrorState message={classrooms.error.message} retry={() => classrooms.refetch()} />;
+  }
+  if (editableAssignment.isError) {
+    return (
+      <ErrorState
+        message={editableAssignment.error.message}
+        retry={() => editableAssignment.refetch()}
+      />
+    );
+  }
+  if (isEditing && editId == null) {
+    return <ErrorState message="作业编号无效，请返回作业管理重新进入。" />;
   }
 
   return (
@@ -93,12 +154,14 @@ export function PublishAssignmentPage() {
       </Button>
 
       <section>
-        <p className="page-eyebrow">发布作业</p>
+        <p className="page-eyebrow">{isEditing ? "修改作业" : "发布作业"}</p>
         <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
-          创建新的课程作业
+          {isEditing ? "修改后重新发布" : "创建新的课程作业"}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-          设置提交要求、截止时间和评分标准。发布后学生即可查看并提交。
+          {isEditing
+            ? "作业仍对学生隐藏。确认修改后重新发布，已有提交记录不会被删除。"
+            : "设置提交要求、截止时间和评分标准。发布后学生即可查看并提交。"}
         </p>
       </section>
 
@@ -212,7 +275,11 @@ export function PublishAssignmentPage() {
               <div>
                 <p className="page-eyebrow">02 · 评分量规</p>
                 <CardTitle className="mt-1">评分项目</CardTitle>
-                <p className="mt-1 text-xs text-muted">支持 1–10 个维度，总分必须为 100。</p>
+                <p className="mt-1 text-xs text-muted">
+                  {rubricLocked
+                    ? `已有 ${editableAssignment.data?.submissionCount} 份提交，为保持历史评分一致，评分维度已锁定。`
+                    : "支持 1–10 个维度，总分必须为 100。"}
+                </p>
               </div>
               <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs">
                 总分{" "}
@@ -231,6 +298,7 @@ export function PublishAssignmentPage() {
                   <Field label={`维度 ${index + 1}`}>
                     <Input
                       value={rubric.name}
+                      disabled={rubricLocked}
                       onChange={(event) =>
                         setRubrics((items) =>
                           items.map((item, itemIndex) =>
@@ -247,6 +315,7 @@ export function PublishAssignmentPage() {
                       min={1}
                       max={100}
                       value={rubric.points}
+                      disabled={rubricLocked}
                       onChange={(event) =>
                         setRubrics((items) =>
                           items.map((item, itemIndex) =>
@@ -262,6 +331,7 @@ export function PublishAssignmentPage() {
                   <Field label="观察说明">
                     <Input
                       value={rubric.description}
+                      disabled={rubricLocked}
                       onChange={(event) =>
                         setRubrics((items) =>
                           items.map((item, itemIndex) =>
@@ -278,7 +348,7 @@ export function PublishAssignmentPage() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    disabled={rubrics.length === 1}
+                    disabled={rubricLocked || rubrics.length === 1}
                     onClick={() =>
                       setRubrics((items) => items.filter((_, itemIndex) => itemIndex !== index))
                     }
@@ -291,7 +361,7 @@ export function PublishAssignmentPage() {
               <Button
                 type="button"
                 variant="secondary"
-                disabled={rubrics.length >= 10}
+                disabled={rubricLocked || rubrics.length >= 10}
                 onClick={() =>
                   setRubrics((items) => [...items, { name: "", points: 0, description: "" }])
                 }
@@ -307,7 +377,13 @@ export function PublishAssignmentPage() {
               <Link to="/teacher">取消</Link>
             </Button>
             <Button type="submit" size="lg" disabled={publish.isPending || total !== 100}>
-              {publish.isPending ? "发布中…" : "发布作业并开放提交"}
+              {publish.isPending
+                ? isEditing
+                  ? "保存中…"
+                  : "发布中…"
+                : isEditing
+                  ? "保存修改并重新发布"
+                  : "发布作业并开放提交"}
             </Button>
           </div>
         </form>

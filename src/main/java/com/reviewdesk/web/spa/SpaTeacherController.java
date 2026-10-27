@@ -12,6 +12,7 @@ import com.reviewdesk.domain.ReviewScore;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.domain.SubmissionAttachment;
 import com.reviewdesk.repository.ReviewIssueRepository;
+import com.reviewdesk.repository.SubmissionRepository;
 import com.reviewdesk.service.AccessControlService;
 import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AppealService;
@@ -65,6 +66,7 @@ public class SpaTeacherController {
     private final AiSettingsService aiSettingsService;
     private final AiBatchReviewService aiBatchReviewService;
     private final ReviewIssueRepository issueRepository;
+    private final SubmissionRepository submissionRepository;
     private final ReviewActivityService activityService;
     private final AccessControlService accessControlService;
     private final TeachingSuggestionService suggestionService;
@@ -83,6 +85,7 @@ public class SpaTeacherController {
             AiSettingsService aiSettingsService,
             AiBatchReviewService aiBatchReviewService,
             ReviewIssueRepository issueRepository,
+            SubmissionRepository submissionRepository,
             ReviewActivityService activityService,
             AccessControlService accessControlService,
             TeachingSuggestionService suggestionService) {
@@ -99,6 +102,7 @@ public class SpaTeacherController {
         this.aiSettingsService = aiSettingsService;
         this.aiBatchReviewService = aiBatchReviewService;
         this.issueRepository = issueRepository;
+        this.submissionRepository = submissionRepository;
         this.activityService = activityService;
         this.accessControlService = accessControlService;
         this.suggestionService = suggestionService;
@@ -196,10 +200,7 @@ public class SpaTeacherController {
         if (!classroomService.isTeacherOwner(teacher, form.getClassroomId())) {
             throw new SecurityException("无权向该课堂发布作业");
         }
-        List<AssignmentService.RubricDefinition> rubrics = form.getRubrics().stream()
-                .map(rubric -> new AssignmentService.RubricDefinition(
-                        rubric.getName(), rubric.getPoints(), rubric.getDescription()))
-                .toList();
+        List<AssignmentService.RubricDefinition> rubrics = toRubricDefinitions(form);
         Assignment assignment = assignmentService.publish(
                 form.getClassroomId(),
                 form.getTitle(),
@@ -214,6 +215,68 @@ public class SpaTeacherController {
                 rubrics);
         return Map.of(
                 "id", assignment.getId(),
+                "status", assignment.getStatus(),
+                "redirectPath", "/app/teacher");
+    }
+
+    @PostMapping("/assignments/{assignmentId}/withdraw")
+    public Map<String, Object> withdrawAssignment(
+            @PathVariable long assignmentId,
+            Authentication authentication) {
+        accessControlService.requireTeacherAssignment(
+                authentication.getName(), assignmentId);
+        Assignment assignment = assignmentService.withdraw(assignmentId);
+        return Map.of(
+                "id", assignment.getId(),
+                "status", assignment.getStatus(),
+                "redirectPath", "/app/teacher/assignments/" + assignmentId + "/edit");
+    }
+
+    @GetMapping("/assignments/{assignmentId}/edit")
+    public SpaViewModels.EditableAssignmentView editableAssignment(
+            @PathVariable long assignmentId,
+            Authentication authentication) {
+        accessControlService.requireTeacherAssignment(
+                authentication.getName(), assignmentId);
+        Assignment assignment = assignmentService.requireAssignment(assignmentId);
+        if (!"WITHDRAWN".equals(assignment.getStatus())) {
+            throw new IllegalStateException("请先撤回作业，再修改内容");
+        }
+        return new SpaViewModels.EditableAssignmentView(
+                toAssignment(assignment),
+                assignmentService.listRubrics(assignmentId).stream()
+                        .map(this::toRubric)
+                        .toList(),
+                submissionRepository.countByAssignmentId(assignmentId));
+    }
+
+    @PutMapping("/assignments/{assignmentId}")
+    public Map<String, Object> updateAndRepublishAssignment(
+            @PathVariable long assignmentId,
+            Authentication authentication,
+            @Valid @RequestBody PublishAssignmentForm form) {
+        Account teacher = accountService.current(authentication);
+        accessControlService.requireTeacherAssignment(
+                authentication.getName(), assignmentId);
+        if (!classroomService.isTeacherOwner(teacher, form.getClassroomId())) {
+            throw new SecurityException("无权向该课堂发布作业");
+        }
+        Assignment assignment = assignmentService.updateAndRepublish(
+                assignmentId,
+                form.getClassroomId(),
+                form.getTitle(),
+                form.getCourseName(),
+                form.getInstructions(),
+                form.getDueAt().atZone(DISPLAY_ZONE).toInstant(),
+                form.getSubmissionFormat(),
+                form.getAiPolicy(),
+                form.isAiDeclarationRequired(),
+                form.isSourceDeclarationRequired(),
+                form.isAppealAllowed(),
+                toRubricDefinitions(form));
+        return Map.of(
+                "id", assignment.getId(),
+                "status", assignment.getStatus(),
                 "redirectPath", "/app/teacher");
     }
 
@@ -397,6 +460,14 @@ public class SpaTeacherController {
                 account.getRole(), account.getStudentNumber());
     }
 
+    private List<AssignmentService.RubricDefinition> toRubricDefinitions(
+            PublishAssignmentForm form) {
+        return form.getRubrics().stream()
+                .map(rubric -> new AssignmentService.RubricDefinition(
+                        rubric.getName(), rubric.getPoints(), rubric.getDescription()))
+                .toList();
+    }
+
     private SpaViewModels.ClassroomView toClassroom(Classroom classroom, long members) {
         return new SpaViewModels.ClassroomView(
                 classroom.getId(), classroom.getName(), classroom.getCourseName(),
@@ -409,7 +480,8 @@ public class SpaTeacherController {
                 assignment.getCourseName(), assignment.getInstructions(),
                 assignment.getDueAt(), assignment.getSubmissionFormat(),
                 assignment.getAiPolicy(), assignment.isAiDeclarationRequired(),
-                assignment.isSourceDeclarationRequired(), assignment.isAppealAllowed());
+                assignment.isSourceDeclarationRequired(), assignment.isAppealAllowed(),
+                assignment.getStatus());
     }
 
     private SpaViewModels.SubmissionView toSubmission(Submission submission) {

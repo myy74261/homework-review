@@ -10,5 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AssignmentRubricRepository extends JpaRepository<AssignmentRubric, Long> {
 
     List<AssignmentRubric> findByAssignmentIdOrderByDisplayOrderAsc(Long assignmentId);
+
+    void deleteByAssignmentId(Long assignmentId);
 }
 
