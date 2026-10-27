@@ -15,6 +15,7 @@ import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.repository.AiReviewRunRepository;
 import com.reviewdesk.repository.AiReviewSuggestionRepository;
 import com.reviewdesk.repository.AiProviderSettingRepository;
+import com.reviewdesk.repository.ClassroomRepository;
 import com.reviewdesk.repository.ReviewIssueRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ class SpaApiControllerTest {
 
     @Autowired
     private AiProviderSettingRepository aiProviderSettingRepository;
+
+    @Autowired
+    private ClassroomRepository classroomRepository;
 
     @Test
     void reactEntryAndTeacherSessionAreAvailable() throws Exception {
@@ -211,13 +215,69 @@ class SpaApiControllerTest {
                         .content("""
                                 {
                                   "name": "新媒体设计课 · 2026",
-                                  "courseName": "新媒体设计"
+                                  "courseName": "新媒体设计",
+                                  "startAt": "2026-01-01T00:00:00Z",
+                                  "endAt": "2099-06-30T15:59:00Z"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.name").value("新媒体设计课 · 2026"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.joinCode").isNotEmpty());
+    }
+
+    @Test
+    void teacherCanRescheduleAndDissolveAClassroomOnlyAfterItEnds() throws Exception {
+        mockMvc.perform(post("/api/app/teacher/classrooms")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "课程时间测试课堂",
+                                  "courseName": "课程时间测试",
+                                  "startAt": "2026-01-01T00:00:00Z",
+                                  "endAt": "2099-06-30T15:59:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+        var classroom = classroomRepository.findAll().stream()
+                .filter(item -> "课程时间测试课堂".equals(item.getName()))
+                .findFirst()
+                .orElseThrow();
+
+        mockMvc.perform(post("/api/app/teacher/classrooms/{id}/dissolve", classroom.getId())
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("课程尚未结束，不能解散课堂"));
+
+        mockMvc.perform(put("/api/app/teacher/classrooms/{id}/schedule", classroom.getId())
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "startAt": "2025-01-01T00:00:00Z",
+                                  "endAt": "2025-06-30T15:59:00Z"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ENDED"));
+
+        mockMvc.perform(post("/api/app/teacher/classrooms/{id}/dissolve", classroom.getId())
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISSOLVED"));
+
+        org.assertj.core.api.Assertions.assertThat(
+                        classroomRepository.findById(classroom.getId()).orElseThrow()
+                                .getDissolvedAt())
+                .isNotNull();
     }
 
     @Test

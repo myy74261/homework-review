@@ -21,6 +21,9 @@ export interface Classroom {
   courseName: string;
   joinCode: string;
   memberCount: number;
+  startAt: string | null;
+  endAt: string | null;
+  status: "UNSCHEDULED" | "UPCOMING" | "ACTIVE" | "ENDED" | "DISSOLVED";
 }
 
 export interface Assignment {

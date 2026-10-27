@@ -96,7 +96,10 @@ public class SpaStudentController {
                                 classroom.getName(),
                                 classroom.getCourseName(),
                                 classroom.getJoinCode(),
-                                classroomService.memberCount(classroom.getId())))
+                                classroomService.memberCount(classroom.getId()),
+                                classroom.getStartAt(),
+                                classroom.getEndAt(),
+                                classroomService.lifecycleStatus(classroom)))
                         .toList(),
                 assignments);
     }
@@ -110,7 +113,9 @@ public class SpaStudentController {
         return new SpaViewModels.ClassroomView(
                 classroom.getId(), classroom.getName(), classroom.getCourseName(),
                 classroom.getJoinCode(),
-                classroomService.memberCount(classroom.getId()));
+                classroomService.memberCount(classroom.getId()),
+                classroom.getStartAt(), classroom.getEndAt(),
+                classroomService.lifecycleStatus(classroom));
     }
 
     @GetMapping("/assignments/{assignmentId}")

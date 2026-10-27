@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * 教师创建、学生通过课堂码加入的教学班级。
@@ -38,16 +39,33 @@ public class Classroom {
     @Column(nullable = false)
     private Instant createdAt;
 
+    @Column(name = "start_at")
+    private Instant startAt;
+
+    @Column(name = "end_at")
+    private Instant endAt;
+
+    @Column(name = "dissolved_at")
+    private Instant dissolvedAt;
+
     protected Classroom() {
         // JPA 需要的无参构造方法
     }
 
     public Classroom(String name, String courseName, Long teacherId, String joinCode) {
+        this(name, courseName, teacherId, joinCode,
+                Instant.now(), Instant.now().plus(120, ChronoUnit.DAYS));
+    }
+
+    public Classroom(String name, String courseName, Long teacherId, String joinCode,
+                     Instant startAt, Instant endAt) {
         this.name = name;
         this.courseName = courseName;
         this.teacherId = teacherId;
         this.joinCode = joinCode;
         this.createdAt = Instant.now();
+        this.startAt = startAt;
+        this.endAt = endAt;
     }
 
     public Long getId() {
@@ -72,6 +90,31 @@ public class Classroom {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getStartAt() {
+        return startAt;
+    }
+
+    public Instant getEndAt() {
+        return endAt;
+    }
+
+    public Instant getDissolvedAt() {
+        return dissolvedAt;
+    }
+
+    public boolean isDissolved() {
+        return dissolvedAt != null;
+    }
+
+    public void updateSchedule(Instant startAt, Instant endAt) {
+        this.startAt = startAt;
+        this.endAt = endAt;
+    }
+
+    public void dissolve() {
+        this.dissolvedAt = Instant.now();
     }
 }
 

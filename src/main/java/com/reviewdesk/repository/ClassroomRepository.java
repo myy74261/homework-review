@@ -13,9 +13,15 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
 
     List<Classroom> findByTeacherIdOrderByCreatedAtDesc(Long teacherId);
 
+    List<Classroom> findByTeacherIdAndDissolvedAtIsNullOrderByCreatedAtDesc(Long teacherId);
+
     List<Classroom> findByIdInOrderByCreatedAtDesc(Collection<Long> ids);
 
+    List<Classroom> findByIdInAndDissolvedAtIsNullOrderByCreatedAtDesc(Collection<Long> ids);
+
     Optional<Classroom> findByJoinCodeIgnoreCase(String joinCode);
+
+    Optional<Classroom> findByJoinCodeIgnoreCaseAndDissolvedAtIsNull(String joinCode);
 
     boolean existsByJoinCode(String joinCode);
 }

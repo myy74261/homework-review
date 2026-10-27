@@ -31,6 +31,8 @@ import com.reviewdesk.service.TeachingWorkspaceService;
 import com.reviewdesk.web.PublishAssignmentForm;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -179,8 +181,32 @@ public class SpaTeacherController {
             @Valid @RequestBody CreateClassroomRequest request) {
         Account teacher = accountService.current(authentication);
         Classroom classroom = classroomService.create(
-                teacher, request.name(), request.courseName());
+                teacher,
+                request.name(),
+                request.courseName(),
+                request.startAt(),
+                request.endAt());
         return toClassroom(classroom, 0);
+    }
+
+    @PutMapping("/classrooms/{classroomId}/schedule")
+    public SpaViewModels.ClassroomView updateClassroomSchedule(
+            @PathVariable long classroomId,
+            Authentication authentication,
+            @Valid @RequestBody UpdateClassroomScheduleRequest request) {
+        Account teacher = accountService.current(authentication);
+        Classroom classroom = classroomService.updateSchedule(
+                teacher, classroomId, request.startAt(), request.endAt());
+        return toClassroom(classroom, classroomService.memberCount(classroomId));
+    }
+
+    @PostMapping("/classrooms/{classroomId}/dissolve")
+    public SpaViewModels.ClassroomView dissolveClassroom(
+            @PathVariable long classroomId,
+            Authentication authentication) {
+        Account teacher = accountService.current(authentication);
+        Classroom classroom = classroomService.dissolve(teacher, classroomId);
+        return toClassroom(classroom, classroomService.memberCount(classroomId));
     }
 
     @GetMapping("/classrooms")
@@ -471,7 +497,8 @@ public class SpaTeacherController {
     private SpaViewModels.ClassroomView toClassroom(Classroom classroom, long members) {
         return new SpaViewModels.ClassroomView(
                 classroom.getId(), classroom.getName(), classroom.getCourseName(),
-                classroom.getJoinCode(), members);
+                classroom.getJoinCode(), members, classroom.getStartAt(),
+                classroom.getEndAt(), classroomService.lifecycleStatus(classroom));
     }
 
     private SpaViewModels.AssignmentView toAssignment(Assignment assignment) {
@@ -592,7 +619,14 @@ public class SpaTeacherController {
 
     public record CreateClassroomRequest(
             @NotBlank(message = "请填写课堂名称") String name,
-            @NotBlank(message = "请填写课程名称") String courseName) {
+            @NotBlank(message = "请填写课程名称") String courseName,
+            @NotNull(message = "请选择课程起始时间") Instant startAt,
+            @NotNull(message = "请选择课程结束时间") Instant endAt) {
+    }
+
+    public record UpdateClassroomScheduleRequest(
+            @NotNull(message = "请选择课程起始时间") Instant startAt,
+            @NotNull(message = "请选择课程结束时间") Instant endAt) {
     }
 
     public record FinalScoresRequest(Map<Long, Integer> scores) {

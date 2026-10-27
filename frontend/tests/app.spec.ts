@@ -7,6 +7,13 @@ async function login(page: import("@playwright/test").Page, username: string, pa
   await page.getByRole("button", { name: "登录", exact: true }).click();
 }
 
+function localDateTime(days: number) {
+  const value = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  value.setSeconds(0, 0);
+  const offset = value.getTimezoneOffset() * 60_000;
+  return new Date(value.getTime() - offset).toISOString().slice(0, 16);
+}
+
 test("teacher React workspace renders dashboard, review and lesson pages", async ({ page }) => {
   await login(page, "chen", "Teach1234");
   await expect(page).toHaveURL(/\/app\/teacher$/);
@@ -34,6 +41,26 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await page.goto("/app/teacher/assignments/1/lesson-plan");
   await expect(page.getByText("备课建议")).toBeVisible();
   await expect(page.getByText("规则生成模式").or(page.getByText("AI 增强已启用"))).toBeVisible();
+});
+
+test("teacher can schedule and dissolve a finished classroom", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.getByRole("button", { name: "新建课堂" }).click();
+  await page.getByLabel("课堂名称").fill("学期管理测试课堂");
+  await page.getByLabel("课程名称").fill("学期管理测试");
+  await page.getByLabel("课程起始时间").fill(localDateTime(-5));
+  await page.getByLabel("课程结束时间").fill(localDateTime(-1));
+  await page.getByRole("button", { name: "创建课堂" }).click();
+
+  const classroomCard = page
+    .getByTestId(/^classroom-card-/)
+    .filter({ hasText: "学期管理测试课堂" });
+  await expect(classroomCard).toBeVisible();
+  await expect(classroomCard.getByText("已结课")).toBeVisible();
+  await classroomCard.getByRole("button", { name: "解散课堂" }).click();
+  await expect(page.getByRole("heading", { name: "解散课堂" })).toBeVisible();
+  await page.getByRole("button", { name: "确认解散" }).click();
+  await expect(page.getByText("学期管理测试课堂")).toHaveCount(0);
 });
 
 test("teacher can withdraw, edit and republish an assignment", async ({ page }) => {

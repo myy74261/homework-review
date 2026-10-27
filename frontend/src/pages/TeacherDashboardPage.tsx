@@ -3,17 +3,20 @@ import {
   ArrowRight,
   Bot,
   BookOpen,
+  CalendarClock,
   CheckCircle2,
   ClipboardCheck,
   Copy,
   LayoutDashboard,
   MessageSquareWarning,
   Plus,
+  Trash2,
   Undo2,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
+import type { Classroom } from "@/lib/types";
 import { formatDate, formatLabels } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +25,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { ErrorState, Loading } from "@/components/ui/loading";
 import { Field, Input } from "@/components/ui/field";
+
+const classroomStatusLabels: Record<Classroom["status"], string> = {
+  UNSCHEDULED: "时间未设置",
+  UPCOMING: "未开始",
+  ACTIVE: "进行中",
+  ENDED: "已结课",
+  DISSOLVED: "已解散",
+};
+
+function localDateTime(days = 0) {
+  const value = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  value.setSeconds(0, 0);
+  const offset = value.getTimezoneOffset() * 60_000;
+  return new Date(value.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function toDateTimeInput(value: string) {
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
 
 export function TeacherDashboardPage() {
   const navigate = useNavigate();
@@ -33,6 +57,12 @@ export function TeacherDashboardPage() {
   >("overview");
   const [classroomName, setClassroomName] = useState("");
   const [courseName, setCourseName] = useState("");
+  const [courseStartAt, setCourseStartAt] = useState(localDateTime(0));
+  const [courseEndAt, setCourseEndAt] = useState(localDateTime(120));
+  const [scheduleTarget, setScheduleTarget] = useState<Classroom | null>(null);
+  const [scheduleStartAt, setScheduleStartAt] = useState("");
+  const [scheduleEndAt, setScheduleEndAt] = useState("");
+  const [dissolveTarget, setDissolveTarget] = useState<Classroom | null>(null);
   const [appealDrafts, setAppealDrafts] = useState<Record<number, string>>({});
   const [appealStatus, setAppealStatus] = useState<Record<number, string>>({});
   const [withdrawTarget, setWithdrawTarget] = useState<{
@@ -47,13 +77,48 @@ export function TeacherDashboardPage() {
   });
 
   const createClassroom = useMutation({
-    mutationFn: () => api.createClassroom({ name: classroomName, courseName }),
+    mutationFn: () =>
+      api.createClassroom({
+        name: classroomName,
+        courseName,
+        startAt: new Date(courseStartAt).toISOString(),
+        endAt: new Date(courseEndAt).toISOString(),
+      }),
     onSuccess: async () => {
       notify("课堂已创建，可以分享课堂码。", "success");
       setClassroomOpen(false);
       setClassroomName("");
       setCourseName("");
+      setCourseStartAt(localDateTime(0));
+      setCourseEndAt(localDateTime(120));
       await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const updateSchedule = useMutation({
+    mutationFn: () =>
+      api.updateClassroomSchedule(scheduleTarget!.id, {
+        startAt: new Date(scheduleStartAt).toISOString(),
+        endAt: new Date(scheduleEndAt).toISOString(),
+      }),
+    onSuccess: async () => {
+      notify("课程时间已更新。", "success");
+      setScheduleTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const dissolveClassroom = useMutation({
+    mutationFn: (classroomId: number) => api.dissolveClassroom(classroomId),
+    onSuccess: async () => {
+      notify("课堂已解散，历史数据仍保留在数据库中。", "success");
+      setDissolveTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
     },
     onError: (error: Error) => notify(error.message, "error"),
   });
@@ -236,25 +301,81 @@ export function TeacherDashboardPage() {
                   {data.classrooms.map((classroom) => (
                     <div
                       key={classroom.id}
-                      className="flex min-w-[280px] flex-1 items-center justify-between gap-4 rounded-xl border border-line bg-pine-50/55 px-4 py-3"
+                      data-testid={`classroom-card-${classroom.id}`}
+                      className="min-w-[340px] flex-1 rounded-xl border border-line bg-pine-50/55 p-4"
                     >
-                      <div>
-                        <strong className="text-sm">{classroom.name}</strong>
-                        <p className="mt-1 text-xs text-muted">
-                          {classroom.courseName} · {classroom.memberCount} 名学生
-                        </p>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <strong className="text-sm">{classroom.name}</strong>
+                            <Badge
+                              tone={
+                                classroom.status === "ACTIVE"
+                                  ? "default"
+                                  : classroom.status === "ENDED"
+                                    ? "neutral"
+                                    : "warning"
+                              }
+                            >
+                              {classroomStatusLabels[classroom.status]}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted">
+                            {classroom.courseName} · {classroom.memberCount} 名学生
+                          </p>
+                          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                            <CalendarClock className="size-3.5" />
+                            {classroom.startAt && classroom.endAt
+                              ? `${formatDate(classroom.startAt)} 至 ${formatDate(classroom.endAt)}`
+                              : "课程时间未设置"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(classroom.joinCode);
+                            notify(`课堂码 ${classroom.joinCode} 已复制。`, "success");
+                          }}
+                          className="flex shrink-0 items-center gap-2 rounded-lg border border-dashed border-pine-500/40 bg-white px-2.5 py-2 font-mono text-xs text-pine-700"
+                        >
+                          {classroom.joinCode}
+                          <Copy className="size-3.5" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(classroom.joinCode);
-                          notify(`课堂码 ${classroom.joinCode} 已复制。`, "success");
-                        }}
-                        className="flex items-center gap-2 rounded-lg border border-dashed border-pine-500/40 bg-white px-2.5 py-2 font-mono text-xs text-pine-700"
-                      >
-                        {classroom.joinCode}
-                        <Copy className="size-3.5" />
-                      </button>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-pine-500/10 pt-3">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setScheduleTarget(classroom);
+                            setScheduleStartAt(
+                              classroom.startAt
+                                ? toDateTimeInput(classroom.startAt)
+                                : localDateTime(0),
+                            );
+                            setScheduleEndAt(
+                              classroom.endAt
+                                ? toDateTimeInput(classroom.endAt)
+                                : localDateTime(120),
+                            );
+                          }}
+                        >
+                          <CalendarClock className="size-3.5" />
+                          {classroom.status === "UNSCHEDULED" ? "设置课程时间" : "调整课程时间"}
+                        </Button>
+                        {classroom.status === "ENDED" ? (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDissolveTarget(classroom)}
+                          >
+                            <Trash2 className="size-3.5" />
+                            解散课堂
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                   {data.classrooms.length === 0 ? (
@@ -581,13 +702,124 @@ export function TeacherDashboardPage() {
               placeholder="例如：传播学方法课"
             />
           </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="课程起始时间">
+              <Input
+                type="datetime-local"
+                value={courseStartAt}
+                onChange={(event) => setCourseStartAt(event.target.value)}
+                required
+              />
+            </Field>
+            <Field label="课程结束时间">
+              <Input
+                type="datetime-local"
+                value={courseEndAt}
+                onChange={(event) => setCourseEndAt(event.target.value)}
+                required
+              />
+            </Field>
+          </div>
           <Button
             size="lg"
-            disabled={createClassroom.isPending || !classroomName.trim() || !courseName.trim()}
+            disabled={
+              createClassroom.isPending ||
+              !classroomName.trim() ||
+              !courseName.trim() ||
+              !courseStartAt ||
+              !courseEndAt ||
+              courseStartAt >= courseEndAt
+            }
             onClick={() => createClassroom.mutate()}
           >
             {createClassroom.isPending ? "创建中…" : "创建课堂"}
           </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={scheduleTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setScheduleTarget(null);
+        }}
+        title="调整课程时间"
+        description={
+          scheduleTarget ? `设置《${scheduleTarget.name}》的课程起始和结束时间。` : undefined
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="新的起始时间">
+              <Input
+                type="datetime-local"
+                value={scheduleStartAt}
+                onChange={(event) => setScheduleStartAt(event.target.value)}
+                required
+              />
+            </Field>
+            <Field label="新的结束时间">
+              <Input
+                type="datetime-local"
+                value={scheduleEndAt}
+                onChange={(event) => setScheduleEndAt(event.target.value)}
+                required
+              />
+            </Field>
+          </div>
+          <p className="rounded-xl bg-stone-50 p-3 text-xs leading-6 text-muted">
+            调整结束时间不会删除作业、提交或审核记录。课程结束前不能解散课堂。
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setScheduleTarget(null)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                updateSchedule.isPending ||
+                !scheduleStartAt ||
+                !scheduleEndAt ||
+                scheduleStartAt >= scheduleEndAt
+              }
+              onClick={() => updateSchedule.mutate()}
+            >
+              {updateSchedule.isPending ? "保存中…" : "保存课程时间"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={dissolveTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDissolveTarget(null);
+        }}
+        title="解散课堂"
+        description={
+          dissolveTarget
+            ? `《${dissolveTarget.name}》已结课。解散后将不再显示在教师端和学生端。`
+            : undefined
+        }
+      >
+        <div className="space-y-4">
+          <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-700">
+            解散采用软删除，作业、提交、评分和申诉记录仍保留在数据库中，不会物理删除。
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDissolveTarget(null)}>
+              暂不解散
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={dissolveClassroom.isPending}
+              onClick={() => {
+                if (dissolveTarget) dissolveClassroom.mutate(dissolveTarget.id);
+              }}
+            >
+              {dissolveClassroom.isPending ? "解散中…" : "确认解散"}
+            </Button>
+          </div>
         </div>
       </Dialog>
 

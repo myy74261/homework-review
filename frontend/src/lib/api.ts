@@ -89,10 +89,24 @@ export const api = {
   teacherDashboard: () => request<TeacherDashboard>("/api/app/teacher/dashboard"),
   studentDashboard: () => request<StudentDashboard>("/api/app/student/dashboard"),
   teacherClassrooms: () => request<Classroom[]>("/api/app/teacher/classrooms"),
-  createClassroom: (payload: { name: string; courseName: string }) =>
+  createClassroom: (payload: {
+    name: string;
+    courseName: string;
+    startAt: string;
+    endAt: string;
+  }) =>
     request<Classroom>("/api/app/teacher/classrooms", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  updateClassroomSchedule: (classroomId: number, payload: { startAt: string; endAt: string }) =>
+    request<Classroom>(`/api/app/teacher/classrooms/${classroomId}/schedule`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  dissolveClassroom: (classroomId: number) =>
+    request<Classroom>(`/api/app/teacher/classrooms/${classroomId}/dissolve`, {
+      method: "POST",
     }),
   publishAssignment: (payload: unknown) =>
     request<{ id: number; status: string; redirectPath: string }>("/api/app/teacher/assignments", {
