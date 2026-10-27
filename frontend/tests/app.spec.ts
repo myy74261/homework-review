@@ -11,6 +11,7 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await login(page, "chen", "Teach1234");
   await expect(page).toHaveURL(/\/app\/teacher$/);
   await expect(page.getByRole("heading", { name: "作业审核与课堂反馈" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "我的课堂", exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: /概览/ })).toHaveAttribute("aria-selected", "true");
   await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
 

@@ -225,8 +225,7 @@ export function TeacherDashboardPage() {
               <section className="rounded-2xl border border-line bg-white/85 p-5 shadow-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="page-eyebrow">我的课堂</p>
-                    <h2 className="section-title mt-1">课堂与加入码</h2>
+                    <h2 className="section-title">我的课堂</h2>
                   </div>
                   <Button variant="secondary" size="sm" onClick={() => setClassroomOpen(true)}>
                     <Plus className="size-4" />
