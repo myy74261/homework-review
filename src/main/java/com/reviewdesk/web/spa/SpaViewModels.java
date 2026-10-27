@@ -85,6 +85,17 @@ public final class SpaViewModels {
     public record CommonIssueView(String rubricName, long count) {
     }
 
+    public record AiBatchProgressView(
+            long assignmentId,
+            long total,
+            long completed,
+            long running,
+            long pending,
+            long failed,
+            long skipped
+    ) {
+    }
+
     public record AppealOverview(AppealView appeal, String studentName,
                                  String assignmentTitle) {
     }
@@ -114,7 +125,9 @@ public final class SpaViewModels {
                                    List<AssignmentOverview> assignments,
                                    List<SubmissionOverview> submissions,
                                    List<CommonIssueView> commonIssues,
-                                   List<AppealOverview> appeals, long reviewedCount) {
+                                   List<AppealOverview> appeals, long reviewedCount,
+                                   boolean aiConfigured,
+                                   List<AiBatchProgressView> aiBatchProgress) {
     }
 
     public record TeacherReviewWorkspace(

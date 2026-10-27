@@ -186,6 +186,16 @@ export interface CommonIssue {
   count: number;
 }
 
+export interface AiBatchProgress {
+  assignmentId: number;
+  total: number;
+  completed: number;
+  running: number;
+  pending: number;
+  failed: number;
+  skipped: number;
+}
+
 export interface AppealOverview {
   appeal: Appeal;
   studentName: string;
@@ -200,6 +210,8 @@ export interface TeacherDashboard {
   commonIssues: CommonIssue[];
   appeals: AppealOverview[];
   reviewedCount: number;
+  aiConfigured: boolean;
+  aiBatchProgress: AiBatchProgress[];
 }
 
 export interface TeacherReviewWorkspace {

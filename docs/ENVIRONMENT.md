@@ -73,6 +73,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `AI_MODEL` | `deepseek-chat` | 模型名称 |
 | `AI_TIMEOUT_SECONDS` | `30` | 模型请求超时秒数 |
 | `AI_SETTINGS_SECRET` | 本地开发默认值 | 加密教师在页面中填写的 API Key；生产必须更换 |
+| `AI_BATCH_SIZE` | `3` | 每轮自动预审最多处理的提交数 |
+| `AI_BATCH_INITIAL_DELAY_MS` | `15000` | 服务启动后首次扫描等待时间 |
+| `AI_BATCH_DELAY_MS` | `60000` | 自动预审扫描间隔 |
 | `SHOW_DEMO_CREDENTIALS` | `true` | 登录页是否显示初始演示账号；生产环境应设为 `false` |
 | `DEMO_TEACHER_USERNAME` | `chen` | 首次启动创建的教师账号 |
 | `DEMO_TEACHER_PASSWORD` | `Teach1234` | 首次启动创建的教师密码 |

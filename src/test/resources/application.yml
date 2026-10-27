@@ -5,3 +5,7 @@ spring:
     hibernate:
       ddl-auto: create-drop
     open-in-view: false
+
+review-desk:
+  ai:
+    batch-initial-delay-ms: 3600000

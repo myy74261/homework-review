@@ -11,8 +11,14 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await login(page, "chen", "Teach1234");
   await expect(page).toHaveURL(/\/app\/teacher$/);
   await expect(page.getByRole("heading", { name: "从提交证据到备课素材" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "已发布作业" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /概览/ })).toHaveAttribute("aria-selected", "true");
   await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
+
+  await page.getByRole("tab", { name: /作业管理/ }).click();
+  await expect(page.getByRole("heading", { name: "已发布作业" })).toBeVisible();
+  await page.getByRole("tab", { name: /AI 批审/ }).click();
+  await expect(page.getByRole("heading", { name: "AI 批量预审" })).toBeVisible();
+  await expect(page.getByText(/作业截止后自动排队，无需教师手动启动|尚未接入模型/)).toBeVisible();
 
   await page.goto("/app/reviews/1");
   await expect(page.getByRole("heading", { name: "建议由模型生成，结论由教师决定" })).toBeVisible();

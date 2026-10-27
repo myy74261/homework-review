@@ -46,6 +46,9 @@ review-desk:
     model: ${AI_MODEL:deepseek-chat}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
     settings-secret: ${AI_SETTINGS_SECRET:review-desk-local-dev-secret}
+    batch-size: ${AI_BATCH_SIZE:3}
+    batch-initial-delay-ms: ${AI_BATCH_INITIAL_DELAY_MS:15000}
+    batch-delay-ms: ${AI_BATCH_DELAY_MS:60000}
   ui:
     show-demo-credentials: ${SHOW_DEMO_CREDENTIALS:true}
   demo:

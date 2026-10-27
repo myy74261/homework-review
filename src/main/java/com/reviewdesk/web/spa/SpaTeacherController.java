@@ -17,6 +17,7 @@ import com.reviewdesk.service.AccountService;
 import com.reviewdesk.service.AppealService;
 import com.reviewdesk.service.AiReviewService;
 import com.reviewdesk.service.AiSettingsService;
+import com.reviewdesk.service.AiBatchReviewService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
 import com.reviewdesk.service.IntegrityService;
@@ -62,6 +63,7 @@ public class SpaTeacherController {
     private final AppealService appealService;
     private final AiReviewService aiReviewService;
     private final AiSettingsService aiSettingsService;
+    private final AiBatchReviewService aiBatchReviewService;
     private final ReviewIssueRepository issueRepository;
     private final ReviewActivityService activityService;
     private final AccessControlService accessControlService;
@@ -79,6 +81,7 @@ public class SpaTeacherController {
             AppealService appealService,
             AiReviewService aiReviewService,
             AiSettingsService aiSettingsService,
+            AiBatchReviewService aiBatchReviewService,
             ReviewIssueRepository issueRepository,
             ReviewActivityService activityService,
             AccessControlService accessControlService,
@@ -94,6 +97,7 @@ public class SpaTeacherController {
         this.appealService = appealService;
         this.aiReviewService = aiReviewService;
         this.aiSettingsService = aiSettingsService;
+        this.aiBatchReviewService = aiBatchReviewService;
         this.issueRepository = issueRepository;
         this.activityService = activityService;
         this.accessControlService = accessControlService;
@@ -122,6 +126,9 @@ public class SpaTeacherController {
                         })
                         .toList();
 
+        List<Long> assignmentIds = workspaceService.listAssignments(classroomIds).stream()
+                .map(item -> item.assignment().getId())
+                .toList();
         return new SpaViewModels.TeacherDashboard(
                 toUser(teacher),
                 classrooms.stream()
@@ -148,7 +155,18 @@ public class SpaTeacherController {
                                 issue.rubricName(), issue.count()))
                         .toList(),
                 appeals,
-                submissions.stream().filter(item -> "已审核".equals(item.statusText())).count());
+                submissions.stream().filter(item -> "已审核".equals(item.statusText())).count(),
+                aiSettingsService.isConfigured(teacher.getUsername()),
+                aiBatchReviewService.progress(assignmentIds).stream()
+                        .map(item -> new SpaViewModels.AiBatchProgressView(
+                                item.assignmentId(),
+                                item.total(),
+                                item.completed(),
+                                item.running(),
+                                item.pending(),
+                                item.failed(),
+                                item.skipped()))
+                        .toList());
     }
 
     @PostMapping("/classrooms")

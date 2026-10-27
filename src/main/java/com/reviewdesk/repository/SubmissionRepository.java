@@ -3,6 +3,7 @@ package com.reviewdesk.repository;
 import com.reviewdesk.domain.Submission;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -21,5 +22,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             Long assignmentId, Long studentAccountId);
 
     Optional<Submission> findTopByOrderByIdDesc();
+
+    List<Submission> findByDueAtBeforeAndReviewStatusNot(
+            Instant now, String reviewStatus);
 }
 
