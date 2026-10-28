@@ -314,6 +314,33 @@ class SpaApiControllerTest {
     }
 
     @Test
+    void teacherCanUpdateProfileDetailsWithoutChangingUsernameOrRole() throws Exception {
+        mockMvc.perform(put("/api/app/account/profile")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "陈老师（教研）",
+                                  "email": "chen@example.edu.cn",
+                                  "department": "新闻传播学院",
+                                  "professionalTitle": "副教授"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("chen"))
+                .andExpect(jsonPath("$.role").value("TEACHER"))
+                .andExpect(jsonPath("$.displayName").value("陈老师（教研）"))
+                .andExpect(jsonPath("$.email").value("chen@example.edu.cn"))
+                .andExpect(jsonPath("$.department").value("新闻传播学院"))
+                .andExpect(jsonPath("$.professionalTitle").value("副教授"));
+
+        var account = accountRepository.findByUsername("chen").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(account.getDisplayName())
+                .isEqualTo("陈老师（教研）");
+    }
+
+    @Test
     void teacherCanReviewAiTraceAndExplicitlyAdoptSuggestion() throws Exception {
         AiReviewRun run = aiReviewRunRepository.save(new AiReviewRun(
                 1L, "deepseek-chat", "模型认为引用需要进一步核对，最终由教师判断。"));

@@ -201,7 +201,8 @@ public class SpaStudentController {
     private SpaViewModels.UserView toUser(Account account) {
         return new SpaViewModels.UserView(
                 account.getId(), account.getUsername(), account.getDisplayName(),
-                account.getRole(), account.getStudentNumber());
+                account.getRole(), account.getStudentNumber(), account.getEmail(),
+                account.getDepartment(), account.getProfessionalTitle());
     }
 
     private SpaViewModels.AssignmentView toAssignment(Assignment assignment) {

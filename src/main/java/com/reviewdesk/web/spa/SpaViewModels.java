@@ -14,7 +14,8 @@ public final class SpaViewModels {
     }
 
     public record UserView(long id, String username, String displayName,
-                           String role, String studentNumber) {
+                           String role, String studentNumber, String email,
+                           String department, String professionalTitle) {
     }
 
     public record SessionView(UserView user, String csrfToken, String csrfHeader,

@@ -354,7 +354,10 @@ export function ReviewWorkspacePage() {
               </p>
               {!data.aiConfigured ? (
                 <div className="rounded-xl border border-dashed border-line p-3 text-xs leading-6 text-muted">
-                  当前未配置 AI 接口，请到个人中心设置。
+                  当前未配置 AI 接口。
+                  <Link to="/teacher/ai-settings" className="ml-1 font-medium text-pine-700">
+                    前往 AI 设置
+                  </Link>
                 </div>
               ) : (
                 <Button

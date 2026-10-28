@@ -39,6 +39,15 @@ public class Account {
     @Column(length = 40)
     private String studentNumber;
 
+    @Column(length = 120)
+    private String email;
+
+    @Column(length = 100)
+    private String department;
+
+    @Column(length = 100)
+    private String professionalTitle;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -84,6 +93,18 @@ public class Account {
         return createdAt;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public String getProfessionalTitle() {
+        return professionalTitle;
+    }
+
     public boolean isTeacher() {
         return Role.TEACHER.name().equals(role);
     }
@@ -93,6 +114,14 @@ public class Account {
      */
     public void changePasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public void updateProfile(String displayName, String email,
+                              String department, String professionalTitle) {
+        this.displayName = displayName;
+        this.email = email;
+        this.department = department;
+        this.professionalTitle = professionalTitle;
     }
 }
 

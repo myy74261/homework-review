@@ -58,6 +58,34 @@ public class AccountService {
     }
 
     @Transactional
+    public Account updateProfile(String username, String displayName,
+                                 String email, String department,
+                                 String professionalTitle) {
+        Account account = requireByUsername(username);
+        String cleanDisplayName = displayName == null ? "" : displayName.strip();
+        if (cleanDisplayName.isEmpty() || cleanDisplayName.length() > 80) {
+            throw new IllegalArgumentException("姓名需要为 1–80 个字符");
+        }
+        String cleanEmail = clean(email);
+        if (cleanEmail != null
+                && !cleanEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("邮箱格式不正确");
+        }
+        String cleanDepartment = account.isTeacher() ? clean(department) : null;
+        String cleanTitle = account.isTeacher() ? clean(professionalTitle) : null;
+        if ((cleanDepartment != null && cleanDepartment.length() > 100)
+                || (cleanTitle != null && cleanTitle.length() > 100)) {
+            throw new IllegalArgumentException("院系和职称信息不能超过 100 个字符");
+        }
+        account.updateProfile(
+                cleanDisplayName,
+                cleanEmail,
+                cleanDepartment,
+                cleanTitle);
+        return account;
+    }
+
+    @Transactional
     public Account register(String username, String password, String displayName,
                             Account.Role role, String studentNumber) {
         String cleanUsername = username == null ? "" : username.strip().toLowerCase();
@@ -83,6 +111,10 @@ public class AccountService {
                 displayName.strip(),
                 role,
                 role == Account.Role.STUDENT ? studentNumber.strip() : null));
+    }
+
+    private String clean(String value) {
+        return value == null || value.isBlank() ? null : value.strip();
     }
 }
 

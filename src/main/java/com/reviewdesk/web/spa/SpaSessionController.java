@@ -3,6 +3,7 @@ package com.reviewdesk.web.spa;
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.service.AccountService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
@@ -49,13 +50,29 @@ public class SpaSessionController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/account/profile")
+    public SpaViewModels.UserView updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        Account account = accountService.updateProfile(
+                authentication.getName(),
+                request.displayName(),
+                request.email(),
+                request.department(),
+                request.professionalTitle());
+        return toUser(account);
+    }
+
     private SpaViewModels.UserView toUser(Account account) {
         return new SpaViewModels.UserView(
                 account.getId(),
                 account.getUsername(),
                 account.getDisplayName(),
                 account.getRole(),
-                account.getStudentNumber());
+                account.getStudentNumber(),
+                account.getEmail(),
+                account.getDepartment(),
+                account.getProfessionalTitle());
     }
 
     public record ChangePasswordRequest(
@@ -63,5 +80,18 @@ public class SpaSessionController {
             @NotBlank(message = "请输入新密码")
             @Size(min = 8, max = 72, message = "新密码需要 8–72 个字符")
             String newPassword) {
+    }
+
+    public record UpdateProfileRequest(
+            @NotBlank(message = "请填写姓名")
+            @Size(max = 80, message = "姓名不能超过 80 个字符")
+            String displayName,
+            @Email(message = "邮箱格式不正确")
+            @Size(max = 120, message = "邮箱不能超过 120 个字符")
+            String email,
+            @Size(max = 100, message = "院系不能超过 100 个字符")
+            String department,
+            @Size(max = 100, message = "职称/职务不能超过 100 个字符")
+            String professionalTitle) {
     }
 }

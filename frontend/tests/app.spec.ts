@@ -27,10 +27,15 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await page.getByRole("tab", { name: /AI 预审/ }).click();
   await expect(page.getByRole("heading", { name: "批量预审进度" })).toBeVisible();
   await expect(page.getByText(/作业截止后自动开始|尚未接入模型/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "配置 AI 接口" })).toHaveAttribute(
+    "href",
+    "/app/teacher/ai-settings",
+  );
 
   await page.goto("/app/reviews/1");
   await expect(page.getByRole("heading", { name: "预审建议" })).toBeVisible();
   await expect(page.getByText(/当前未配置 AI 接口/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "前往 AI 设置" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "评分建议" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "诚信核验" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "提交内容" })).toBeVisible();
@@ -138,10 +143,27 @@ test("student can submit through the React async form", async ({ page }) => {
   await expect(page.getByText("react-upload.md")).toBeVisible();
 });
 
-test("authenticated user can change their password from account settings", async ({ page }) => {
+test("teacher AI settings are available on a dedicated page", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.goto("/app/teacher/ai-settings");
+  await expect(page.getByRole("heading", { name: "AI 接口设置" })).toBeVisible();
+  await expect(page.getByLabel("模型服务")).toBeVisible();
+  await expect(page.getByLabel("模型名称")).toBeVisible();
+  await expect(page.getByLabel("API Key")).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-ai-settings.png", fullPage: true });
+});
+
+test("teacher can update profile details and password from account settings", async ({ page }) => {
   await login(page, "chen", "Teach1234");
   await page.goto("/app/account");
-  await expect(page.getByRole("heading", { name: "AI 接口设置" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "编辑个人资料" })).toBeVisible();
+  await page.getByLabel("姓名").fill("陈老师（教研）");
+  await page.getByLabel("邮箱").fill("chen@example.edu.cn");
+  await page.getByLabel("院系").fill("新闻传播学院");
+  await page.getByLabel("职称 / 职务").fill("副教授");
+  await page.getByRole("button", { name: "保存个人信息" }).click();
+  await expect(page.getByText("个人信息已更新。")).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-account.png", fullPage: true });
   await page.getByLabel("当前密码").fill("Teach1234");
   await page.getByLabel("新密码", { exact: true }).fill("ChangedPass-2026!");
   await page.getByLabel("确认新密码").fill("ChangedPass-2026!");

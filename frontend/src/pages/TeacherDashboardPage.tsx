@@ -555,9 +555,12 @@ export function TeacherDashboardPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {!data.aiConfigured ? (
-                      <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-700">
-                        尚未接入模型。配置 AI 接口后，作业截止时会自动开始预审。
-                      </p>
+                      <div className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-700">
+                        <p>尚未接入模型。配置 AI 接口后，作业截止时会自动开始预审。</p>
+                        <Button asChild variant="secondary" size="sm" className="mt-3">
+                          <Link to="/teacher/ai-settings">配置 AI 接口</Link>
+                        </Button>
+                      </div>
                     ) : (
                       <p className="rounded-xl bg-pine-50 p-3 text-xs leading-5 text-pine-700">
                         作业截止后自动开始。AI 只生成待确认建议，不会发布成绩。
@@ -589,18 +592,24 @@ export function TeacherDashboardPage() {
                           <span className="min-w-0 truncate text-xs text-stone-700">
                             {assignment.title}
                           </span>
-                          <Badge
-                            tone={
-                              status === "预审完成"
-                                ? "default"
-                                : status.startsWith("失败")
-                                  ? "danger"
-                                  : "warning"
-                            }
-                            className="shrink-0"
-                          >
-                            {status}
-                          </Badge>
+                          {status === "等待配置" ? (
+                            <Link to="/teacher/ai-settings" className="shrink-0">
+                              <Badge tone="warning">等待配置 →</Badge>
+                            </Link>
+                          ) : (
+                            <Badge
+                              tone={
+                                status === "预审完成"
+                                  ? "default"
+                                  : status.startsWith("失败")
+                                    ? "danger"
+                                    : "warning"
+                              }
+                              className="shrink-0"
+                            >
+                              {status}
+                            </Badge>
+                          )}
                         </div>
                       );
                     })}

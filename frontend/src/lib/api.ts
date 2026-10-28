@@ -15,6 +15,7 @@ import type {
   StudentDashboard,
   TeacherDashboard,
   TeacherReviewWorkspace,
+  User,
 } from "@/lib/types";
 
 class ApiError extends Error {
@@ -231,6 +232,16 @@ export const api = {
     }),
   changePassword: (payload: { currentPassword: string; newPassword: string }) =>
     request<void>("/api/app/account/password", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  updateProfile: (payload: {
+    displayName: string;
+    email: string;
+    department: string;
+    professionalTitle: string;
+  }) =>
+    request<User>("/api/app/account/profile", {
       method: "PUT",
       body: JSON.stringify(payload),
     }),

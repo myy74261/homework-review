@@ -11,6 +11,7 @@ import { LessonPlanPage } from "@/pages/LessonPlanPage";
 import { StudentHomePage } from "@/pages/StudentHomePage";
 import { StudentAssignmentPage } from "@/pages/StudentAssignmentPage";
 import { AccountPage } from "@/pages/AccountPage";
+import { AiSettingsPage } from "@/pages/AiSettingsPage";
 
 function HomeRedirect() {
   const session = useAppStore((state) => state.session);
@@ -57,6 +58,14 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route index element={<HomeRedirect />} />
         <Route path="account" element={<AccountPage />} />
+        <Route
+          path="teacher/ai-settings"
+          element={
+            <TeacherOnly>
+              <AiSettingsPage />
+            </TeacherOnly>
+          }
+        />
         <Route
           path="teacher"
           element={

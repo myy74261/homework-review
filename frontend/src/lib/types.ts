@@ -6,6 +6,9 @@ export interface User {
   displayName: string;
   role: Role;
   studentNumber: string | null;
+  email: string | null;
+  department: string | null;
+  professionalTitle: string | null;
 }
 
 export interface Session {

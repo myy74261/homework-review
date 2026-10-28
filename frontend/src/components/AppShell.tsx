@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardCheck, Home, LogOut, Settings, Sparkles } from "lucide-react";
+import { Bot, BookOpen, ClipboardCheck, Home, LogOut, Settings, Sparkles } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 const teacherNav = [
   { to: "/teacher", label: "我的课堂", icon: Home },
   { to: "/teacher/assignments/new", label: "发布作业", icon: BookOpen },
+  { to: "/teacher/ai-settings", label: "AI 设置", icon: Bot },
 ];
 
 const studentNav = [{ to: "/student", label: "我的作业", icon: ClipboardCheck }];
