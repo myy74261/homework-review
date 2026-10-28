@@ -17,7 +17,7 @@ import {
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
-import type { Classroom, TeacherDashboard } from "@/lib/types";
+import type { Classroom, ClassroomAnalytics, TeacherDashboard } from "@/lib/types";
 import { formatDate, formatLabels } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { Badge } from "@/components/ui/badge";
@@ -48,107 +48,86 @@ function toDateTimeInput(value: string) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
-function TeacherOverviewCharts({ data }: { data: TeacherDashboard }) {
+function ReviewCompletionCard({ data }: { data: TeacherDashboard }) {
   const totalSubmissions = data.submissions.length;
   const completion = totalSubmissions
     ? Math.round((data.reviewedCount / totalSubmissions) * 100)
     : 0;
-  const submittedStudents = data.submittedStudentCount;
-  const unsubmittedStudents = Math.max(0, data.enrolledStudentCount - submittedStudents);
-  const submittedPercent = data.enrolledStudentCount
-    ? Math.round((submittedStudents / data.enrolledStudentCount) * 100)
-    : 0;
-  const maxIssue = Math.max(1, ...data.commonIssues.map((issue) => issue.count));
 
   return (
-    <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-      <Card className="p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="page-eyebrow">审核进度</p>
-            <h2 className="mt-1 font-display text-xl font-semibold">审核完成度</h2>
-          </div>
-          <BarChart3 className="size-5 text-pine-600" />
+    <Card className="p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="page-eyebrow">审核进度</p>
+          <h2 className="mt-1 font-display text-xl font-semibold">审核完成度</h2>
         </div>
-        <div className="mt-5 flex items-center gap-5">
-          <div
-            className="grid size-28 shrink-0 place-items-center rounded-full"
-            style={{
-              background: `conic-gradient(#2f6d57 ${completion * 3.6}deg, #e7ece9 0deg)`,
-            }}
-          >
-            <div className="grid size-20 place-items-center rounded-full bg-white">
-              <strong className="font-display text-2xl text-pine-700">{completion}%</strong>
-            </div>
-          </div>
-          <div className="space-y-2 text-sm">
-            <p>
-              <strong className="text-xl">{data.reviewedCount}</strong>
-              <span className="ml-2 text-muted">已完成反馈</span>
-            </p>
-            <p>
-              <strong className="text-xl">{totalSubmissions - data.reviewedCount}</strong>
-              <span className="ml-2 text-muted">待完成审核</span>
-            </p>
-            <p className="text-xs text-muted">按提交记录统计</p>
+        <BarChart3 className="size-5 text-pine-600" />
+      </div>
+      <div className="mt-5 flex items-center gap-5">
+        <div
+          className="grid size-24 shrink-0 place-items-center rounded-full"
+          style={{
+            background: `conic-gradient(#2f6d57 ${completion * 3.6}deg, #e7ece9 0deg)`,
+          }}
+        >
+          <div className="grid size-[68px] place-items-center rounded-full bg-white">
+            <strong className="font-display text-xl text-pine-700">{completion}%</strong>
           </div>
         </div>
-      </Card>
-
-      <Card className="p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="page-eyebrow">学生覆盖</p>
-            <h2 className="mt-1 font-display text-xl font-semibold">学生提交占比</h2>
-          </div>
-          <span className="font-display text-3xl text-pine-700">{submittedPercent}%</span>
-        </div>
-        <div className="mt-8">
-          <div className="flex h-5 overflow-hidden rounded-full bg-stone-100">
-            <div className="h-full bg-pine-500" style={{ width: `${submittedPercent}%` }} />
-            <div className="bg-clay-200 h-full" style={{ width: `${100 - submittedPercent}%` }} />
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-pine-50 p-3">
-              <span className="flex items-center gap-2 text-xs text-pine-700">
-                <span className="size-2 rounded-full bg-pine-500" />
-                已提交学生
-              </span>
-              <strong className="mt-2 block font-display text-2xl text-pine-700">
-                {submittedStudents}
-              </strong>
-            </div>
-            <div className="rounded-xl bg-stone-50 p-3">
-              <span className="flex items-center gap-2 text-xs text-muted">
-                <span className="bg-clay-300 size-2 rounded-full" />
-                未提交学生
-              </span>
-              <strong className="mt-2 block font-display text-2xl">{unsubmittedStudents}</strong>
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-muted">
-            共 {data.enrolledStudentCount} 名在册学生，按学生账号去重统计。
+        <div className="space-y-1.5 text-sm">
+          <p>
+            <strong className="text-xl">{data.reviewedCount}</strong>
+            <span className="ml-2 text-muted">已完成反馈</span>
+          </p>
+          <p>
+            <strong className="text-xl">{totalSubmissions - data.reviewedCount}</strong>
+            <span className="ml-2 text-muted">待完成审核</span>
           </p>
         </div>
-      </Card>
+      </div>
+    </Card>
+  );
+}
 
-      {data.commonIssues.length ? (
-        <Card className="p-5 lg:col-span-2">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="page-eyebrow">共性问题</p>
-              <h2 className="mt-1 font-display text-xl font-semibold">问题维度分布</h2>
-            </div>
-            <span className="text-xs text-muted">基于教师确认的问题</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {data.commonIssues.slice(0, 6).map((issue) => (
+function ClassroomAnalyticsPanel({ analytics }: { analytics?: ClassroomAnalytics }) {
+  if (!analytics) return null;
+  const submittedPercent = analytics.enrolledStudentCount
+    ? Math.round((analytics.submittedStudentCount / analytics.enrolledStudentCount) * 100)
+    : 0;
+  const unsubmittedStudents = Math.max(
+    0,
+    analytics.enrolledStudentCount - analytics.submittedStudentCount,
+  );
+  const maxIssue = Math.max(1, ...analytics.commonIssues.map((issue) => issue.count));
+
+  return (
+    <div className="mt-4 space-y-4 border-t border-pine-500/10 pt-4">
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold">学生提交占比</h3>
+          <span className="text-xs font-medium text-pine-700">{submittedPercent}%</span>
+        </div>
+        <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-stone-100">
+          <div className="h-full bg-pine-500" style={{ width: `${submittedPercent}%` }} />
+          <div className="bg-clay-200 h-full" style={{ width: `${100 - submittedPercent}%` }} />
+        </div>
+        <p className="mt-2 text-[11px] text-muted">
+          已提交学生 {analytics.submittedStudentCount} 人 · 未提交学生 {unsubmittedStudents} 人 · 共{" "}
+          {analytics.enrolledStudentCount} 人
+        </p>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-semibold">问题维度分析</h3>
+        {analytics.commonIssues.length ? (
+          <div className="mt-2 space-y-2">
+            {analytics.commonIssues.slice(0, 4).map((issue) => (
               <div key={issue.rubricName}>
-                <div className="mb-1 flex justify-between gap-3 text-xs">
+                <div className="mb-1 flex justify-between gap-3 text-[11px] text-muted">
                   <span>{issue.rubricName}</span>
                   <strong>{issue.count}</strong>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-stone-100">
+                <div className="h-1.5 overflow-hidden rounded-full bg-white">
                   <div
                     className="h-full rounded-full bg-pine-500"
                     style={{ width: `${(issue.count / maxIssue) * 100}%` }}
@@ -157,9 +136,11 @@ function TeacherOverviewCharts({ data }: { data: TeacherDashboard }) {
               </div>
             ))}
           </div>
-        </Card>
-      ) : null}
-    </section>
+        ) : (
+          <p className="mt-2 text-[11px] text-muted">暂无已确认的共性问题。</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -439,7 +420,7 @@ export function TeacherDashboardPage() {
                 ))}
               </section>
 
-              <TeacherOverviewCharts data={data} />
+              <ReviewCompletionCard data={data} />
 
               <section className="rounded-2xl border border-line bg-white/85 p-5 shadow-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -451,12 +432,16 @@ export function TeacherDashboardPage() {
                     新建课堂
                   </Button>
                 </div>
-                <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                <div
+                  className={`mt-4 grid gap-3 ${
+                    data.classrooms.length > 1 ? "lg:grid-cols-2" : ""
+                  }`}
+                >
                   {data.classrooms.map((classroom) => (
                     <div
                       key={classroom.id}
                       data-testid={`classroom-card-${classroom.id}`}
-                      className="min-w-[340px] flex-1 rounded-xl border border-line bg-pine-50/55 p-4"
+                      className="rounded-xl border border-line bg-pine-50/55 p-4"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
@@ -503,6 +488,11 @@ export function TeacherDashboardPage() {
                           <Copy className="size-3.5" />
                         </button>
                       </div>
+                      <ClassroomAnalyticsPanel
+                        analytics={data.classroomAnalytics.find(
+                          (item) => item.classroomId === classroom.id,
+                        )}
+                      />
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-pine-500/10 pt-3">
                         <div className="flex flex-wrap gap-1">
                           <Button
@@ -713,34 +703,6 @@ export function TeacherDashboardPage() {
               </div>
 
               <aside className="space-y-4" hidden={activeTab !== "ai" && activeTab !== "appeals"}>
-                <Card hidden={activeTab !== "ai"}>
-                  <CardHeader>
-                    <div>
-                      <p className="page-eyebrow">共性问题</p>
-                      <CardTitle className="mt-1">常见问题</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {data.commonIssues.map((issue) => (
-                      <div
-                        key={issue.rubricName}
-                        className="flex items-center justify-between rounded-xl bg-clay-50 px-3 py-2.5 text-sm text-clay-600"
-                      >
-                        <span>{issue.rubricName}</span>
-                        <strong>{issue.count} 处</strong>
-                      </div>
-                    ))}
-                    {data.commonIssues.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-line p-4 text-center text-sm leading-6 text-muted">
-                        在审核页确认问题后，这里会自动汇总。
-                      </p>
-                    ) : null}
-                    <div className="mt-3 rounded-xl bg-stone-50 p-3 text-xs leading-6 text-muted">
-                      平台只整理教师确认的问题，不自动判定学术不端。
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <Card hidden={activeTab !== "ai"}>
                   <CardHeader>
                     <div>

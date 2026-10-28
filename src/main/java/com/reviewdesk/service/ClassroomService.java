@@ -169,12 +169,6 @@ public class ClassroomService {
         return membershipRepository.countByClassroomId(classroomId);
     }
 
-    public long distinctStudentCount(List<Long> classroomIds) {
-        return classroomIds.isEmpty()
-                ? 0
-                : membershipRepository.countDistinctStudentsByClassroomIdIn(classroomIds);
-    }
-
     public long rosterCount(long classroomId) {
         return rosterRepository.countByClassroomId(classroomId);
     }

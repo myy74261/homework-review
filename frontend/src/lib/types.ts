@@ -223,13 +223,18 @@ export interface TeacherDashboard {
   classrooms: Classroom[];
   assignments: AssignmentOverview[];
   submissions: SubmissionOverview[];
-  commonIssues: CommonIssue[];
   appeals: AppealOverview[];
   reviewedCount: number;
   aiConfigured: boolean;
   aiBatchProgress: AiBatchProgress[];
+  classroomAnalytics: ClassroomAnalytics[];
+}
+
+export interface ClassroomAnalytics {
+  classroomId: number;
   enrolledStudentCount: number;
   submittedStudentCount: number;
+  commonIssues: CommonIssue[];
 }
 
 export interface TeacherReviewWorkspace {

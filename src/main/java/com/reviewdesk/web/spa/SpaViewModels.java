@@ -133,12 +133,17 @@ public final class SpaViewModels {
     public record TeacherDashboard(UserView user, List<ClassroomView> classrooms,
                                    List<AssignmentOverview> assignments,
                                    List<SubmissionOverview> submissions,
-                                   List<CommonIssueView> commonIssues,
                                    List<AppealOverview> appeals, long reviewedCount,
                                    boolean aiConfigured,
                                    List<AiBatchProgressView> aiBatchProgress,
-                                   long enrolledStudentCount,
-                                   long submittedStudentCount) {
+                                   List<ClassroomAnalyticsView> classroomAnalytics) {
+    }
+
+    public record ClassroomAnalyticsView(
+            long classroomId,
+            long enrolledStudentCount,
+            long submittedStudentCount,
+            List<CommonIssueView> commonIssues) {
     }
 
     public record TeacherReviewWorkspace(

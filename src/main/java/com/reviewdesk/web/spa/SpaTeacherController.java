@@ -118,6 +118,7 @@ public class SpaTeacherController {
         List<Classroom> classrooms = classroomService.teacherClassrooms(teacher);
         List<Long> classroomIds = classrooms.stream().map(Classroom::getId).toList();
         var submissions = workspaceService.listSubmissions(classroomIds);
+        var assignmentOverviews = workspaceService.listAssignments(classroomIds);
         Map<Long, Submission> submissionById = submissions.stream()
                 .collect(Collectors.toMap(
                         row -> row.submission().getId(),
@@ -134,16 +135,39 @@ public class SpaTeacherController {
                         })
                         .toList();
 
-        List<Long> assignmentIds = workspaceService.listAssignments(classroomIds).stream()
+        List<Long> assignmentIds = assignmentOverviews.stream()
                 .map(item -> item.assignment().getId())
                 .toList();
+        List<SpaViewModels.ClassroomAnalyticsView> classroomAnalytics =
+                classrooms.stream().map(classroom -> {
+                    List<Long> classAssignmentIds = assignmentOverviews.stream()
+                            .filter(item -> item.assignment().getClassroomId()
+                                    .equals(classroom.getId()))
+                            .map(item -> item.assignment().getId())
+                            .toList();
+                    long submittedStudents = submissions.stream()
+                            .filter(item -> classAssignmentIds.contains(
+                                    item.submission().getAssignmentId()))
+                            .map(item -> item.submission().getStudentAccountId())
+                            .distinct()
+                            .count();
+                    return new SpaViewModels.ClassroomAnalyticsView(
+                            classroom.getId(),
+                            classroomService.memberCount(classroom.getId()),
+                            submittedStudents,
+                            workspaceService.listCommonIssues(
+                                            List.of(classroom.getId())).stream()
+                                    .map(issue -> new SpaViewModels.CommonIssueView(
+                                            issue.rubricName(), issue.count()))
+                                    .toList());
+                }).toList();
         return new SpaViewModels.TeacherDashboard(
                 toUser(teacher),
                 classrooms.stream()
                         .map(classroom -> toClassroom(classroom,
                                 classroomService.memberCount(classroom.getId())))
                         .toList(),
-                workspaceService.listAssignments(classroomIds).stream()
+                assignmentOverviews.stream()
                         .map(item -> new SpaViewModels.AssignmentOverview(
                                 toAssignment(item.assignment()), item.submissionCount()))
                         .toList(),
@@ -158,10 +182,6 @@ public class SpaTeacherController {
                                 item.submission().getReviewStatus(),
                                 item.statusText()))
                         .toList(),
-                workspaceService.listCommonIssues(classroomIds).stream()
-                        .map(issue -> new SpaViewModels.CommonIssueView(
-                                issue.rubricName(), issue.count()))
-                        .toList(),
                 appeals,
                 submissions.stream().filter(item -> "已审核".equals(item.statusText())).count(),
                 aiSettingsService.isConfigured(teacher.getUsername()),
@@ -175,11 +195,7 @@ public class SpaTeacherController {
                                 item.failed(),
                                 item.skipped()))
                         .toList(),
-                classroomService.distinctStudentCount(classroomIds),
-                submissions.stream()
-                        .map(item -> item.submission().getStudentAccountId())
-                        .distinct()
-                        .count());
+                classroomAnalytics);
     }
 
     @PostMapping("/classrooms")
