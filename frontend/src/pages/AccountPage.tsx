@@ -13,12 +13,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { User } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
+
+type AccountTab = "profile" | "security" | "sessions";
 
 export function AccountPage() {
   const session = useAppStore((state) => state.session)!;
@@ -31,6 +34,7 @@ export function AccountPage() {
   const queryClient = useQueryClient();
   const isTeacher = session.user.role === "TEACHER";
 
+  const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [displayName, setDisplayName] = useState(session.user.displayName);
   const [email, setEmail] = useState(session.user.email ?? "");
   const [department, setDepartment] = useState(session.user.department ?? "");
@@ -81,9 +85,7 @@ export function AccountPage() {
     onSuccess: (mode) => {
       window.location.assign(mode === "switch" ? "/login?switch" : "/login?logout");
     },
-    onError: () => {
-      window.location.assign("/login");
-    },
+    onError: () => window.location.assign("/login"),
   });
 
   const deactivateAccount = useMutation({
@@ -91,9 +93,7 @@ export function AccountPage() {
       api.deactivateAccount({
         currentPassword: deactivatePassword,
       }),
-    onSuccess: () => {
-      window.location.assign("/login?deactivated");
-    },
+    onSuccess: () => window.location.assign("/login?deactivated"),
     onError: (error: Error) => notify(error.message, "error"),
   });
 
@@ -108,7 +108,7 @@ export function AccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-4xl space-y-4">
       <Button asChild variant="ghost" size="sm" className="-ml-2">
         <Link to={session.homePath.replace("/app", "")}>
           <ArrowLeft className="size-4" />
@@ -116,255 +116,290 @@ export function AccountPage() {
         </Link>
       </Button>
 
-      <section>
-        <p className="page-eyebrow">账号与资料</p>
-        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">个人中心</h1>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          更新个人资料或登录密码。登录账号和角色不能在这里修改。
-        </p>
+      <section className="flex flex-col justify-between gap-4 rounded-2xl border border-line bg-white/85 px-5 py-5 shadow-card sm:flex-row sm:items-center">
+        <div>
+          <p className="page-eyebrow">账号与资料</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">个人中心</h1>
+          <p className="mt-1 text-sm text-muted">
+            {session.user.displayName} · {session.user.username}
+          </p>
+        </div>
+        <Badge>{isTeacher ? "教师账号" : "学生账号"}</Badge>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="h-fit">
-          <CardHeader>
-            <div>
-              <p className="page-eyebrow">当前账号</p>
-              <CardTitle className="mt-1">{session.user.displayName}</CardTitle>
-            </div>
-            <Badge>{isTeacher ? "教师" : "学生"}</Badge>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4 border-b border-line pb-3">
-              <span className="text-muted">登录账号</span>
-              <strong>{session.user.username}</strong>
-            </div>
-            {session.user.studentNumber ? (
-              <div className="flex justify-between gap-4 border-b border-line pb-3">
-                <span className="text-muted">学号</span>
-                <strong>{session.user.studentNumber}</strong>
-              </div>
-            ) : null}
-            <div className="rounded-xl bg-pine-50 p-3 text-xs leading-6 text-pine-700">
-              <ShieldCheck className="mb-1 size-4" />
-              密码使用 BCrypt 哈希保存，网站不会记录或返回密码明文。
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 lg:grid-cols-[190px_minmax(0,1fr)] lg:items-start">
+        <div
+          role="tablist"
+          aria-label="个人中心设置"
+          className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-white/85 p-1.5 shadow-card lg:sticky lg:top-20 lg:flex-col lg:overflow-visible"
+        >
+          {[
+            { id: "profile", label: "个人资料", icon: UserRound },
+            { id: "security", label: "安全设置", icon: ShieldCheck },
+            { id: "sessions", label: "账号操作", icon: LogOut },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const selected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveTab(tab.id as AccountTab)}
+                className={cn(
+                  "flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-4 text-sm transition lg:w-full",
+                  selected
+                    ? "bg-pine-600 font-medium text-white"
+                    : "text-muted hover:bg-pine-50 hover:text-pine-700",
+                )}
+              >
+                <Icon className="size-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-        <Card>
-          <CardHeader>
-            <div>
-              <p className="page-eyebrow">个人信息</p>
-              <CardTitle className="mt-1">编辑个人资料</CardTitle>
-            </div>
-            <UserRound className="size-5 text-pine-600" />
-          </CardHeader>
-          <CardContent>
-            <form
-              className="grid gap-4 md:grid-cols-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                updateProfile.mutate();
-              }}
-            >
-              <Field label="姓名" className="md:col-span-2">
-                <Input
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  maxLength={80}
-                  required
-                />
-              </Field>
-              <Field label="邮箱">
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  maxLength={120}
-                  placeholder="name@example.com"
-                />
-              </Field>
-              {isTeacher ? (
-                <>
-                  <Field label="院系">
+        <div className="min-w-0 space-y-4">
+          {activeTab === "profile" ? (
+            <Card>
+              <CardHeader>
+                <div>
+                  <p className="page-eyebrow">个人信息</p>
+                  <CardTitle className="mt-1">编辑个人资料</CardTitle>
+                </div>
+                <UserRound className="size-5 text-pine-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="mb-5 grid gap-2 rounded-xl bg-stone-50 p-3 text-xs text-muted sm:grid-cols-3">
+                  <span>
+                    登录账号：<strong className="text-ink">{session.user.username}</strong>
+                  </span>
+                  <span>
+                    身份：<strong className="text-ink">{isTeacher ? "教师" : "学生"}</strong>
+                  </span>
+                  {session.user.studentNumber ? (
+                    <span>
+                      学号：<strong className="text-ink">{session.user.studentNumber}</strong>
+                    </span>
+                  ) : null}
+                </div>
+                <form
+                  className="grid gap-4 md:grid-cols-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    updateProfile.mutate();
+                  }}
+                >
+                  <Field label="姓名" className="md:col-span-2">
                     <Input
-                      value={department}
-                      onChange={(event) => setDepartment(event.target.value)}
-                      maxLength={100}
-                      placeholder="例如：新闻传播学院"
+                      value={displayName}
+                      onChange={(event) => setDisplayName(event.target.value)}
+                      maxLength={80}
+                      required
                     />
                   </Field>
-                  <Field label="职称 / 职务" className="md:col-span-2">
+                  <Field label="邮箱">
                     <Input
-                      value={professionalTitle}
-                      onChange={(event) => setProfessionalTitle(event.target.value)}
-                      maxLength={100}
-                      placeholder="例如：副教授 / 课程负责人"
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      maxLength={120}
+                      placeholder="name@example.com"
                     />
                   </Field>
-                </>
-              ) : null}
-              <div className="flex justify-end md:col-span-2">
-                <Button type="submit" disabled={updateProfile.isPending || !displayName.trim()}>
-                  {updateProfile.isPending ? "保存中…" : "保存个人信息"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+                  {isTeacher ? (
+                    <>
+                      <Field label="院系">
+                        <Input
+                          value={department}
+                          onChange={(event) => setDepartment(event.target.value)}
+                          maxLength={100}
+                          placeholder="例如：新闻传播学院"
+                        />
+                      </Field>
+                      <Field label="职称 / 职务" className="md:col-span-2">
+                        <Input
+                          value={professionalTitle}
+                          onChange={(event) => setProfessionalTitle(event.target.value)}
+                          maxLength={100}
+                          placeholder="例如：副教授 / 课程负责人"
+                        />
+                      </Field>
+                    </>
+                  ) : null}
+                  <div className="flex justify-end md:col-span-2">
+                    <Button type="submit" disabled={updateProfile.isPending || !displayName.trim()}>
+                      {updateProfile.isPending ? "保存中…" : "保存个人信息"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          ) : null}
 
-      <Card>
-        <CardHeader>
-          <div>
-            <p className="page-eyebrow">账号安全</p>
-            <CardTitle className="mt-1">修改密码</CardTitle>
-          </div>
-          <KeyRound className="size-5 text-pine-600" />
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4 md:grid-cols-3" onSubmit={submitPassword}>
-            <Field label="当前密码">
-              <Input
-                aria-label="当前密码"
-                type="password"
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                required
-              />
-            </Field>
-            <Field label="新密码" hint="至少 8 个字符。">
-              <Input
-                aria-label="新密码"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={72}
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                required
-              />
-            </Field>
-            <Field label="确认新密码">
-              <Input
-                aria-label="确认新密码"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={72}
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-              />
-            </Field>
-            {formError ? (
-              <p className="rounded-xl bg-clay-50 px-3 py-2 text-sm text-clay-600 md:col-span-3">
-                {formError}
-              </p>
-            ) : null}
-            <div className="flex justify-end md:col-span-3">
-              <Button
-                type="submit"
-                disabled={
-                  changePassword.isPending ||
-                  !currentPassword ||
-                  newPassword.length < 8 ||
-                  !confirmPassword
-                }
-              >
-                {changePassword.isPending ? "正在更新…" : "更新密码"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          {activeTab === "security" ? (
+            <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+              <Card>
+                <CardHeader>
+                  <div>
+                    <p className="page-eyebrow">账号安全</p>
+                    <CardTitle className="mt-1">修改密码</CardTitle>
+                  </div>
+                  <KeyRound className="size-5 text-pine-600" />
+                </CardHeader>
+                <CardContent>
+                  <form className="space-y-4" onSubmit={submitPassword}>
+                    <Field label="当前密码">
+                      <Input
+                        aria-label="当前密码"
+                        type="password"
+                        autoComplete="current-password"
+                        value={currentPassword}
+                        onChange={(event) => setCurrentPassword(event.target.value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="新密码" hint="至少 8 个字符。">
+                      <Input
+                        aria-label="新密码"
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={8}
+                        maxLength={72}
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="确认新密码">
+                      <Input
+                        aria-label="确认新密码"
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={8}
+                        maxLength={72}
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        required
+                      />
+                    </Field>
+                    {formError ? (
+                      <p className="rounded-xl bg-clay-50 px-3 py-2 text-sm text-clay-600">
+                        {formError}
+                      </p>
+                    ) : null}
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={
+                        changePassword.isPending ||
+                        !currentPassword ||
+                        newPassword.length < 8 ||
+                        !confirmPassword
+                      }
+                    >
+                      {changePassword.isPending ? "正在更新…" : "更新密码"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div>
-              <p className="page-eyebrow">偏好设置</p>
-              <CardTitle className="mt-1">显示与提醒</CardTitle>
+              <Card>
+                <CardHeader>
+                  <div>
+                    <p className="page-eyebrow">偏好设置</p>
+                    <CardTitle className="mt-1">显示与提醒</CardTitle>
+                  </div>
+                  <SlidersHorizontal className="size-5 text-pine-600" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <label className="flex items-center justify-between gap-4 rounded-xl bg-stone-50 p-3 text-sm">
+                    <span>
+                      <strong className="block">减少界面动效</strong>
+                      <small className="text-xs text-muted">关闭过渡和动画效果。</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={reduceMotion}
+                      onChange={(event) => setReduceMotion(event.target.checked)}
+                      className="size-4 accent-pine-600"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-4 rounded-xl bg-stone-50 p-3 text-sm">
+                    <span>
+                      <strong className="block">显示操作提示</strong>
+                      <small className="text-xs text-muted">保存或提交后显示结果。</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={noticesEnabled}
+                      onChange={(event) => setNoticesEnabled(event.target.checked)}
+                      className="size-4 accent-pine-600"
+                    />
+                  </label>
+                  {isTeacher ? (
+                    <Button asChild variant="secondary" className="w-full">
+                      <Link to="/teacher/ai-settings">打开 AI 接口设置</Link>
+                    </Button>
+                  ) : null}
+                </CardContent>
+              </Card>
             </div>
-            <SlidersHorizontal className="size-5 text-pine-600" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <label className="flex items-center justify-between gap-4 rounded-xl bg-stone-50 p-3 text-sm">
-              <span>
-                <strong className="block">减少界面动效</strong>
-                <small className="text-xs text-muted">关闭过渡和动画效果。</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={reduceMotion}
-                onChange={(event) => setReduceMotion(event.target.checked)}
-                className="size-4 accent-pine-600"
-              />
-            </label>
-            <label className="flex items-center justify-between gap-4 rounded-xl bg-stone-50 p-3 text-sm">
-              <span>
-                <strong className="block">显示操作提示</strong>
-                <small className="text-xs text-muted">保存或提交后显示结果提示。</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={noticesEnabled}
-                onChange={(event) => setNoticesEnabled(event.target.checked)}
-                className="size-4 accent-pine-600"
-              />
-            </label>
-            {isTeacher ? (
-              <Button asChild variant="secondary" size="sm">
-                <Link to="/teacher/ai-settings">打开 AI 接口设置</Link>
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
+          ) : null}
 
-        <Card>
-          <CardHeader>
-            <div>
-              <p className="page-eyebrow">账号操作</p>
-              <CardTitle className="mt-1">会话与账号</CardTitle>
-            </div>
-            <LogOut className="size-5 text-pine-600" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={logout.isPending}
-                onClick={() => logout.mutate("switch")}
-              >
-                <Repeat2 className="size-4" />
-                切换账号
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={logout.isPending}
-                onClick={() => logout.mutate("logout")}
-              >
-                <LogOut className="size-4" />
-                退出登录
-              </Button>
-            </div>
-            <div className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-700">
-              切换账号会先安全退出当前会话，不会在浏览器中保存账号密码。
-            </div>
-            <Button
-              type="button"
-              variant="destructive"
-              className="w-full"
-              onClick={() => setDeactivateOpen(true)}
-            >
-              <UserX className="size-4" />
-              注销账号
-            </Button>
-          </CardContent>
-        </Card>
+          {activeTab === "sessions" ? (
+            <Card>
+              <CardHeader>
+                <div>
+                  <p className="page-eyebrow">账号操作</p>
+                  <CardTitle className="mt-1">会话与账号</CardTitle>
+                </div>
+                <LogOut className="size-5 text-pine-600" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={logout.isPending}
+                    onClick={() => logout.mutate("switch")}
+                  >
+                    <Repeat2 className="size-4" />
+                    切换账号
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={logout.isPending}
+                    onClick={() => logout.mutate("logout")}
+                  >
+                    <LogOut className="size-4" />
+                    退出登录
+                  </Button>
+                </div>
+                <p className="rounded-xl bg-stone-50 p-3 text-xs leading-6 text-muted">
+                  切换账号会安全退出当前会话，浏览器不会保存账号或密码。
+                </p>
+                <div className="border-t border-line pt-4">
+                  <p className="text-xs leading-6 text-muted">
+                    注销后无法再次登录，教学和审核历史会继续保留。
+                  </p>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="mt-3"
+                    onClick={() => setDeactivateOpen(true)}
+                  >
+                    <UserX className="size-4" />
+                    注销账号
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
 
       <Dialog
