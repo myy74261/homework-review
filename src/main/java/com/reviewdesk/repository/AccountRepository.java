@@ -11,6 +11,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Optional<Account> findByUsername(String username);
 
+    Optional<Account> findFirstByStudentNumberIgnoreCase(String studentNumber);
+
     boolean existsByUsername(String username);
 }
 

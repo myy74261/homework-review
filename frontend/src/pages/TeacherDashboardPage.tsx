@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
+  BarChart3,
   Bot,
   BookOpen,
   CalendarClock,
@@ -12,11 +13,12 @@ import {
   Plus,
   Trash2,
   Undo2,
+  Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
-import type { Classroom } from "@/lib/types";
+import type { Classroom, TeacherDashboard } from "@/lib/types";
 import { formatDate, formatLabels } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { ErrorState, Loading } from "@/components/ui/loading";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Textarea } from "@/components/ui/field";
 
 const classroomStatusLabels: Record<Classroom["status"], string> = {
   UNSCHEDULED: "时间未设置",
@@ -47,6 +49,145 @@ function toDateTimeInput(value: string) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
+function TeacherOverviewCharts({ data }: { data: TeacherDashboard }) {
+  const totalSubmissions = data.submissions.length;
+  const completion = totalSubmissions
+    ? Math.round((data.reviewedCount / totalSubmissions) * 100)
+    : 0;
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - (6 - index));
+    return date;
+  });
+  const submittedByDay = days.map(
+    (day) =>
+      data.submissions.filter(
+        (submission) => new Date(submission.submittedAt).toDateString() === day.toDateString(),
+      ).length,
+  );
+  const maxDaily = Math.max(1, ...submittedByDay);
+  const maxIssue = Math.max(1, ...data.commonIssues.map((issue) => issue.count));
+
+  return (
+    <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+      <Card className="p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="page-eyebrow">审核进度</p>
+            <h2 className="mt-1 font-display text-xl font-semibold">审核完成度</h2>
+          </div>
+          <BarChart3 className="size-5 text-pine-600" />
+        </div>
+        <div className="mt-5 flex items-center gap-5">
+          <div
+            className="grid size-28 shrink-0 place-items-center rounded-full"
+            style={{
+              background: `conic-gradient(#2f6d57 ${completion * 3.6}deg, #e7ece9 0deg)`,
+            }}
+          >
+            <div className="grid size-20 place-items-center rounded-full bg-white">
+              <strong className="font-display text-2xl text-pine-700">{completion}%</strong>
+            </div>
+          </div>
+          <div className="space-y-2 text-sm">
+            <p>
+              <strong className="text-xl">{data.reviewedCount}</strong>
+              <span className="ml-2 text-muted">已完成反馈</span>
+            </p>
+            <p>
+              <strong className="text-xl">{totalSubmissions - data.reviewedCount}</strong>
+              <span className="ml-2 text-muted">待完成审核</span>
+            </p>
+            <p className="text-xs text-muted">按提交记录统计</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="page-eyebrow">提交活跃度</p>
+            <h2 className="mt-1 font-display text-xl font-semibold">近 7 天提交趋势</h2>
+          </div>
+          <span className="text-xs text-muted">{totalSubmissions} 条记录</span>
+        </div>
+        <div className="mt-5 grid h-32 grid-cols-7 items-end gap-2 border-b border-line">
+          {days.map((day, index) => (
+            <div key={day.toISOString()} className="flex h-full flex-col justify-end gap-2">
+              <div
+                className={`rounded-t-md ${
+                  submittedByDay[index] > 0
+                    ? "bg-gradient-to-t from-pine-500 to-emerald-300"
+                    : "bg-transparent"
+                }`}
+                style={{
+                  height: submittedByDay[index]
+                    ? `${Math.max(6, (submittedByDay[index] / maxDaily) * 88)}%`
+                    : "0%",
+                }}
+                title={`${submittedByDay[index]} 条提交`}
+              />
+              <span className="text-center text-[10px] text-muted">
+                {day.toLocaleDateString("zh-CN", { weekday: "short" })}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {data.commonIssues.length ? (
+        <Card className="p-5 lg:col-span-2">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="page-eyebrow">共性问题</p>
+              <h2 className="mt-1 font-display text-xl font-semibold">问题维度分布</h2>
+            </div>
+            <span className="text-xs text-muted">基于教师确认的问题</span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {data.commonIssues.slice(0, 6).map((issue) => (
+              <div key={issue.rubricName}>
+                <div className="mb-1 flex justify-between gap-3 text-xs">
+                  <span>{issue.rubricName}</span>
+                  <strong>{issue.count}</strong>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-stone-100">
+                  <div
+                    className="h-full rounded-full bg-pine-500"
+                    style={{ width: `${(issue.count / maxIssue) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+    </section>
+  );
+}
+
+function parseRoster(text: string) {
+  return text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const [studentNumber = "", studentName = ""] = line
+        .split(/[,\t;]/)
+        .map((value) => value.trim());
+      if (index === 0 && studentNumber.includes("学号") && studentName.includes("姓名")) {
+        return null;
+      }
+      return { studentNumber, studentName };
+    })
+    .filter(
+      (entry): entry is { studentNumber: string; studentName: string } =>
+        entry != null && Boolean(entry.studentNumber) && Boolean(entry.studentName),
+    );
+}
+
 export function TeacherDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -63,6 +204,14 @@ export function TeacherDashboardPage() {
   const [scheduleStartAt, setScheduleStartAt] = useState("");
   const [scheduleEndAt, setScheduleEndAt] = useState("");
   const [dissolveTarget, setDissolveTarget] = useState<Classroom | null>(null);
+  const [rosterTarget, setRosterTarget] = useState<Classroom | null>(null);
+  const [rosterText, setRosterText] = useState("");
+  const [rosterFileName, setRosterFileName] = useState("");
+  const [dueTarget, setDueTarget] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
+  const [dueAtInput, setDueAtInput] = useState(localDateTime(7));
   const [appealDrafts, setAppealDrafts] = useState<Record<number, string>>({});
   const [appealStatus, setAppealStatus] = useState<Record<number, string>>({});
   const [withdrawTarget, setWithdrawTarget] = useState<{
@@ -123,6 +272,33 @@ export function TeacherDashboardPage() {
     onError: (error: Error) => notify(error.message, "error"),
   });
 
+  const updateDueDate = useMutation({
+    mutationFn: () => api.updateAssignmentDueDate(dueTarget!.id, dueAtInput),
+    onSuccess: async () => {
+      notify("作业截止时间已更新，无需撤回作业。", "success");
+      setDueTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["settled-submissions"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const importRoster = useMutation({
+    mutationFn: () => api.importClassroomRoster(rosterTarget!.id, parseRoster(rosterText)),
+    onSuccess: async (result) => {
+      notify(
+        `名单已导入，共 ${result.rosterCount} 人，已关联 ${result.linkedCount} 个学生账号。`,
+        "success",
+      );
+      setRosterTarget(null);
+      setRosterText("");
+      setRosterFileName("");
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
   const respondAppeal = useMutation({
     mutationFn: ({ id }: { id: number }) =>
       api.respondAppeal(id, {
@@ -157,6 +333,7 @@ export function TeacherDashboardPage() {
   const publishedCount = data.assignments.filter(
     ({ assignment }) => assignment.status === "PUBLISHED",
   ).length;
+  const rosterEntries = parseRoster(rosterText);
 
   return (
     <div className="space-y-5">
@@ -287,6 +464,8 @@ export function TeacherDashboardPage() {
                 })}
               </section>
 
+              <TeacherOverviewCharts data={data} />
+
               <section className="rounded-2xl border border-line bg-white/85 p-5 shadow-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -329,6 +508,10 @@ export function TeacherDashboardPage() {
                               ? `${formatDate(classroom.startAt)} 至 ${formatDate(classroom.endAt)}`
                               : "课程时间未设置"}
                           </p>
+                          <p className="mt-1 text-xs text-muted">
+                            名单 {classroom.rosterCount} 人 · 已关联 {classroom.linkedRosterCount}{" "}
+                            个账号
+                          </p>
                         </div>
                         <button
                           type="button"
@@ -343,27 +526,42 @@ export function TeacherDashboardPage() {
                         </button>
                       </div>
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-pine-500/10 pt-3">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setScheduleTarget(classroom);
-                            setScheduleStartAt(
-                              classroom.startAt
-                                ? toDateTimeInput(classroom.startAt)
-                                : localDateTime(0),
-                            );
-                            setScheduleEndAt(
-                              classroom.endAt
-                                ? toDateTimeInput(classroom.endAt)
-                                : localDateTime(120),
-                            );
-                          }}
-                        >
-                          <CalendarClock className="size-3.5" />
-                          {classroom.status === "UNSCHEDULED" ? "设置课程时间" : "调整课程时间"}
-                        </Button>
+                        <div className="flex flex-wrap gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setScheduleTarget(classroom);
+                              setScheduleStartAt(
+                                classroom.startAt
+                                  ? toDateTimeInput(classroom.startAt)
+                                  : localDateTime(0),
+                              );
+                              setScheduleEndAt(
+                                classroom.endAt
+                                  ? toDateTimeInput(classroom.endAt)
+                                  : localDateTime(120),
+                              );
+                            }}
+                          >
+                            <CalendarClock className="size-3.5" />
+                            {classroom.status === "UNSCHEDULED" ? "设置课程时间" : "调整课程时间"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setRosterTarget(classroom);
+                              setRosterText("");
+                              setRosterFileName("");
+                            }}
+                          >
+                            <Upload className="size-3.5" />
+                            导入名单
+                          </Button>
+                        </div>
                         {classroom.status === "ENDED" ? (
                           <Button
                             type="button"
@@ -439,20 +637,40 @@ export function TeacherDashboardPage() {
                               </Link>
                             </Button>
                           ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setWithdrawTarget({
-                                  id: assignment.id,
-                                  title: assignment.title,
-                                  submissionCount,
-                                })
-                              }
-                            >
-                              <Undo2 className="size-3.5" />
-                              撤回并修改
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setDueTarget({
+                                    id: assignment.id,
+                                    title: assignment.title,
+                                  });
+                                  setDueAtInput(
+                                    new Date(assignment.dueAt).getTime() > Date.now()
+                                      ? toDateTimeInput(assignment.dueAt)
+                                      : localDateTime(7),
+                                  );
+                                }}
+                              >
+                                <CalendarClock className="size-3.5" />
+                                调整截止时间
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setWithdrawTarget({
+                                    id: assignment.id,
+                                    title: assignment.title,
+                                    submissionCount,
+                                  })
+                                }
+                              >
+                                <Undo2 className="size-3.5" />
+                                撤回并修改
+                              </Button>
+                            </>
                           )}
                         </div>
                       </Card>
@@ -799,6 +1017,72 @@ export function TeacherDashboardPage() {
       </Dialog>
 
       <Dialog
+        open={rosterTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setRosterTarget(null);
+        }}
+        title="导入学生名单"
+        description={
+          rosterTarget
+            ? `为《${rosterTarget.name}》导入学号和姓名。已有账号会立即加入，未注册账号会在注册后自动关联。`
+            : undefined
+        }
+      >
+        <div className="space-y-4">
+          <Field label="上传名单文件" hint="支持 CSV/TXT，格式为“学号,姓名”，首行可写表头。">
+            <input
+              type="file"
+              accept=".csv,.txt,text/csv,text/plain"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                setRosterText(await file.text());
+                setRosterFileName(file.name);
+              }}
+              className="block w-full rounded-xl border border-dashed border-line bg-stone-50 p-3 text-xs text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-pine-600 file:px-3 file:py-2 file:text-white"
+            />
+          </Field>
+          <Field label="或直接粘贴名单" hint="每行一名学生，例如：20230118,王同学。">
+            <Textarea
+              rows={8}
+              value={rosterText}
+              onChange={(event) => {
+                setRosterText(event.target.value);
+                setRosterFileName("");
+              }}
+              placeholder={"学号,姓名\n20230118,王同学\n20230119,李同学"}
+            />
+          </Field>
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-50 p-3 text-xs text-muted">
+            <span>
+              {rosterFileName ? `${rosterFileName} · ` : ""}
+              已识别 <strong className="text-ink">{rosterEntries.length}</strong> 名学生
+            </span>
+            {rosterTarget ? (
+              <span>
+                当前名单 {rosterTarget.rosterCount} 人，已关联 {rosterTarget.linkedRosterCount}{" "}
+                个账号
+              </span>
+            ) : null}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setRosterTarget(null)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                importRoster.isPending || rosterEntries.length === 0 || rosterEntries.length > 500
+              }
+              onClick={() => importRoster.mutate()}
+            >
+              {importRoster.isPending ? "导入中…" : "确认导入名单"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
         open={dissolveTarget != null}
         onOpenChange={(open) => {
           if (!open) setDissolveTarget(null);
@@ -827,6 +1111,43 @@ export function TeacherDashboardPage() {
               }}
             >
               {dissolveClassroom.isPending ? "解散中…" : "确认解散"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={dueTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDueTarget(null);
+        }}
+        title="调整作业截止时间"
+        description={
+          dueTarget ? `只修改《${dueTarget.title}》的提交时间，作业内容和状态保持不变。` : undefined
+        }
+      >
+        <div className="space-y-4">
+          <Field label="新的截止时间">
+            <Input
+              type="datetime-local"
+              value={dueAtInput}
+              onChange={(event) => setDueAtInput(event.target.value)}
+              required
+            />
+          </Field>
+          <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-700">
+            无需撤回作业。如果原截止时间已过且 AI 预审已经开始，已有建议和运行记录会保留。
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDueTarget(null)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              disabled={updateDueDate.isPending || !dueAtInput}
+              onClick={() => updateDueDate.mutate()}
+            >
+              {updateDueDate.isPending ? "保存中…" : "保存截止时间"}
             </Button>
           </div>
         </div>

@@ -27,6 +27,8 @@ export interface Classroom {
   startAt: string | null;
   endAt: string | null;
   status: "UNSCHEDULED" | "UPCOMING" | "ACTIVE" | "ENDED" | "DISSOLVED";
+  rosterCount: number;
+  linkedRosterCount: number;
 }
 
 export interface Assignment {

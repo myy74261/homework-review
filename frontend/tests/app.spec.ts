@@ -19,6 +19,8 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await expect(page).toHaveURL(/\/app\/teacher$/);
   await expect(page.getByRole("heading", { name: "作业审核与课堂反馈" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "我的课堂", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "审核完成度" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "近 7 天提交趋势" })).toBeVisible();
   await expect(page.getByRole("tab", { name: /概览/ })).toHaveAttribute("aria-selected", "true");
   await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
 
@@ -66,6 +68,31 @@ test("teacher can schedule and dissolve a finished classroom", async ({ page }) 
   await expect(page.getByRole("heading", { name: "解散课堂" })).toBeVisible();
   await page.getByRole("button", { name: "确认解散" }).click();
   await expect(page.getByText("学期管理测试课堂")).toHaveCount(0);
+});
+
+test("teacher can import a classroom roster", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  const classroomCard = page
+    .getByTestId(/^classroom-card-/)
+    .filter({ hasText: "传播学方法课 · 2026 秋" });
+  await classroomCard.getByRole("button", { name: "导入名单" }).click();
+  await page.getByLabel("或直接粘贴名单").fill("学号,姓名\n20230116,林清和\n20230198,新同学");
+  await expect(page.getByText("已识别 2 名学生")).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-roster-import.png", fullPage: true });
+  await page.getByRole("button", { name: "确认导入名单" }).click();
+  await expect(page.getByText(/名单已导入，共 2 人，已关联 1 个学生账号/)).toBeVisible();
+  await expect(classroomCard.getByText(/名单 2 人 · 已关联 1 个账号/)).toBeVisible();
+});
+
+test("teacher can change an assignment deadline without withdrawing it", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.getByRole("tab", { name: /作业管理/ }).click();
+  const assignmentCard = page.getByTestId("assignment-card-1");
+  await assignmentCard.getByRole("button", { name: "调整截止时间" }).click();
+  await page.getByLabel("新的截止时间").fill("2099-06-30T23:59");
+  await page.getByRole("button", { name: "保存截止时间" }).click();
+  await expect(page.getByText("作业截止时间已更新，无需撤回作业。")).toBeVisible();
+  await expect(assignmentCard.getByText("已发布")).toBeVisible();
 });
 
 test("teacher can withdraw, edit and republish an assignment", async ({ page }) => {

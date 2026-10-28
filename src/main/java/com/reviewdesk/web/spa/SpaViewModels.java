@@ -24,7 +24,8 @@ public final class SpaViewModels {
 
     public record ClassroomView(long id, String name, String courseName,
                                 String joinCode, long memberCount,
-                                Instant startAt, Instant endAt, String status) {
+                                Instant startAt, Instant endAt, String status,
+                                long rosterCount, long linkedRosterCount) {
     }
 
     public record AssignmentView(long id, long classroomId, String title,

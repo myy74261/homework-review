@@ -3,12 +3,17 @@ package com.reviewdesk.service;
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.domain.Classroom;
 import com.reviewdesk.domain.ClassroomMembership;
+import com.reviewdesk.domain.ClassroomRosterEntry;
+import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.repository.ClassroomMembershipRepository;
 import com.reviewdesk.repository.ClassroomRepository;
+import com.reviewdesk.repository.ClassroomRosterRepository;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +29,17 @@ public class ClassroomService {
 
     private final ClassroomRepository classroomRepository;
     private final ClassroomMembershipRepository membershipRepository;
+    private final ClassroomRosterRepository rosterRepository;
+    private final AccountRepository accountRepository;
 
     public ClassroomService(ClassroomRepository classroomRepository,
-                            ClassroomMembershipRepository membershipRepository) {
+                            ClassroomMembershipRepository membershipRepository,
+                            ClassroomRosterRepository rosterRepository,
+                            AccountRepository accountRepository) {
         this.classroomRepository = classroomRepository;
         this.membershipRepository = membershipRepository;
+        this.rosterRepository = rosterRepository;
+        this.accountRepository = accountRepository;
     }
 
     public List<Classroom> teacherClassrooms(Account teacher) {
@@ -86,11 +97,16 @@ public class ClassroomService {
                 .findByJoinCodeIgnoreCaseAndDissolvedAtIsNull(
                         joinCode == null ? "" : joinCode.strip())
                 .orElseThrow(() -> new IllegalArgumentException("课堂码无效"));
-        if (!membershipRepository.existsByClassroomIdAndStudentId(
-                classroom.getId(), student.getId())) {
-            membershipRepository.save(new ClassroomMembership(
-                    classroom.getId(), student.getId()));
+        if (rosterRepository.existsByClassroomId(classroom.getId())) {
+            ClassroomRosterEntry rosterEntry = rosterRepository
+                    .findByClassroomIdAndStudentNumberIgnoreCase(
+                            classroom.getId(), student.getStudentNumber())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "你的学号不在该课堂名单中，请联系教师导入名单"));
+            rosterEntry.linkAccount(student.getId());
+            rosterRepository.save(rosterEntry);
         }
+        ensureMembership(classroom.getId(), student.getId());
         return classroom;
     }
 
@@ -151,6 +167,74 @@ public class ClassroomService {
         return membershipRepository.countByClassroomId(classroomId);
     }
 
+    public long rosterCount(long classroomId) {
+        return rosterRepository.countByClassroomId(classroomId);
+    }
+
+    public long linkedRosterCount(long classroomId) {
+        return rosterRepository.countByClassroomIdAndStudentAccountIdIsNotNull(classroomId);
+    }
+
+    @Transactional
+    public RosterImportResult importRoster(
+            Account teacher, long classroomId, List<RosterEntry> entries) {
+        Classroom classroom = requireTeacherClassroom(teacher, classroomId);
+        if (entries == null || entries.isEmpty()) {
+            throw new IllegalArgumentException("请导入至少一名学生");
+        }
+        if (entries.size() > 500) {
+            throw new IllegalArgumentException("一次最多导入 500 名学生");
+        }
+        Set<String> seen = new HashSet<>();
+        for (RosterEntry entry : entries) {
+            String studentNumber = entry.studentNumber() == null
+                    ? "" : entry.studentNumber().strip();
+            String studentName = entry.studentName() == null
+                    ? "" : entry.studentName().strip();
+            if (studentNumber.isEmpty() || studentName.isEmpty()) {
+                throw new IllegalArgumentException("名单中的学号和姓名不能为空");
+            }
+            if (studentNumber.length() > 40 || studentName.length() > 80) {
+                throw new IllegalArgumentException("名单中的学号或姓名过长");
+            }
+            if (!seen.add(studentNumber.toLowerCase())) {
+                continue;
+            }
+            ClassroomRosterEntry rosterEntry = rosterRepository
+                    .findByClassroomIdAndStudentNumberIgnoreCase(
+                            classroom.getId(), studentNumber)
+                    .orElseGet(() -> new ClassroomRosterEntry(
+                            classroom.getId(), studentNumber, studentName));
+            rosterEntry.updateName(studentName);
+            accountRepository.findFirstByStudentNumberIgnoreCase(studentNumber)
+                    .filter(student -> !student.isTeacher())
+                    .ifPresent(student -> {
+                        rosterEntry.linkAccount(student.getId());
+                        ensureMembership(classroom.getId(), student.getId());
+                    });
+            rosterRepository.save(rosterEntry);
+        }
+        return new RosterImportResult(
+                rosterRepository.countByClassroomId(classroom.getId()),
+                rosterRepository.countByClassroomIdAndStudentAccountIdIsNotNull(
+                        classroom.getId()));
+    }
+
+    @Transactional
+    public void linkStudentToRosters(Account student) {
+        if (student.isTeacher()
+                || student.getStudentNumber() == null
+                || student.getStudentNumber().isBlank()) {
+            return;
+        }
+        for (ClassroomRosterEntry entry :
+                rosterRepository.findByStudentNumberIgnoreCase(student.getStudentNumber())) {
+            entry.linkAccount(student.getId());
+            rosterRepository.save(entry);
+            ensureMembership(entry.getClassroomId(), student.getId());
+        }
+    }
+
     private Classroom requireTeacherClassroom(Account teacher, long classroomId) {
         if (!teacher.isTeacher()) {
             throw new SecurityException("需要教师权限");
@@ -172,6 +256,12 @@ public class ClassroomService {
         }
     }
 
+    private void ensureMembership(long classroomId, long studentId) {
+        if (!membershipRepository.existsByClassroomIdAndStudentId(classroomId, studentId)) {
+            membershipRepository.save(new ClassroomMembership(classroomId, studentId));
+        }
+    }
+
     private String nextJoinCode() {
         for (int attempt = 0; attempt < 20; attempt++) {
             StringBuilder code = new StringBuilder(8);
@@ -183,6 +273,12 @@ public class ClassroomService {
             }
         }
         throw new IllegalStateException("暂时无法生成课堂码，请稍后重试");
+    }
+
+    public record RosterEntry(String studentNumber, String studentName) {
+    }
+
+    public record RosterImportResult(long rosterCount, long linkedCount) {
     }
 }
 

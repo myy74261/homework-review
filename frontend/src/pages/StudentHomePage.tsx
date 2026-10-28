@@ -197,6 +197,9 @@ export function StudentHomePage() {
               <Button size="sm" className="w-full" disabled={join.isPending || !joinCode.trim()}>
                 {join.isPending ? "加入中…" : "加入课堂"}
               </Button>
+              <p className="text-[11px] leading-5 text-muted">
+                教师已导入名单时，仅名单内学号可以使用课堂码加入。
+              </p>
             </form>
           </div>
         </aside>

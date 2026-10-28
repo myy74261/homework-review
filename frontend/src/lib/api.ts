@@ -5,6 +5,7 @@ import type {
   AiSettings,
   AiConnectionResult,
   Appeal,
+  Assignment,
   Classroom,
   EditableAssignment,
   IntegrityFlag,
@@ -109,6 +110,17 @@ export const api = {
     request<Classroom>(`/api/app/teacher/classrooms/${classroomId}/dissolve`, {
       method: "POST",
     }),
+  importClassroomRoster: (
+    classroomId: number,
+    students: { studentNumber: string; studentName: string }[],
+  ) =>
+    request<{ rosterCount: number; linkedCount: number }>(
+      `/api/app/teacher/classrooms/${classroomId}/roster`,
+      {
+        method: "POST",
+        body: JSON.stringify({ students }),
+      },
+    ),
   publishAssignment: (payload: unknown) =>
     request<{ id: number; status: string; redirectPath: string }>("/api/app/teacher/assignments", {
       method: "POST",
@@ -123,6 +135,11 @@ export const api = {
         method: "POST",
       },
     ),
+  updateAssignmentDueDate: (assignmentId: number, dueAt: string) =>
+    request<Assignment>(`/api/app/teacher/assignments/${assignmentId}/due-date`, {
+      method: "PUT",
+      body: JSON.stringify({ dueAt }),
+    }),
   updateAssignment: (assignmentId: number, payload: unknown) =>
     request<{ id: number; status: string; redirectPath: string }>(
       `/api/app/teacher/assignments/${assignmentId}`,

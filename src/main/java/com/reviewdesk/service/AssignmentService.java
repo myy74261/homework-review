@@ -100,6 +100,22 @@ public class AssignmentService {
     }
 
     /**
+     * 仅调整已发布作业的截止时间，不改变作业内容和状态。
+     */
+    @Transactional
+    public Assignment updateDueAt(long assignmentId, Instant dueAt) {
+        Assignment assignment = requireAssignment(assignmentId);
+        if (!"PUBLISHED".equals(assignment.getStatus())) {
+            throw new IllegalStateException("只有已发布作业可以直接调整截止时间");
+        }
+        if (dueAt == null || !dueAt.isAfter(Instant.now())) {
+            throw new IllegalArgumentException("截止时间必须晚于当前时间");
+        }
+        assignment.updateDueAt(dueAt);
+        return assignmentRepository.save(assignment);
+    }
+
+    /**
      * 保存撤回作业的修改并重新发布，已有提交记录保持不变。
      */
     @Transactional

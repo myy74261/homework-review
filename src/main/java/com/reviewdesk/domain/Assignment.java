@@ -141,6 +141,10 @@ public class Assignment {
         this.status = "WITHDRAWN";
     }
 
+    public void updateDueAt(Instant dueAt) {
+        this.dueAt = dueAt;
+    }
+
     /**
      * 使用教师修改后的内容重新发布，并保留原作业编号。
      */

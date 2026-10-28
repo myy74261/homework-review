@@ -16,7 +16,9 @@ import com.reviewdesk.repository.AiReviewRunRepository;
 import com.reviewdesk.repository.AiReviewSuggestionRepository;
 import com.reviewdesk.repository.AiProviderSettingRepository;
 import com.reviewdesk.repository.ClassroomRepository;
+import com.reviewdesk.repository.ClassroomMembershipRepository;
 import com.reviewdesk.repository.ReviewIssueRepository;
+import com.reviewdesk.service.AccountService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +43,9 @@ class SpaApiControllerTest {
     private AccountRepository accountRepository;
 
     @Autowired
+    private AccountService accountService;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -57,6 +62,9 @@ class SpaApiControllerTest {
 
     @Autowired
     private ClassroomRepository classroomRepository;
+
+    @Autowired
+    private ClassroomMembershipRepository membershipRepository;
 
     @Test
     void reactEntryAndTeacherSessionAreAvailable() throws Exception {
@@ -204,6 +212,94 @@ class SpaApiControllerTest {
                 .andExpect(jsonPath("$.assignments.length()").value(1))
                 .andExpect(jsonPath("$.assignments[0].assignment.title")
                         .value("短视频使用与注意力恢复（修订版）"));
+    }
+
+    @Test
+    void teacherCanChangeDeadlineWithoutWithdrawingTheAssignment() throws Exception {
+        mockMvc.perform(put("/api/app/teacher/assignments/1/due-date")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "dueAt": "2099-06-30T23:59"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.dueAt").value("2099-06-30T15:59:00Z"));
+
+        mockMvc.perform(get("/api/app/student/dashboard")
+                        .with(user("lin").roles("STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignments.length()").value(1))
+                .andExpect(jsonPath("$.assignments[0].assignment.status").value("PUBLISHED"));
+    }
+
+    @Test
+    void importedRosterLinksExistingAndFutureStudentAccounts() throws Exception {
+        mockMvc.perform(post("/api/app/teacher/classrooms/1/roster")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "students": [
+                                    {"studentNumber": "20230116", "studentName": "林清和"},
+                                    {"studentNumber": "20230199", "studentName": "待注册学生"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rosterCount").value(2))
+                .andExpect(jsonPath("$.linkedCount").value(1));
+
+        mockMvc.perform(post("/register")
+                        .with(csrf())
+                        .param("username", "student99")
+                        .param("password", "Student9912")
+                        .param("displayName", "待注册学生")
+                        .param("role", "STUDENT")
+                        .param("studentNumber", "20230199"))
+                .andExpect(status().is3xxRedirection());
+
+        org.assertj.core.api.Assertions.assertThat(
+                        membershipRepository.countByClassroomId(1L))
+                .isEqualTo(2);
+    }
+
+    @Test
+    void rosterRestrictsClassroomCodeJoiningToListedStudents() throws Exception {
+        mockMvc.perform(post("/api/app/teacher/classrooms/1/roster")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "students": [
+                                    {"studentNumber": "20230116", "studentName": "林清和"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        accountService.register(
+                "student_unlisted",
+                "Student5678",
+                "名单外学生",
+                com.reviewdesk.domain.Account.Role.STUDENT,
+                "20239999");
+
+        String joinCode = classroomRepository.findById(1L).orElseThrow().getJoinCode();
+        mockMvc.perform(post("/api/app/student/classrooms/join")
+                        .with(user("student_unlisted").roles("STUDENT"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"joinCode\":\"" + joinCode + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "你的学号不在该课堂名单中，请联系教师导入名单"));
     }
 
     @Test

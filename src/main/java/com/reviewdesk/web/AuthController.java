@@ -2,6 +2,7 @@ package com.reviewdesk.web;
 
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.service.AccountService;
+import com.reviewdesk.service.ClassroomService;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -17,9 +18,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthController {
 
     private final AccountService accountService;
+    private final ClassroomService classroomService;
 
-    public AuthController(AccountService accountService) {
+    public AuthController(AccountService accountService,
+                          ClassroomService classroomService) {
         this.accountService = accountService;
+        this.classroomService = classroomService;
     }
 
     @GetMapping("/login")
@@ -47,7 +51,9 @@ public class AuthController {
                            @RequestParam(required = false) String studentNumber,
                            Model model) {
         try {
-            accountService.register(username, password, displayName, role, studentNumber);
+            Account account = accountService.register(
+                    username, password, displayName, role, studentNumber);
+            classroomService.linkStudentToRosters(account);
             return "redirect:/login?registered";
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());

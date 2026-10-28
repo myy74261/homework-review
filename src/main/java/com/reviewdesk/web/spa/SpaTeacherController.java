@@ -32,7 +32,9 @@ import com.reviewdesk.web.PublishAssignmentForm;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -209,6 +211,21 @@ public class SpaTeacherController {
         return toClassroom(classroom, classroomService.memberCount(classroomId));
     }
 
+    @PostMapping("/classrooms/{classroomId}/roster")
+    public ClassroomService.RosterImportResult importClassroomRoster(
+            @PathVariable long classroomId,
+            Authentication authentication,
+            @Valid @RequestBody ImportClassroomRosterRequest request) {
+        Account teacher = accountService.current(authentication);
+        return classroomService.importRoster(
+                teacher,
+                classroomId,
+                request.students().stream()
+                        .map(student -> new ClassroomService.RosterEntry(
+                                student.studentNumber(), student.studentName()))
+                        .toList());
+    }
+
     @GetMapping("/classrooms")
     public List<SpaViewModels.ClassroomView> classrooms(Authentication authentication) {
         Account teacher = accountService.current(authentication);
@@ -256,6 +273,19 @@ public class SpaTeacherController {
                 "id", assignment.getId(),
                 "status", assignment.getStatus(),
                 "redirectPath", "/app/teacher/assignments/" + assignmentId + "/edit");
+    }
+
+    @PutMapping("/assignments/{assignmentId}/due-date")
+    public SpaViewModels.AssignmentView updateAssignmentDueDate(
+            @PathVariable long assignmentId,
+            Authentication authentication,
+            @Valid @RequestBody UpdateAssignmentDueDateRequest request) {
+        accessControlService.requireTeacherAssignment(
+                authentication.getName(), assignmentId);
+        Assignment assignment = assignmentService.updateDueAt(
+                assignmentId,
+                request.dueAt().atZone(DISPLAY_ZONE).toInstant());
+        return toAssignment(assignment);
     }
 
     @GetMapping("/assignments/{assignmentId}/edit")
@@ -499,7 +529,9 @@ public class SpaTeacherController {
         return new SpaViewModels.ClassroomView(
                 classroom.getId(), classroom.getName(), classroom.getCourseName(),
                 classroom.getJoinCode(), members, classroom.getStartAt(),
-                classroom.getEndAt(), classroomService.lifecycleStatus(classroom));
+                classroom.getEndAt(), classroomService.lifecycleStatus(classroom),
+                classroomService.rosterCount(classroom.getId()),
+                classroomService.linkedRosterCount(classroom.getId()));
     }
 
     private SpaViewModels.AssignmentView toAssignment(Assignment assignment) {
@@ -655,5 +687,19 @@ public class SpaTeacherController {
             @NotBlank String provider,
             String model,
             String apiKey) {
+    }
+
+    public record UpdateAssignmentDueDateRequest(
+            @NotNull(message = "请选择新的截止时间") LocalDateTime dueAt) {
+    }
+
+    public record ImportClassroomRosterRequest(
+            @Size(min = 1, max = 500, message = "名单需要包含 1–500 名学生")
+            List<@Valid RosterStudentRequest> students) {
+    }
+
+    public record RosterStudentRequest(
+            @NotBlank(message = "学号不能为空") String studentNumber,
+            @NotBlank(message = "姓名不能为空") String studentName) {
     }
 }
