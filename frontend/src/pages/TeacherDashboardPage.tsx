@@ -5,7 +5,6 @@ import {
   Bot,
   BookOpen,
   CalendarClock,
-  CheckCircle2,
   ClipboardCheck,
   Copy,
   LayoutDashboard,
@@ -333,22 +332,17 @@ export function TeacherDashboardPage() {
   const rosterEntries = parseRoster(rosterText);
 
   return (
-    <div className="space-y-5">
-      <section className="relative isolate overflow-hidden rounded-[28px] border border-white/80 bg-white/80 p-6 shadow-card sm:p-8">
-        <div className="absolute -bottom-14 right-6 -z-10 select-none font-display text-[150px] text-pine-600/[0.045]">
-          明鉴
-        </div>
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+    <div className="space-y-4">
+      <section className="rounded-2xl border border-line bg-white/85 px-5 py-5 shadow-card sm:px-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <p className="page-eyebrow">教学概览</p>
-            <h1 className="mt-2 max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              作业审核与课堂反馈
+            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              教学工作台
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-              查看学生提交，完成作业审核，并整理课堂反馈。
-            </p>
+            <p className="mt-2 text-sm text-muted">审核作业、查看进度并整理课堂反馈。</p>
           </div>
-          <Button asChild size="lg">
+          <Button asChild>
             <Link to="/teacher/assignments/new">
               <Plus className="size-4" />
               发布作业
@@ -419,46 +413,30 @@ export function TeacherDashboardPage() {
         <div className="min-w-0 space-y-5">
           {activeTab === "overview" ? (
             <>
-              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <section className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-white/85 p-2 shadow-card sm:grid-cols-4">
                 {[
                   {
                     label: "已发布作业",
                     value: publishedCount,
-                    detail: "课堂任务",
-                    icon: BookOpen,
                   },
                   {
                     label: "学生提交",
                     value: data.submissions.length,
-                    detail: "提交记录",
-                    icon: ClipboardCheck,
                   },
                   {
                     label: "待完成审核",
                     value: pendingCount,
-                    detail: "需要处理",
-                    icon: MessageSquareWarning,
                   },
                   {
                     label: "已完成反馈",
                     value: data.reviewedCount,
-                    detail: "反馈已发布",
-                    icon: CheckCircle2,
                   },
-                ].map((metric) => {
-                  const Icon = metric.icon;
-                  return (
-                    <Card key={metric.label} className="relative overflow-hidden p-5">
-                      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-pine-500/70 to-emerald-100" />
-                      <div className="flex items-start justify-between">
-                        <span className="text-sm text-muted">{metric.label}</span>
-                        <Icon className="size-4 text-pine-600" />
-                      </div>
-                      <strong className="metric-number mt-4 block">{metric.value}</strong>
-                      <small className="mt-1 block text-xs text-stone-500">{metric.detail}</small>
-                    </Card>
-                  );
-                })}
+                ].map((metric) => (
+                  <div key={metric.label} className="rounded-xl bg-stone-50/80 px-4 py-3">
+                    <span className="text-xs text-muted">{metric.label}</span>
+                    <strong className="mt-1 block font-display text-2xl">{metric.value}</strong>
+                  </div>
+                ))}
               </section>
 
               <TeacherOverviewCharts data={data} />

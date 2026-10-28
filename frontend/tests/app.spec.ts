@@ -17,7 +17,7 @@ function localDateTime(days: number) {
 test("teacher React workspace renders dashboard, review and lesson pages", async ({ page }) => {
   await login(page, "chen", "Teach1234");
   await expect(page).toHaveURL(/\/app\/teacher$/);
-  await expect(page.getByRole("heading", { name: "作业审核与课堂反馈" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "教学工作台" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "我的课堂", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "审核完成度" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "学生提交占比" })).toBeVisible();
