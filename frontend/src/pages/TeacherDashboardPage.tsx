@@ -510,7 +510,11 @@ export function TeacherDashboardPage() {
                           </p>
                           <p className="mt-1 text-xs text-muted">
                             名单 {classroom.rosterCount} 人 · 已关联 {classroom.linkedRosterCount}{" "}
-                            个账号
+                            个账号 · 待注册{" "}
+                            {classroom.rosterCount - classroom.linkedRosterCount} 人
+                            {classroom.unlistedMemberCount
+                              ? ` · 名单外成员 ${classroom.unlistedMemberCount} 人`
+                              : ""}
                           </p>
                         </div>
                         <button
@@ -1061,7 +1065,10 @@ export function TeacherDashboardPage() {
             {rosterTarget ? (
               <span>
                 当前名单 {rosterTarget.rosterCount} 人，已关联 {rosterTarget.linkedRosterCount}{" "}
-                个账号
+                个账号，待注册 {rosterTarget.rosterCount - rosterTarget.linkedRosterCount} 人
+                {rosterTarget.unlistedMemberCount
+                  ? `，名单外成员 ${rosterTarget.unlistedMemberCount} 人`
+                  : ""}
               </span>
             ) : null}
           </div>

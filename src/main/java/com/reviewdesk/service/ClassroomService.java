@@ -13,7 +13,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -173,6 +175,21 @@ public class ClassroomService {
 
     public long linkedRosterCount(long classroomId) {
         return rosterRepository.countByClassroomIdAndStudentAccountIdIsNotNull(classroomId);
+    }
+
+    public long unlistedMemberCount(long classroomId) {
+        List<ClassroomRosterEntry> roster =
+                rosterRepository.findByClassroomIdOrderByStudentNumberAsc(classroomId);
+        if (roster.isEmpty()) {
+            return 0;
+        }
+        Set<Long> listedAccountIds = roster.stream()
+                .map(ClassroomRosterEntry::getStudentAccountId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return membershipRepository.findByClassroomId(classroomId).stream()
+                .filter(membership -> !listedAccountIds.contains(membership.getStudentId()))
+                .count();
     }
 
     @Transactional

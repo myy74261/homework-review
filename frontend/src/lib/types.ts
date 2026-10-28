@@ -29,6 +29,7 @@ export interface Classroom {
   status: "UNSCHEDULED" | "UPCOMING" | "ACTIVE" | "ENDED" | "DISSOLVED";
   rosterCount: number;
   linkedRosterCount: number;
+  unlistedMemberCount: number;
 }
 
 export interface Assignment {

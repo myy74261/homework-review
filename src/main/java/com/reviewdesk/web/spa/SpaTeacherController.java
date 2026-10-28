@@ -531,7 +531,8 @@ public class SpaTeacherController {
                 classroom.getJoinCode(), members, classroom.getStartAt(),
                 classroom.getEndAt(), classroomService.lifecycleStatus(classroom),
                 classroomService.rosterCount(classroom.getId()),
-                classroomService.linkedRosterCount(classroom.getId()));
+                classroomService.linkedRosterCount(classroom.getId()),
+                classroomService.unlistedMemberCount(classroom.getId()));
     }
 
     private SpaViewModels.AssignmentView toAssignment(Assignment assignment) {

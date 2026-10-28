@@ -19,6 +19,8 @@ public interface ClassroomMembershipRepository
 
     List<ClassroomMembership> findByStudentIdOrderByJoinedAtDesc(Long studentId);
 
+    List<ClassroomMembership> findByClassroomId(Long classroomId);
+
     long countByClassroomId(Long classroomId);
 }
 
