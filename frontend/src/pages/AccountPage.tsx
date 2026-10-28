@@ -1,5 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, KeyRound, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  KeyRound,
+  LogOut,
+  Repeat2,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserRound,
+  UserX,
+} from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
@@ -8,12 +17,17 @@ import { useAppStore } from "@/store/app-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
 
 export function AccountPage() {
   const session = useAppStore((state) => state.session)!;
   const setSession = useAppStore((state) => state.setSession);
   const notify = useAppStore((state) => state.notify);
+  const noticesEnabled = useAppStore((state) => state.noticesEnabled);
+  const reduceMotion = useAppStore((state) => state.reduceMotion);
+  const setNoticesEnabled = useAppStore((state) => state.setNoticesEnabled);
+  const setReduceMotion = useAppStore((state) => state.setReduceMotion);
   const queryClient = useQueryClient();
   const isTeacher = session.user.role === "TEACHER";
 
@@ -25,6 +39,8 @@ export function AccountPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState("");
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivatePassword, setDeactivatePassword] = useState("");
 
   const updateProfile = useMutation({
     mutationFn: () =>
@@ -58,6 +74,27 @@ export function AccountPage() {
       notify("密码已更新，下次登录时请使用新密码。", "success");
     },
     onError: (error: Error) => setFormError(error.message),
+  });
+
+  const logout = useMutation({
+    mutationFn: (mode: "logout" | "switch") => api.logout().then(() => mode),
+    onSuccess: (mode) => {
+      window.location.assign(mode === "switch" ? "/login?switch" : "/login?logout");
+    },
+    onError: () => {
+      window.location.assign("/login");
+    },
+  });
+
+  const deactivateAccount = useMutation({
+    mutationFn: () =>
+      api.deactivateAccount({
+        currentPassword: deactivatePassword,
+      }),
+    onSuccess: () => {
+      window.location.assign("/login?deactivated");
+    },
+    onError: (error: Error) => notify(error.message, "error"),
   });
 
   function submitPassword(event: React.FormEvent) {
@@ -242,6 +279,131 @@ export function AccountPage() {
           </form>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div>
+              <p className="page-eyebrow">偏好设置</p>
+              <CardTitle className="mt-1">显示与提醒</CardTitle>
+            </div>
+            <SlidersHorizontal className="size-5 text-pine-600" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <label className="flex items-center justify-between gap-4 rounded-xl bg-stone-50 p-3 text-sm">
+              <span>
+                <strong className="block">减少界面动效</strong>
+                <small className="text-xs text-muted">关闭过渡和动画效果。</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={reduceMotion}
+                onChange={(event) => setReduceMotion(event.target.checked)}
+                className="size-4 accent-pine-600"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-4 rounded-xl bg-stone-50 p-3 text-sm">
+              <span>
+                <strong className="block">显示操作提示</strong>
+                <small className="text-xs text-muted">保存或提交后显示结果提示。</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={noticesEnabled}
+                onChange={(event) => setNoticesEnabled(event.target.checked)}
+                className="size-4 accent-pine-600"
+              />
+            </label>
+            {isTeacher ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link to="/teacher/ai-settings">打开 AI 接口设置</Link>
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div>
+              <p className="page-eyebrow">账号操作</p>
+              <CardTitle className="mt-1">会话与账号</CardTitle>
+            </div>
+            <LogOut className="size-5 text-pine-600" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={logout.isPending}
+                onClick={() => logout.mutate("switch")}
+              >
+                <Repeat2 className="size-4" />
+                切换账号
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={logout.isPending}
+                onClick={() => logout.mutate("logout")}
+              >
+                <LogOut className="size-4" />
+                退出登录
+              </Button>
+            </div>
+            <div className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-700">
+              切换账号会先安全退出当前会话，不会在浏览器中保存账号密码。
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full"
+              onClick={() => setDeactivateOpen(true)}
+            >
+              <UserX className="size-4" />
+              注销账号
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog
+        open={deactivateOpen}
+        onOpenChange={(open) => {
+          setDeactivateOpen(open);
+          if (!open) setDeactivatePassword("");
+        }}
+        title="注销账号"
+        description="注销后账号将无法登录，历史数据仍会保留用于教学记录和审核追溯。"
+      >
+        <div className="space-y-4">
+          <Field label="当前密码" hint="注销前需要验证当前密码。">
+            <Input
+              type="password"
+              autoComplete="current-password"
+              value={deactivatePassword}
+              onChange={(event) => setDeactivatePassword(event.target.value)}
+              required
+            />
+          </Field>
+          <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-700">
+            教师拥有未解散课堂时不能注销；学生注销后会从当前课堂成员列表移除。
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDeactivateOpen(false)}>
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deactivateAccount.isPending || !deactivatePassword}
+              onClick={() => deactivateAccount.mutate()}
+            >
+              {deactivateAccount.isPending ? "注销中…" : "确认注销"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

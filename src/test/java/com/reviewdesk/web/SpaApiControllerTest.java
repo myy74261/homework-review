@@ -442,6 +442,45 @@ class SpaApiControllerTest {
     }
 
     @Test
+    void accountLogoutAndDeactivationRequireTheCurrentSession() throws Exception {
+        mockMvc.perform(post("/api/app/account/logout")
+                        .with(user("lin").roles("STUDENT"))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/app/account/deactivate")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "Teach1234"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "请先处理并解散所有现有课堂，再注销教师账号"));
+
+        mockMvc.perform(post("/api/app/account/deactivate")
+                        .with(user("lin").roles("STUDENT"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "Student1234"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        var student = accountRepository.findByUsername("lin").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(student.isActive()).isFalse();
+        org.assertj.core.api.Assertions.assertThat(student.getDeactivatedAt()).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(
+                        membershipRepository.countByClassroomId(1L))
+                .isZero();
+    }
+
+    @Test
     void teacherCanReviewAiTraceAndExplicitlyAdoptSuggestion() throws Exception {
         AiReviewRun run = aiReviewRunRepository.save(new AiReviewRun(
                 1L, "deepseek-chat", "模型认为引用需要进一步核对，最终由教师判断。"));

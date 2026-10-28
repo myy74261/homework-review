@@ -1,4 +1,5 @@
 import { Bot, BookOpen, ClipboardCheck, Home, LogOut, Settings, Sparkles } from "lucide-react";
+import { useEffect } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -17,8 +18,13 @@ export function AppShell() {
   const session = useAppStore((state) => state.session)!;
   const notices = useAppStore((state) => state.notices);
   const dismiss = useAppStore((state) => state.dismiss);
+  const reduceMotion = useAppStore((state) => state.reduceMotion);
   const navigate = useNavigate();
   const nav = session.user.role === "TEACHER" ? teacherNav : studentNav;
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("reduce-motion", reduceMotion);
+  }, [reduceMotion]);
 
   async function logout() {
     try {

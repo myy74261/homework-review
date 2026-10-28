@@ -262,7 +262,12 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  logout: () => request<void>("/logout", { method: "POST" }),
+  deactivateAccount: (payload: { currentPassword: string }) =>
+    request<void>("/api/app/account/deactivate", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  logout: () => request<void>("/api/app/account/logout", { method: "POST" }),
 };
 
 export { ApiError };

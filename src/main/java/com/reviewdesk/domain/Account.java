@@ -51,6 +51,10 @@ public class Account {
     @Column(nullable = false)
     private Instant createdAt;
 
+    private Boolean active;
+
+    private Instant deactivatedAt;
+
     protected Account() {
         // JPA 需要的无参构造方法
     }
@@ -63,6 +67,7 @@ public class Account {
         this.role = role.name();
         this.studentNumber = studentNumber;
         this.createdAt = Instant.now();
+        this.active = true;
     }
 
     public Long getId() {
@@ -105,6 +110,14 @@ public class Account {
         return professionalTitle;
     }
 
+    public boolean isActive() {
+        return !Boolean.FALSE.equals(active);
+    }
+
+    public Instant getDeactivatedAt() {
+        return deactivatedAt;
+    }
+
     public boolean isTeacher() {
         return Role.TEACHER.name().equals(role);
     }
@@ -122,6 +135,11 @@ public class Account {
         this.email = email;
         this.department = department;
         this.professionalTitle = professionalTitle;
+    }
+
+    public void deactivate() {
+        this.active = false;
+        this.deactivatedAt = Instant.now();
     }
 }
 

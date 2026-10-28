@@ -84,4 +84,8 @@ public class ClassroomRosterEntry {
     public void linkAccount(Long studentAccountId) {
         this.studentAccountId = studentAccountId;
     }
+
+    public void unlinkAccount() {
+        this.studentAccountId = null;
+    }
 }

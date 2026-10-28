@@ -6,10 +6,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,6 +66,25 @@ public class SpaSessionController {
         return toUser(account);
     }
 
+    @PostMapping("/account/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        var session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/account/deactivate")
+    public ResponseEntity<Void> deactivate(
+            Authentication authentication,
+            @Valid @RequestBody DeactivateAccountRequest request) {
+        accountService.deactivate(
+                authentication.getName(), request.currentPassword());
+        return ResponseEntity.noContent().build();
+    }
+
     private SpaViewModels.UserView toUser(Account account) {
         return new SpaViewModels.UserView(
                 account.getId(),
@@ -93,5 +115,9 @@ public class SpaSessionController {
             String department,
             @Size(max = 100, message = "职称/职务不能超过 100 个字符")
             String professionalTitle) {
+    }
+
+    public record DeactivateAccountRequest(
+            @NotBlank(message = "请输入当前密码") String currentPassword) {
     }
 }

@@ -2,6 +2,9 @@ package com.reviewdesk.service;
 
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.repository.AccountRepository;
+import com.reviewdesk.repository.ClassroomMembershipRepository;
+import com.reviewdesk.repository.ClassroomRepository;
+import com.reviewdesk.repository.ClassroomRosterRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,11 +19,20 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ClassroomRepository classroomRepository;
+    private final ClassroomMembershipRepository membershipRepository;
+    private final ClassroomRosterRepository rosterRepository;
 
     public AccountService(AccountRepository accountRepository,
-                          PasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder,
+                          ClassroomRepository classroomRepository,
+                          ClassroomMembershipRepository membershipRepository,
+                          ClassroomRosterRepository rosterRepository) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.classroomRepository = classroomRepository;
+        this.membershipRepository = membershipRepository;
+        this.rosterRepository = rosterRepository;
     }
 
     public Account requireByUsername(String username) {
@@ -32,7 +44,11 @@ public class AccountService {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("请先登录");
         }
-        return requireByUsername(authentication.getName());
+        Account account = requireByUsername(authentication.getName());
+        if (!account.isActive()) {
+            throw new IllegalArgumentException("账号已注销");
+        }
+        return account;
     }
 
     @Transactional
@@ -83,6 +99,34 @@ public class AccountService {
                 cleanDepartment,
                 cleanTitle);
         return account;
+    }
+
+    @Transactional
+    public void deactivate(String username, String currentPassword) {
+        Account account = requireByUsername(username);
+        if (!account.isActive()) {
+            throw new IllegalArgumentException("账号已经注销");
+        }
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("请输入当前密码");
+        }
+        if (!passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
+            throw new IllegalArgumentException("当前密码不正确");
+        }
+        if (account.isTeacher()
+                && classroomRepository.existsByTeacherIdAndDissolvedAtIsNull(
+                        account.getId())) {
+            throw new IllegalStateException("请先处理并解散所有现有课堂，再注销教师账号");
+        }
+        if (!account.isTeacher()) {
+            rosterRepository.findByStudentAccountId(account.getId()).forEach(entry -> {
+                entry.unlinkAccount();
+                rosterRepository.save(entry);
+            });
+            membershipRepository.deleteByStudentId(account.getId());
+        }
+        account.deactivate();
+        accountRepository.save(account);
     }
 
     @Transactional

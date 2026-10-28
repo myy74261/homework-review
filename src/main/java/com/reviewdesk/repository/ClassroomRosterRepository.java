@@ -19,6 +19,8 @@ public interface ClassroomRosterRepository extends JpaRepository<ClassroomRoster
 
     List<ClassroomRosterEntry> findByClassroomIdOrderByStudentNumberAsc(Long classroomId);
 
+    List<ClassroomRosterEntry> findByStudentAccountId(Long studentAccountId);
+
     long countByClassroomId(Long classroomId);
 
     long countByClassroomIdAndStudentAccountIdIsNotNull(Long classroomId);

@@ -21,5 +21,7 @@ public interface ClassroomMembershipRepository
     List<ClassroomMembership> findByClassroomId(Long classroomId);
 
     long countByClassroomId(Long classroomId);
+
+    void deleteByStudentId(Long studentId);
 }
 

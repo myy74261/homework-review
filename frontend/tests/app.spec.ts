@@ -182,6 +182,16 @@ test("teacher AI settings are available on a dedicated page", async ({ page }) =
   await page.screenshot({ path: "test-results/teacher-ai-settings.png", fullPage: true });
 });
 
+test("account can switch to another login session safely", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.goto("/app/account");
+  await expect(page.getByRole("heading", { name: "显示与提醒" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "会话与账号" })).toBeVisible();
+  await page.getByRole("button", { name: "切换账号" }).click();
+  await expect(page).toHaveURL(/\/login\?switch$/);
+  await expect(page.getByText("已退出当前账号，请输入另一个账号。")).toBeVisible();
+});
+
 test("teacher can update profile details and password from account settings", async ({ page }) => {
   await login(page, "chen", "Teach1234");
   await page.goto("/app/account");
@@ -192,6 +202,8 @@ test("teacher can update profile details and password from account settings", as
   await page.getByLabel("职称 / 职务").fill("副教授");
   await page.getByRole("button", { name: "保存个人信息" }).click();
   await expect(page.getByText("个人信息已更新。")).toBeVisible();
+  await expect(page.getByLabel("减少界面动效")).not.toBeChecked();
+  await expect(page.getByLabel("显示操作提示")).toBeChecked();
   await page.screenshot({ path: "test-results/teacher-account.png", fullPage: true });
   await page.getByLabel("当前密码").fill("Teach1234");
   await page.getByLabel("新密码", { exact: true }).fill("ChangedPass-2026!");

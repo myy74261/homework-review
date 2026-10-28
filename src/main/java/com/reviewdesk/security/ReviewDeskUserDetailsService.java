@@ -28,6 +28,7 @@ public class ReviewDeskUserDetailsService implements UserDetailsService {
         return User.withUsername(account.getUsername())
                 .password(account.getPasswordHash())
                 .roles(account.getRole())
+                .disabled(!account.isActive())
                 .build();
     }
 }

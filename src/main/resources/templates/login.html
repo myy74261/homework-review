@@ -36,6 +36,12 @@
 
       <p class="error-banner" th:if="${param.error}">账号或密码不正确，请重新输入。</p>
       <p class="success-banner" th:if="${param.logout}">你已安全退出登录。</p>
+      <p class="success-banner" th:if="${param.switch}">
+        已退出当前账号，请输入另一个账号。
+      </p>
+      <p class="success-banner" th:if="${param.deactivated}">
+        账号已注销，当前设备已安全退出。
+      </p>
       <p class="success-banner" th:if="${param.registered}">
         账号创建成功，请使用新账号登录。
       </p>
