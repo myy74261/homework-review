@@ -20,7 +20,9 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   await expect(page.getByRole("heading", { name: "作业审核与课堂反馈" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "我的课堂", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "审核完成度" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "近 7 天提交趋势" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "学生提交占比" })).toBeVisible();
+  await expect(page.getByText("已提交学生")).toBeVisible();
+  await expect(page.getByText("未提交学生")).toBeVisible();
   await expect(page.getByRole("tab", { name: /概览/ })).toHaveAttribute("aria-selected", "true");
   await page.screenshot({ path: "test-results/teacher-dashboard.png", fullPage: true });
 

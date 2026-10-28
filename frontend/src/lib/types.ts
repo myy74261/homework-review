@@ -228,6 +228,8 @@ export interface TeacherDashboard {
   reviewedCount: number;
   aiConfigured: boolean;
   aiBatchProgress: AiBatchProgress[];
+  enrolledStudentCount: number;
+  submittedStudentCount: number;
 }
 
 export interface TeacherReviewWorkspace {

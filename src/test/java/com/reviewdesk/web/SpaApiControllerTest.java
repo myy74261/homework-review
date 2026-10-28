@@ -91,6 +91,8 @@ class SpaApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assignments.length()").value(1))
                 .andExpect(jsonPath("$.submissions.length()").value(1))
+                .andExpect(jsonPath("$.enrolledStudentCount").value(1))
+                .andExpect(jsonPath("$.submittedStudentCount").value(1))
                 .andExpect(jsonPath("$.classrooms[0].joinCode").isNotEmpty());
 
         mockMvc.perform(get("/api/app/teacher/reviews/1")

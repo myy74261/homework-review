@@ -136,7 +136,9 @@ public final class SpaViewModels {
                                    List<CommonIssueView> commonIssues,
                                    List<AppealOverview> appeals, long reviewedCount,
                                    boolean aiConfigured,
-                                   List<AiBatchProgressView> aiBatchProgress) {
+                                   List<AiBatchProgressView> aiBatchProgress,
+                                   long enrolledStudentCount,
+                                   long submittedStudentCount) {
     }
 
     public record TeacherReviewWorkspace(

@@ -174,7 +174,12 @@ public class SpaTeacherController {
                                 item.pending(),
                                 item.failed(),
                                 item.skipped()))
-                        .toList());
+                        .toList(),
+                classroomService.distinctStudentCount(classroomIds),
+                submissions.stream()
+                        .map(item -> item.submission().getStudentAccountId())
+                        .distinct()
+                        .count());
     }
 
     @PostMapping("/classrooms")

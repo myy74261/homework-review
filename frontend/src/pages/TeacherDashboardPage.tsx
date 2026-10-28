@@ -54,19 +54,11 @@ function TeacherOverviewCharts({ data }: { data: TeacherDashboard }) {
   const completion = totalSubmissions
     ? Math.round((data.reviewedCount / totalSubmissions) * 100)
     : 0;
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() - (6 - index));
-    return date;
-  });
-  const submittedByDay = days.map(
-    (day) =>
-      data.submissions.filter(
-        (submission) => new Date(submission.submittedAt).toDateString() === day.toDateString(),
-      ).length,
-  );
-  const maxDaily = Math.max(1, ...submittedByDay);
+  const submittedStudents = data.submittedStudentCount;
+  const unsubmittedStudents = Math.max(0, data.enrolledStudentCount - submittedStudents);
+  const submittedPercent = data.enrolledStudentCount
+    ? Math.round((submittedStudents / data.enrolledStudentCount) * 100)
+    : 0;
   const maxIssue = Math.max(1, ...data.commonIssues.map((issue) => issue.count));
 
   return (
@@ -107,32 +99,37 @@ function TeacherOverviewCharts({ data }: { data: TeacherDashboard }) {
       <Card className="p-5">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="page-eyebrow">提交活跃度</p>
-            <h2 className="mt-1 font-display text-xl font-semibold">近 7 天提交趋势</h2>
+            <p className="page-eyebrow">学生覆盖</p>
+            <h2 className="mt-1 font-display text-xl font-semibold">学生提交占比</h2>
           </div>
-          <span className="text-xs text-muted">{totalSubmissions} 条记录</span>
+          <span className="font-display text-3xl text-pine-700">{submittedPercent}%</span>
         </div>
-        <div className="mt-5 grid h-32 grid-cols-7 items-end gap-2 border-b border-line">
-          {days.map((day, index) => (
-            <div key={day.toISOString()} className="flex h-full flex-col justify-end gap-2">
-              <div
-                className={`rounded-t-md ${
-                  submittedByDay[index] > 0
-                    ? "bg-gradient-to-t from-pine-500 to-emerald-300"
-                    : "bg-transparent"
-                }`}
-                style={{
-                  height: submittedByDay[index]
-                    ? `${Math.max(6, (submittedByDay[index] / maxDaily) * 88)}%`
-                    : "0%",
-                }}
-                title={`${submittedByDay[index]} 条提交`}
-              />
-              <span className="text-center text-[10px] text-muted">
-                {day.toLocaleDateString("zh-CN", { weekday: "short" })}
+        <div className="mt-8">
+          <div className="flex h-5 overflow-hidden rounded-full bg-stone-100">
+            <div className="h-full bg-pine-500" style={{ width: `${submittedPercent}%` }} />
+            <div className="bg-clay-200 h-full" style={{ width: `${100 - submittedPercent}%` }} />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-pine-50 p-3">
+              <span className="flex items-center gap-2 text-xs text-pine-700">
+                <span className="size-2 rounded-full bg-pine-500" />
+                已提交学生
               </span>
+              <strong className="mt-2 block font-display text-2xl text-pine-700">
+                {submittedStudents}
+              </strong>
             </div>
-          ))}
+            <div className="rounded-xl bg-stone-50 p-3">
+              <span className="flex items-center gap-2 text-xs text-muted">
+                <span className="bg-clay-300 size-2 rounded-full" />
+                未提交学生
+              </span>
+              <strong className="mt-2 block font-display text-2xl">{unsubmittedStudents}</strong>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-muted">
+            共 {data.enrolledStudentCount} 名在册学生，按学生账号去重统计。
+          </p>
         </div>
       </Card>
 
@@ -510,8 +507,7 @@ export function TeacherDashboardPage() {
                           </p>
                           <p className="mt-1 text-xs text-muted">
                             名单 {classroom.rosterCount} 人 · 已关联 {classroom.linkedRosterCount}{" "}
-                            个账号 · 待注册{" "}
-                            {classroom.rosterCount - classroom.linkedRosterCount} 人
+                            个账号 · 待注册 {classroom.rosterCount - classroom.linkedRosterCount} 人
                             {classroom.unlistedMemberCount
                               ? ` · 名单外成员 ${classroom.unlistedMemberCount} 人`
                               : ""}
