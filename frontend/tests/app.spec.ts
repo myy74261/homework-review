@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import * as XLSX from "xlsx";
 
 async function login(page: import("@playwright/test").Page, username: string, password: string) {
   await page.goto("/login");
@@ -98,6 +99,35 @@ test("teacher can import a classroom roster", async ({ page }) => {
   await page.getByRole("button", { name: "确认导入名单" }).click();
   await expect(page.getByText(/名单已导入，共 2 人，已关联 1 个学生账号/)).toBeVisible();
   await expect(classroomCard.getByText(/名单 2 人 · 已关联 1 个账号/)).toBeVisible();
+});
+
+test("teacher can import an XLSX roster from a mobile file picker", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page, "chen", "Teach1234");
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([
+      ["学号", "姓名"],
+      ["20230120", "表格同学甲"],
+      ["20230121", "表格同学乙"],
+    ]),
+    "学生名单",
+  );
+  const file = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+
+  const classroomCard = page
+    .getByTestId(/^classroom-card-/)
+    .filter({ hasText: "传播学方法课 · 2026 秋" });
+  await classroomCard.getByRole("button", { name: "导入名单" }).click();
+  await page.getByLabel("上传名单文件").setInputFiles({
+    name: "students.xlsx",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: file,
+  });
+  await expect(page.getByText("已识别 2 名学生")).toBeVisible();
+  await expect(page.getByText(/students\.xlsx/)).toBeVisible();
+  await page.screenshot({ path: "test-results/roster-xlsx-mobile.png", fullPage: true });
 });
 
 test("teacher can change an assignment deadline without withdrawing it", async ({ page }) => {

@@ -166,6 +166,15 @@ function parseRoster(text: string) {
     );
 }
 
+function excelRowsToRosterText(rows: unknown[][]) {
+  return rows
+    .map((row) =>
+      [row[0], row[1]].map((value) => (value == null ? "" : String(value).trim())).join(","),
+    )
+    .filter((line) => line !== ",")
+    .join("\n");
+}
+
 export function TeacherDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1071,15 +1080,47 @@ export function TeacherDashboardPage() {
         }
       >
         <div className="space-y-4">
-          <Field label="上传名单文件" hint="支持 CSV/TXT，格式为“学号,姓名”，首行可写表头。">
+          <Field
+            label="上传名单文件"
+            hint="支持 XLSX、XLS、CSV、TXT。第一列学号、第二列姓名，首行可写表头。"
+          >
             <input
               type="file"
-              accept=".csv,.txt,text/csv,text/plain"
+              accept=".xlsx,.xls,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain"
               onChange={async (event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
-                setRosterText(await file.text());
-                setRosterFileName(file.name);
+                try {
+                  const extension = file.name.split(".").pop()?.toLowerCase();
+                  if (extension === "xlsx" || extension === "xls") {
+                    const XLSX = await import("xlsx");
+                    const workbook = XLSX.read(await file.arrayBuffer(), {
+                      type: "array",
+                    });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    if (!firstSheet) {
+                      throw new Error("表格中没有可读取的工作表");
+                    }
+                    const rows = XLSX.utils.sheet_to_json<unknown[]>(firstSheet, {
+                      header: 1,
+                      raw: false,
+                      blankrows: false,
+                    });
+                    const text = excelRowsToRosterText(rows);
+                    if (!text.trim()) {
+                      throw new Error("表格中没有可导入的学号和姓名");
+                    }
+                    setRosterText(text);
+                  } else {
+                    setRosterText(await file.text());
+                  }
+                  setRosterFileName(file.name);
+                } catch (error) {
+                  notify(
+                    error instanceof Error ? `读取名单失败：${error.message}` : "读取名单失败",
+                    "error",
+                  );
+                }
               }}
               className="block w-full rounded-xl border border-dashed border-line bg-stone-50 p-3 text-xs text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-pine-600 file:px-3 file:py-2 file:text-white"
             />
