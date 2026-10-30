@@ -17,12 +17,12 @@
 - 2 核 CPU
 - 2 GB 内存起步，推荐 4 GB
 - 40 GB 以上磁盘
-- Docker Engine
-- Docker Compose Plugin
 - Nginx
 - 一个解析到服务器的域名
+- Docker 方式需要 Docker Engine 和 Docker Compose Plugin
+- 原生方式需要 JDK 17、PostgreSQL 和 systemd
 
-部署结构：
+Docker Compose 部署结构：
 
 ```text
 Internet
@@ -121,10 +121,40 @@ sudo certbot renew --dry-run
 
 ## 7. 更新版本
 
+Docker 方式：
+
 ```bash
 git pull
 docker compose --env-file .env.production up -d --build
 ```
+
+原生 Ubuntu 方式：
+
+1. 在本地运行测试并构建 JAR。
+2. 记录本地 JAR 的 SHA-256。
+3. 上传到服务器临时文件并核对 SHA-256。
+4. 备份 `/opt/review-desk/app.jar`。
+5. 替换 JAR，并保持所有者和权限为 `reviewdesk:reviewdesk`、`640`。
+6. 执行 `systemctl restart review-desk`。
+7. 检查服务状态、Flyway 日志和登录页 HTTPS 响应。
+
+替换命令示例：
+
+```bash
+cp -p /opt/review-desk/app.jar \
+  /opt/review-desk/app.jar.pre-update
+install -o reviewdesk -g reviewdesk -m 640 \
+  /opt/review-desk/app.jar.new /opt/review-desk/app.jar
+systemctl restart review-desk
+```
+
+本次 AI 截止时间一致性修复不修改表结构，不需要新增 Flyway 迁移。上线前仍应检查：
+
+- `FLYWAY_ENABLED=true`
+- `JPA_DDL_AUTO=validate`
+- `SESSION_STORE_TYPE=jdbc`
+- 教师 AI 配置可用
+- 作业当前截止时间、课堂状态和待执行任务状态符合预期
 
 ## 8. 数据备份
 
@@ -175,6 +205,8 @@ docker compose down -v
 
 ## 9. 日志和排查
 
+Docker 方式：
+
 ```bash
 docker compose logs --tail=200 app
 docker compose logs --tail=200 db
@@ -182,14 +214,33 @@ sudo nginx -t
 sudo journalctl -u nginx --no-pager -n 100
 ```
 
+原生 Ubuntu 方式：
+
+```bash
+systemctl is-active review-desk
+journalctl -u review-desk -n 100 --no-pager
+sudo nginx -t
+curl -I https://实际域名/login
+```
+
+排查 AI 自动预审时，还应确认：
+
+1. 教师已配置有效模型接口。
+2. 作业状态为 `PUBLISHED`，且当前截止时间已经到达。
+3. 课堂未解散，提交尚未完成审核。
+4. `ai_batch_review_jobs` 中任务的 `status`、`next_attempt_at`、`attempt_count` 和 `error_message`。
+5. `ai_review_runs` 和 `ai_review_suggestions` 中是否已有运行记录。
+
 ## 10. 首次启动后的检查
 
 1. 打开域名登录页。
 2. 分别登录教师和学生账号。
 3. 创建课堂、发布作业、学生提交。
-4. 教师填写反馈并点击“发布反馈”。
+4. 教师填写反馈并点击「发布反馈」。
 5. 学生重新登录，确认能查看提交全文和最终反馈。
-6. 重启容器后确认数据仍然存在。
+6. 重启应用程序后确认数据仍然存在。
+7. 作业截止且教师配置 AI 后，确认自动任务在截止时间之后执行。
+8. 延长截止时间，确认待执行任务被推迟，已有建议和审核记录仍然存在。
 
 ## 11. 原生 Ubuntu 部署
 

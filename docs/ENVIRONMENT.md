@@ -73,6 +73,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `SESSION_COOKIE_SAME_SITE` | `lax` | 会话 Cookie 的 SameSite 策略 |
 | `SPRING_APPLICATION_NAME` | `review-desk` | 应用名称 |
 | `THYMELEAF_CACHE` | `false` | 是否缓存服务端页面模板 |
+| `UPLOAD_ROOT` | `./data/uploads` | 学生附件保存目录 |
+| `UPLOAD_MAX_FILE_SIZE` | `25MB` | 单个附件大小上限 |
+| `UPLOAD_MAX_REQUEST_SIZE` | `220MB` | 单次上传请求大小上限 |
 | `AI_API_KEY` | 空 | OpenAI 兼容模型密钥；为空时使用规则生成 |
 | `AI_BASE_URL` | `https://api.deepseek.com` | 模型 API 基地址 |
 | `AI_MODEL` | `deepseek-chat` | 模型名称 |
@@ -80,7 +83,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `AI_SETTINGS_SECRET` | 本地开发默认值 | 加密教师在页面中填写的 API Key；生产必须更换 |
 | `AI_BATCH_SIZE` | `3` | 每轮自动预审最多处理的提交数 |
 | `AI_BATCH_INITIAL_DELAY_MS` | `15000` | 服务启动后首次扫描等待时间 |
-| `AI_BATCH_DELAY_MS` | `60000` | 自动预审扫描间隔 |
+| `AI_BATCH_DELAY_MS` | `60000` | 两轮自动预审扫描之间的固定等待时间 |
 | `SHOW_DEMO_CREDENTIALS` | `true` | 登录页是否显示初始演示账号；生产环境应设为 `false` |
 | `DEMO_TEACHER_USERNAME` | `chen` | 首次启动创建的教师账号 |
 | `DEMO_TEACHER_PASSWORD` | `Teach1234` | 首次启动创建的教师密码 |
@@ -98,21 +101,23 @@ SERVER_ADDRESS=0.0.0.0
 DATABASE_URL=jdbc:h2:file:./data/review-desk
 DATABASE_USERNAME=sa
 DATABASE_PASSWORD=
-JPA_DDL_AUTO=validate
-FLYWAY_ENABLED=true
-FLYWAY_BASELINE_ON_MIGRATE=true
-SESSION_STORE_TYPE=jdbc
-SESSION_TIMEOUT=8h
-SESSION_CLEANUP_CRON=0 */15 * * * *
+JPA_DDL_AUTO=update
+SESSION_STORE_TYPE=none
 SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
 SPRING_APPLICATION_NAME=review-desk
 THYMELEAF_CACHE=false
+UPLOAD_ROOT=./data/uploads
+UPLOAD_MAX_FILE_SIZE=25MB
+UPLOAD_MAX_REQUEST_SIZE=220MB
 AI_API_KEY=
 AI_BASE_URL=https://api.deepseek.com
 AI_MODEL=deepseek-chat
 AI_TIMEOUT_SECONDS=30
 AI_SETTINGS_SECRET=change-this-local-encryption-secret
+AI_BATCH_SIZE=3
+AI_BATCH_INITIAL_DELAY_MS=15000
+AI_BATCH_DELAY_MS=60000
 
 DEMO_TEACHER_USERNAME=chen
 DEMO_TEACHER_PASSWORD=Teach1234
@@ -133,6 +138,7 @@ DEMO_STUDENT_PASSWORD=替换为高强度密码
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAME_SITE=lax
 THYMELEAF_CACHE=true
+SHOW_DEMO_CREDENTIALS=false
 AI_API_KEY=替换为服务端模型密钥
 AI_SETTINGS_SECRET=替换为长随机加密密钥
 ```
@@ -143,6 +149,7 @@ AI_SETTINGS_SECRET=替换为长随机加密密钥
 - 修改演示账号环境变量后，如果旧数据库仍存在，已有账号不会自动改变。
 - 如需重新应用新的演示账号，请先停止服务并备份、删除 `data/review-desk.mv.db`。
 - `SESSION_COOKIE_SECURE=true` 要求浏览器通过 HTTPS 访问。
+- 正式生产环境仍应使用 PostgreSQL，并启用 Flyway 和 `SESSION_STORE_TYPE=jdbc`。
 
 ## 6. 数据库切换
 
@@ -223,4 +230,12 @@ npm run build
 ```powershell
 & "D:\Project\apache-maven-3.10.0\bin\mvn.cmd" test
 ```
+
+## 10. AI 自动预审配置
+
+自动预审只处理当前截止时间已到的已发布作业。教师未配置有效 AI 接口时，系统不会创建新任务，教师仍可完成规则审核。
+
+`AI_BATCH_SIZE`、`AI_BATCH_INITIAL_DELAY_MS` 和 `AI_BATCH_DELAY_MS` 分别控制每轮任务数、首次等待时间和扫描间隔。任务失败后固定等待 5 分钟重试，最多尝试 3 次。
+
+延长截止时间或撤回后重新发布时，系统会同步仍未执行的任务。模型调用前还会再次检查作业当前状态和截止时间，避免提前生成建议。已完成建议、运行记录和教师最终决定不会被删除。
 
