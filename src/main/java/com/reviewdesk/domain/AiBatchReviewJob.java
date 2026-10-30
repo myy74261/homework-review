@@ -93,6 +93,28 @@ public class AiBatchReviewJob {
         this.updatedAt = Instant.now();
     }
 
+    /**
+     * 作业截止时间变化时，调整尚未开始任务的执行时间。
+     */
+    public void postponeUntil(Instant nextAttemptAt) {
+        if ("PENDING".equals(status)) {
+            this.nextAttemptAt = nextAttemptAt;
+            this.updatedAt = Instant.now();
+        }
+    }
+
+    /**
+     * 已领取但尚未调用模型的任务在截止条件不再成立时放回队列。
+     */
+    public void releaseClaimUntil(Instant nextAttemptAt) {
+        if ("RUNNING".equals(status)) {
+            this.status = "PENDING";
+            this.attemptCount = Math.max(0, this.attemptCount - 1);
+            this.nextAttemptAt = nextAttemptAt;
+            this.updatedAt = Instant.now();
+        }
+    }
+
     public Long getId() {
         return id;
     }

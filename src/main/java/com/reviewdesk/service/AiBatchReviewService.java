@@ -7,6 +7,7 @@ import com.reviewdesk.domain.Classroom;
 import com.reviewdesk.domain.Submission;
 import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.repository.AiBatchReviewJobRepository;
+import com.reviewdesk.repository.AssignmentRepository;
 import com.reviewdesk.repository.ClassroomRepository;
 import com.reviewdesk.repository.SubmissionRepository;
 import java.time.Duration;
@@ -30,6 +31,7 @@ public class AiBatchReviewService {
     private static final Duration RETRY_DELAY = Duration.ofMinutes(5);
 
     private final AiBatchReviewJobRepository jobRepository;
+    private final AssignmentRepository assignmentRepository;
     private final SubmissionRepository submissionRepository;
     private final AssignmentService assignmentService;
     private final ClassroomRepository classroomRepository;
@@ -39,6 +41,7 @@ public class AiBatchReviewService {
 
     public AiBatchReviewService(
             AiBatchReviewJobRepository jobRepository,
+            AssignmentRepository assignmentRepository,
             SubmissionRepository submissionRepository,
             AssignmentService assignmentService,
             ClassroomRepository classroomRepository,
@@ -46,6 +49,7 @@ public class AiBatchReviewService {
             AiSettingsService settingsService,
             AiReviewService aiReviewService) {
         this.jobRepository = jobRepository;
+        this.assignmentRepository = assignmentRepository;
         this.submissionRepository = submissionRepository;
         this.assignmentService = assignmentService;
         this.classroomRepository = classroomRepository;
@@ -61,17 +65,42 @@ public class AiBatchReviewService {
     @Transactional
     public int enqueueDueSubmissions() {
         int created = 0;
-        for (Submission submission : submissionRepository
-                .findByDueAtBeforeAndReviewStatusNot(Instant.now(), "REVIEWED")) {
-            if (jobRepository.existsBySubmissionId(submission.getId())
-                    || !isTeacherConfigured(submission)) {
+        Instant now = Instant.now();
+        for (Assignment assignment :
+                assignmentRepository.findByStatusAndDueAtBefore("PUBLISHED", now)) {
+            Classroom classroom = classroomRepository.findById(
+                    assignment.getClassroomId()).orElse(null);
+            if (classroom == null || classroom.isDissolved()
+                    || !isTeacherConfigured(assignment)) {
                 continue;
             }
-            jobRepository.save(new AiBatchReviewJob(
-                    submission.getAssignmentId(), submission.getId()));
-            created++;
+            for (Submission submission :
+                    submissionRepository.findByAssignmentIdOrderBySubmittedAtDesc(
+                            assignment.getId())) {
+                if ("REVIEWED".equals(submission.getReviewStatus())
+                        || jobRepository.existsBySubmissionId(submission.getId())) {
+                    continue;
+                }
+                jobRepository.save(new AiBatchReviewJob(
+                        submission.getAssignmentId(), submission.getId()));
+                created++;
+            }
         }
         return created;
+    }
+
+    /**
+     * 截止时间变化时同步尚未开始的任务。已完成或正在运行的任务保留原运行记录。
+     */
+    @Transactional
+    public void alignPendingJobsWithDeadline(Assignment assignment) {
+        Instant target = assignment.getDueAt().isAfter(Instant.now())
+                ? assignment.getDueAt() : Instant.now();
+        for (AiBatchReviewJob job :
+                jobRepository.findByAssignmentId(assignment.getId())) {
+            job.postponeUntil(target);
+            jobRepository.save(job);
+        }
     }
 
     @Transactional
@@ -90,6 +119,19 @@ public class AiBatchReviewService {
     public void process(long jobId) {
         AiBatchReviewJob job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("AI 批量任务不存在"));
+        Assignment assignment = assignmentService.requireAssignment(
+                job.getAssignmentId());
+        Instant now = Instant.now();
+        boolean due = "PUBLISHED".equals(assignment.getStatus())
+                && !assignment.getDueAt().isAfter(now);
+        if (!due) {
+            Instant nextAttemptAt = assignment.getDueAt().isAfter(now)
+                    ? assignment.getDueAt() : now.plus(RETRY_DELAY);
+            job.releaseClaimUntil(nextAttemptAt);
+            jobRepository.save(job);
+            return;
+        }
+
         Submission submission = submissionRepository.findById(job.getSubmissionId())
                 .orElse(null);
         if (submission == null || "REVIEWED".equals(submission.getReviewStatus())) {
@@ -98,7 +140,7 @@ public class AiBatchReviewService {
             return;
         }
         try {
-            Account teacher = requireTeacher(submission);
+            Account teacher = requireTeacher(assignment);
             if (!settingsService.isConfigured(teacher.getUsername())) {
                 throw new IllegalStateException("教师尚未配置 AI 模型");
             }
@@ -137,17 +179,15 @@ public class AiBatchReviewService {
                 .toList();
     }
 
-    private boolean isTeacherConfigured(Submission submission) {
+    private boolean isTeacherConfigured(Assignment assignment) {
         try {
-            return settingsService.isConfigured(requireTeacher(submission).getUsername());
+            return settingsService.isConfigured(requireTeacher(assignment).getUsername());
         } catch (RuntimeException exception) {
             return false;
         }
     }
 
-    private Account requireTeacher(Submission submission) {
-        Assignment assignment = assignmentService.requireAssignment(
-                submission.getAssignmentId());
+    private Account requireTeacher(Assignment assignment) {
         Classroom classroom = classroomRepository.findById(assignment.getClassroomId())
                 .orElseThrow(() -> new IllegalArgumentException("作业课堂不存在"));
         return accountRepository.findById(classroom.getTeacherId())

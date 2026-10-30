@@ -21,4 +21,6 @@ public interface AiBatchReviewJobRepository
             String status, Instant now);
 
     List<AiBatchReviewJob> findByAssignmentIdIn(Collection<Long> assignmentIds);
+
+    List<AiBatchReviewJob> findByAssignmentId(Long assignmentId);
 }

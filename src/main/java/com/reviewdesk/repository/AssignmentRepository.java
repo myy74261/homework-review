@@ -1,6 +1,7 @@
 package com.reviewdesk.repository;
 
 import com.reviewdesk.domain.Assignment;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,5 +15,7 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByClassroomIdInAndStatusOrderByPublishedAtDesc(
             Collection<Long> classroomIds, String status);
+
+    List<Assignment> findByStatusAndDueAtBefore(String status, Instant now);
 }
 

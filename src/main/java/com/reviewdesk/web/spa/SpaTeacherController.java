@@ -355,6 +355,7 @@ public class SpaTeacherController {
         Assignment assignment = assignmentService.updateDueAt(
                 assignmentId,
                 request.dueAt().atZone(DISPLAY_ZONE).toInstant());
+        aiBatchReviewService.alignPendingJobsWithDeadline(assignment);
         return toAssignment(assignment);
     }
 
@@ -400,6 +401,7 @@ public class SpaTeacherController {
                 form.isSourceDeclarationRequired(),
                 form.isAppealAllowed(),
                 toRubricDefinitions(form));
+        aiBatchReviewService.alignPendingJobsWithDeadline(assignment);
         return Map.of(
                 "id", assignment.getId(),
                 "status", assignment.getStatus(),
