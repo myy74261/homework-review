@@ -98,6 +98,23 @@ PostgreSQL
 | `web` | REST 控制器、表单、DTO、文件下载和页面路由 |
 | `web/spa` | React 教师端和学生端使用的 JSON API |
 
+### 3.3 前端加载与拆包
+
+前端入口只加载会话检查、应用外壳和共享依赖，教师端与学生端页面使用 `React.lazy` 按路由加载。这样，教师访问工作台时不会下载学生提交页，学生也不会下载备课和 AI 设置页面。
+
+构建配置将依赖拆为以下共享包：
+
+| Chunk | 内容 |
+| --- | --- |
+| `react-core` | React、React DOM、React Router |
+| `query-core` | TanStack Query |
+| `state-core` | Zustand |
+| `ui-core` | Radix Slot、样式工具和表单基础组件 |
+| `icons` | 实际使用的 Lucide 图标 |
+| `dialog-core` | Radix Dialog，仅在打开对话框的页面加载 |
+
+SheetJS `xlsx` 通过动态 `import()` 加载，只在教师导入 XLSX/XLS 名单时下载。当前首屏脚本约 364 KB，原先单入口约 495 KB，减少约 26.6%；各页面按需包约 4.6–32 KB。
+
 ## 4. 核心业务流程
 
 ```text

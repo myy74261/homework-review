@@ -1,17 +1,51 @@
 import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { ErrorState, Loading } from "@/components/ui/loading";
 import { loadSession } from "@/lib/api";
 import { useAppStore } from "@/store/app-store";
-import { TeacherDashboardPage } from "@/pages/TeacherDashboardPage";
-import { PublishAssignmentPage } from "@/pages/PublishAssignmentPage";
-import { ReviewWorkspacePage } from "@/pages/ReviewWorkspacePage";
-import { LessonPlanPage } from "@/pages/LessonPlanPage";
-import { StudentHomePage } from "@/pages/StudentHomePage";
-import { StudentAssignmentPage } from "@/pages/StudentAssignmentPage";
-import { AccountPage } from "@/pages/AccountPage";
-import { AiSettingsPage } from "@/pages/AiSettingsPage";
+
+const TeacherDashboardPage = lazy(() =>
+  import("@/pages/TeacherDashboardPage").then((module) => ({
+    default: module.TeacherDashboardPage,
+  })),
+);
+const PublishAssignmentPage = lazy(() =>
+  import("@/pages/PublishAssignmentPage").then((module) => ({
+    default: module.PublishAssignmentPage,
+  })),
+);
+const ReviewWorkspacePage = lazy(() =>
+  import("@/pages/ReviewWorkspacePage").then((module) => ({
+    default: module.ReviewWorkspacePage,
+  })),
+);
+const LessonPlanPage = lazy(() =>
+  import("@/pages/LessonPlanPage").then((module) => ({
+    default: module.LessonPlanPage,
+  })),
+);
+const StudentHomePage = lazy(() =>
+  import("@/pages/StudentHomePage").then((module) => ({
+    default: module.StudentHomePage,
+  })),
+);
+const StudentAssignmentPage = lazy(() =>
+  import("@/pages/StudentAssignmentPage").then((module) => ({
+    default: module.StudentAssignmentPage,
+  })),
+);
+const AccountPage = lazy(() =>
+  import("@/pages/AccountPage").then((module) => ({
+    default: module.AccountPage,
+  })),
+);
+const AiSettingsPage = lazy(() =>
+  import("@/pages/AiSettingsPage").then((module) => ({
+    default: module.AiSettingsPage,
+  })),
+);
 
 function HomeRedirect() {
   const session = useAppStore((state) => state.session);
@@ -26,6 +60,26 @@ function TeacherOnly({ children }: { children: React.ReactNode }) {
 function StudentOnly({ children }: { children: React.ReactNode }) {
   const session = useAppStore((state) => state.session);
   return session?.user.role === "STUDENT" ? children : <Navigate to="/teacher" replace />;
+}
+
+function LazyPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<Loading label="正在加载页面…" />}>{children}</Suspense>;
+}
+
+function TeacherPage({ children }: { children: ReactNode }) {
+  return (
+    <TeacherOnly>
+      <LazyPage>{children}</LazyPage>
+    </TeacherOnly>
+  );
+}
+
+function StudentPage({ children }: { children: ReactNode }) {
+  return (
+    <StudentOnly>
+      <LazyPage>{children}</LazyPage>
+    </StudentOnly>
+  );
 }
 
 export default function App() {
@@ -57,69 +111,76 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<HomeRedirect />} />
-        <Route path="account" element={<AccountPage />} />
+        <Route
+          path="account"
+          element={
+            <LazyPage>
+              <AccountPage />
+            </LazyPage>
+          }
+        />
         <Route
           path="teacher/ai-settings"
           element={
-            <TeacherOnly>
+            <TeacherPage>
               <AiSettingsPage />
-            </TeacherOnly>
+            </TeacherPage>
           }
         />
         <Route
           path="teacher"
           element={
-            <TeacherOnly>
+            <TeacherPage>
               <TeacherDashboardPage />
-            </TeacherOnly>
+            </TeacherPage>
           }
         />
         <Route
           path="teacher/assignments/new"
           element={
-            <TeacherOnly>
+            <TeacherPage>
               <PublishAssignmentPage />
-            </TeacherOnly>
+            </TeacherPage>
           }
         />
         <Route
           path="teacher/assignments/:assignmentId/edit"
           element={
-            <TeacherOnly>
+            <TeacherPage>
               <PublishAssignmentPage />
-            </TeacherOnly>
+            </TeacherPage>
           }
         />
         <Route
           path="teacher/assignments/:assignmentId/lesson-plan"
           element={
-            <TeacherOnly>
+            <TeacherPage>
               <LessonPlanPage />
-            </TeacherOnly>
+            </TeacherPage>
           }
         />
         <Route
           path="reviews/:submissionId"
           element={
-            <TeacherOnly>
+            <TeacherPage>
               <ReviewWorkspacePage />
-            </TeacherOnly>
+            </TeacherPage>
           }
         />
         <Route
           path="student"
           element={
-            <StudentOnly>
+            <StudentPage>
               <StudentHomePage />
-            </StudentOnly>
+            </StudentPage>
           }
         />
         <Route
           path="student/assignments/:assignmentId"
           element={
-            <StudentOnly>
+            <StudentPage>
               <StudentAssignmentPage />
-            </StudentOnly>
+            </StudentPage>
           }
         />
         <Route path="*" element={<HomeRedirect />} />

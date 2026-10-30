@@ -25,6 +25,7 @@ export default defineConfig({
       THYMELEAF_CACHE: "false",
       UPLOAD_ROOT: "target/e2e-uploads",
       SESSION_STORE_TYPE: "none",
+      SPRING_SESSION_JDBC_INITIALIZE_SCHEMA: "always",
       FLYWAY_ENABLED: "false",
     },
   },

@@ -14,6 +14,18 @@ export default defineConfig({
     outDir: "../src/main/resources/static/app",
     emptyOutDir: true,
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-core": ["react", "react-dom", "scheduler", "react-router-dom", "react-router"],
+          "query-core": ["@tanstack/react-query", "@tanstack/query-core"],
+          "state-core": ["zustand"],
+          icons: ["lucide-react"],
+          "dialog-core": ["@radix-ui/react-dialog"],
+          "ui-core": ["@radix-ui/react-slot", "class-variance-authority", "clsx", "tailwind-merge"],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
