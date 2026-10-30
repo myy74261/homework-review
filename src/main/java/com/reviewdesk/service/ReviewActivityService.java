@@ -41,6 +41,12 @@ public class ReviewActivityService {
 
     @Transactional
     public void record(long submissionId, String eventType, String detail) {
+        recordAs(submissionId, eventType, detail, null, null);
+    }
+
+    @Transactional
+    public void recordAs(long submissionId, String eventType, String detail,
+                         Long actorAccountId, String actorName) {
         requireSubmission(submissionId);
         if (!ALLOWED_EVENT_TYPES.contains(eventType)) {
             throw new IllegalArgumentException("不支持的审核事件");
@@ -49,7 +55,10 @@ public class ReviewActivityService {
         if (safeDetail.length() > 240) {
             safeDetail = safeDetail.substring(0, 240);
         }
-        eventRepository.save(new ReviewEvent(submissionId, eventType, safeDetail));
+        eventRepository.save(new ReviewEvent(
+                submissionId, eventType, safeDetail,
+                actorAccountId,
+                actorName == null || actorName.isBlank() ? null : actorName.strip()));
     }
 
     private void requireSubmission(long submissionId) {

@@ -46,10 +46,25 @@ public class AccessControlService {
         requireTeacherClassroom(username, assignment.getClassroomId());
     }
 
+    public void requireTeacherOwnerAssignment(String username, long assignmentId) {
+        Assignment assignment = assignmentService.requireAssignment(assignmentId);
+        if (!classroomService.isTeacherOwner(requireTeacher(username),
+                assignment.getClassroomId())) {
+            throw new SecurityException("只有课堂所有者可以执行此操作");
+        }
+    }
+
     public Submission requireTeacherSubmission(String username, long submissionId) {
         Submission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new SubmissionNotFoundException(submissionId));
         requireTeacherAssignment(username, submission.getAssignmentId());
+        return submission;
+    }
+
+    public Submission requireTeacherOwnerSubmission(String username, long submissionId) {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new SubmissionNotFoundException(submissionId));
+        requireTeacherOwnerAssignment(username, submission.getAssignmentId());
         return submission;
     }
 }

@@ -29,7 +29,7 @@ public class IntegrityService {
     public IntegrityFlag create(String teacherUsername, long submissionId,
                                 String category, String severity,
                                 String evidence, String reason) {
-        accessControlService.requireTeacherSubmission(teacherUsername, submissionId);
+        accessControlService.requireTeacherOwnerSubmission(teacherUsername, submissionId);
         if (category == null || category.isBlank()
                 || evidence == null || evidence.isBlank()
                 || reason == null || reason.isBlank()) {
@@ -59,7 +59,7 @@ public class IntegrityService {
     public IntegrityFlag resolve(String teacherUsername, long flagId, String status) {
         IntegrityFlag flag = flagRepository.findById(flagId)
                 .orElseThrow(() -> new IllegalArgumentException("诚信标记不存在"));
-        accessControlService.requireTeacherSubmission(
+        accessControlService.requireTeacherOwnerSubmission(
                 teacherUsername, flag.getSubmissionId());
         if (!"CONFIRMED".equals(status) && !"CLEARED".equals(status)) {
             throw new IllegalArgumentException("不支持的诚信处理状态");

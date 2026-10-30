@@ -21,6 +21,7 @@ import com.reviewdesk.service.AiSettingsService;
 import com.reviewdesk.service.AiBatchReviewService;
 import com.reviewdesk.service.AssignmentService;
 import com.reviewdesk.service.ClassroomService;
+import com.reviewdesk.service.CollaboratorReviewService;
 import com.reviewdesk.service.IntegrityService;
 import com.reviewdesk.service.ReviewActivityService;
 import com.reviewdesk.service.ReviewScoreService;
@@ -75,6 +76,7 @@ public class SpaTeacherController {
     private final ReviewActivityService activityService;
     private final AccessControlService accessControlService;
     private final TeachingSuggestionService suggestionService;
+    private final CollaboratorReviewService collaboratorReviewService;
 
     public SpaTeacherController(
             AccountService accountService,
@@ -93,7 +95,8 @@ public class SpaTeacherController {
             SubmissionRepository submissionRepository,
             ReviewActivityService activityService,
             AccessControlService accessControlService,
-            TeachingSuggestionService suggestionService) {
+            TeachingSuggestionService suggestionService,
+            CollaboratorReviewService collaboratorReviewService) {
         this.accountService = accountService;
         this.classroomService = classroomService;
         this.workspaceService = workspaceService;
@@ -111,6 +114,7 @@ public class SpaTeacherController {
         this.activityService = activityService;
         this.accessControlService = accessControlService;
         this.suggestionService = suggestionService;
+        this.collaboratorReviewService = collaboratorReviewService;
     }
 
     @GetMapping("/dashboard")
@@ -408,20 +412,31 @@ public class SpaTeacherController {
             Authentication authentication) {
         accessControlService.requireTeacherSubmission(
                 authentication.getName(), submissionId);
+        Account reviewer = accountService.current(authentication);
         Submission submission = reviewService.requireSubmission(submissionId);
         Assignment assignment = assignmentService.requireAssignment(
                 submission.getAssignmentId());
-        ReviewDraft draft = reviewService.requireDraft(submissionId);
-        activityService.record(submissionId, "SUBMISSION_VIEWED", "教师打开 React 审核工作台");
+        boolean owner = collaboratorReviewService.isOwner(
+                authentication.getName(), submissionId);
+        CollaboratorReviewService.DraftData draft = owner
+                ? collaboratorReviewService.ownerDraft(submissionId)
+                : collaboratorReviewService.collaboratorDraft(
+                        authentication.getName(), submissionId);
+        activityService.recordAs(
+                submissionId,
+                "SUBMISSION_VIEWED",
+                "教师打开 React 审核工作台",
+                reviewer.getId(),
+                reviewer.getDisplayName());
         return new SpaViewModels.TeacherReviewWorkspace(
                 toAssignment(assignment),
                 toSubmission(submission),
                 new SpaViewModels.ReviewDraftView(
-                        draft.getTitle(),
-                        draft.getContent(),
-                        draft.getRevision(),
-                        draft.getUpdatedAt(),
-                        reviewService.countVersions(submissionId)),
+                        draft.title(),
+                        draft.content(),
+                        draft.revision(),
+                        draft.updatedAt(),
+                        draft.versionCount()),
                 attachmentService.list(submissionId).stream()
                         .map(this::toAttachment)
                         .toList(),
@@ -443,13 +458,29 @@ public class SpaTeacherController {
                 aiReviewService.isConfigured(authentication.getName()),
                 aiReviewService.list(submissionId).stream()
                         .map(this::toAiReview)
-                        .toList());
+                        .toList(),
+                owner,
+                reviewer.getDisplayName(),
+                owner
+                        ? collaboratorReviewService.collaboratorDraftsForOwner(
+                                authentication.getName(), submissionId).stream()
+                                .map(item -> new SpaViewModels.CollaboratorDraftView(
+                                        item.reviewerId(),
+                                        item.reviewerName(),
+                                        item.reviewerUsername(),
+                                        item.title(),
+                                        item.content(),
+                                        item.updatedAt()))
+                                .toList()
+                        : List.of());
     }
 
     @PostMapping("/reviews/{submissionId}/ai-review")
     public SpaViewModels.AiReviewRunView generateAiReview(
             @PathVariable long submissionId,
             Authentication authentication) {
+        accessControlService.requireTeacherOwnerSubmission(
+                authentication.getName(), submissionId);
         return toAiReview(aiReviewService.generate(
                 authentication.getName(), submissionId));
     }
@@ -505,7 +536,7 @@ public class SpaTeacherController {
             @PathVariable long submissionId,
             Authentication authentication,
             @RequestBody FinalScoresRequest request) {
-        accessControlService.requireTeacherSubmission(
+        accessControlService.requireTeacherOwnerSubmission(
                 authentication.getName(), submissionId);
         return scoreService.saveFinalScores(
                         submissionId,
@@ -520,6 +551,8 @@ public class SpaTeacherController {
             @PathVariable long submissionId,
             Authentication authentication,
             @Valid @RequestBody IntegrityRequest request) {
+        accessControlService.requireTeacherOwnerSubmission(
+                authentication.getName(), submissionId);
         IntegrityFlag flag = integrityService.create(
                 authentication.getName(),
                 submissionId,
@@ -557,6 +590,8 @@ public class SpaTeacherController {
             Authentication authentication) {
         accessControlService.requireTeacherAssignment(
                 authentication.getName(), assignmentId);
+        Account reviewer = accountService.current(authentication);
+        Assignment assignment = assignmentService.requireAssignment(assignmentId);
         TeachingSuggestionService.LessonPlanWorkspace workspace =
                 suggestionService.getOrCreateWorkspace(assignmentId);
         return new SpaViewModels.LessonWorkspace(
@@ -573,7 +608,9 @@ public class SpaTeacherController {
                         .map(group -> new SpaViewModels.LessonIssueGroup(
                                 group.rubricName(), group.count(), group.teacherNotes()))
                         .toList(),
-                suggestionService.isAiConfigured(authentication.getName()));
+                suggestionService.isAiConfigured(authentication.getName()),
+                classroomService.isTeacherOwner(
+                        reviewer, assignment.getClassroomId()));
     }
 
     private SpaViewModels.UserView toUser(Account account) {

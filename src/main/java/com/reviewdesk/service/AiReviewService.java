@@ -73,7 +73,7 @@ public class AiReviewService {
             throw new IllegalStateException(
                     "AI 模型尚未配置，请在教师端“个人中心 → AI 接口设置”中接入");
         }
-        accessControlService.requireTeacherSubmission(teacherUsername, submissionId);
+        accessControlService.requireTeacherOwnerSubmission(teacherUsername, submissionId);
         Submission submission = reviewService.requireSubmission(submissionId);
         requireEditable(submission);
         Assignment assignment = assignmentService.requireAssignment(
@@ -126,7 +126,7 @@ public class AiReviewService {
     public AiReviewSuggestion adopt(String teacherUsername, long suggestionId,
                                     String teacherNote) {
         AiReviewSuggestion suggestion = requireSuggestion(suggestionId);
-        accessControlService.requireTeacherSubmission(
+        accessControlService.requireTeacherOwnerSubmission(
                 teacherUsername, suggestion.getSubmissionId());
         requireEditable(reviewService.requireSubmission(suggestion.getSubmissionId()));
         if (!"PENDING".equals(suggestion.getStatus())) {
@@ -151,7 +151,7 @@ public class AiReviewService {
     @Transactional
     public AiReviewSuggestion dismiss(String teacherUsername, long suggestionId) {
         AiReviewSuggestion suggestion = requireSuggestion(suggestionId);
-        accessControlService.requireTeacherSubmission(
+        accessControlService.requireTeacherOwnerSubmission(
                 teacherUsername, suggestion.getSubmissionId());
         requireEditable(reviewService.requireSubmission(suggestion.getSubmissionId()));
         if ("PENDING".equals(suggestion.getStatus())) {

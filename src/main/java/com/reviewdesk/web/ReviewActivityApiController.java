@@ -41,7 +41,8 @@ public class ReviewActivityApiController {
     public IssueResponse createIssue(@PathVariable long submissionId,
                                      Authentication authentication,
                                      @Valid @RequestBody CreateIssueRequest request) {
-        accessControlService.requireTeacherSubmission(authentication.getName(), submissionId);
+        accessControlService.requireTeacherOwnerSubmission(
+                authentication.getName(), submissionId);
         ReviewIssue issue = issueService.create(
                 submissionId,
                 request.rubricName(),

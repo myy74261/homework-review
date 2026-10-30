@@ -347,7 +347,41 @@ class SpaApiControllerTest {
 
         mockMvc.perform(get("/api/app/teacher/reviews/1")
                         .with(user("teacher_collab").roles("TEACHER")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.owner").value(false));
+
+        mockMvc.perform(put("/api/submissions/1/review")
+                        .with(user("teacher_collab").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "协作教师意见",
+                                  "content": "这是协作者自己的审核草稿。",
+                                  "baseRevision": 0
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revision").value(1));
+
+        mockMvc.perform(get("/api/submissions/1/review")
+                        .with(user("chen").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value(
+                        org.hamcrest.Matchers.not("这是协作者自己的审核草稿。")));
+
+        mockMvc.perform(get("/api/app/teacher/reviews/1")
+                        .with(user("chen").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.owner").value(true))
+                .andExpect(jsonPath("$.collaboratorDrafts.length()").value(1))
+                .andExpect(jsonPath("$.collaboratorDrafts[0].reviewerUsername")
+                        .value("teacher_collab"));
+
+        mockMvc.perform(post("/api/submissions/1/review/complete")
+                        .with(user("teacher_collab").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/app/teacher/classrooms/1/collaborators")
                         .with(user("teacher_collab").roles("TEACHER")))

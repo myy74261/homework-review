@@ -163,7 +163,20 @@ public final class SpaViewModels {
             List<IssueView> issues,
             List<String> reviewChecklist,
             boolean aiConfigured,
-            List<AiReviewRunView> aiReviews
+            List<AiReviewRunView> aiReviews,
+            boolean owner,
+            String reviewerName,
+            List<CollaboratorDraftView> collaboratorDrafts
+    ) {
+    }
+
+    public record CollaboratorDraftView(
+            long reviewerId,
+            String reviewerName,
+            String reviewerUsername,
+            String title,
+            String content,
+            Instant updatedAt
     ) {
     }
 
@@ -200,6 +213,6 @@ public final class SpaViewModels {
                                   String title, String content, long revision,
                                   Instant updatedAt, int evidenceCount,
                                   List<LessonIssueGroup> issueGroups,
-                                  boolean aiConfigured) {
+                                  boolean aiConfigured, boolean owner) {
     }
 }

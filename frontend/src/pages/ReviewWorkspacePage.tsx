@@ -212,26 +212,33 @@ export function ReviewWorkspacePage() {
           </Link>
         </Button>
         <div className="flex items-center gap-2">
+          <Badge tone={data.owner ? "default" : "neutral"}>
+            {data.owner ? "课堂所有者" : `协作者 · ${data.reviewerName}`}
+          </Badge>
           <Badge tone={reviewed ? "default" : "warning"}>
             {reviewed ? "反馈已发布" : "审核中"}
           </Badge>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={createVersion.isPending}
-            onClick={() => createVersion.mutate()}
-          >
-            <History className="size-4" />
-            保存版本 · {data.review.versionCount}
-          </Button>
-          <Button
-            size="sm"
-            disabled={reviewed || complete.isPending}
-            onClick={() => complete.mutate()}
-          >
-            <Check className="size-4" />
-            {reviewed ? "已发布" : complete.isPending ? "发布中…" : "发布反馈"}
-          </Button>
+          {data.owner ? (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={createVersion.isPending}
+                onClick={() => createVersion.mutate()}
+              >
+                <History className="size-4" />
+                保存版本 · {data.review.versionCount}
+              </Button>
+              <Button
+                size="sm"
+                disabled={reviewed || complete.isPending}
+                onClick={() => complete.mutate()}
+              >
+                <Check className="size-4" />
+                {reviewed ? "已发布" : complete.isPending ? "发布中…" : "发布反馈"}
+              </Button>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -355,11 +362,13 @@ export function ReviewWorkspacePage() {
               {!data.aiConfigured ? (
                 <div className="rounded-xl border border-dashed border-line p-3 text-xs leading-6 text-muted">
                   当前未配置 AI 接口。
-                  <Link to="/teacher/ai-settings" className="ml-1 font-medium text-pine-700">
-                    前往 AI 设置
-                  </Link>
+                  {data.owner ? (
+                    <Link to="/teacher/ai-settings" className="ml-1 font-medium text-pine-700">
+                      前往 AI 设置
+                    </Link>
+                  ) : null}
                 </div>
-              ) : (
+              ) : data.owner ? (
                 <Button
                   size="sm"
                   className="w-full"
@@ -373,6 +382,10 @@ export function ReviewWorkspacePage() {
                       ? "重新预审"
                       : "开始预审"}
                 </Button>
+              ) : (
+                <p className="rounded-xl bg-stone-50 p-3 text-xs leading-6 text-muted">
+                  AI 预审由课堂所有者发起，协作者可以查看已有建议。
+                </p>
               )}
 
               {data.aiReviews.slice(0, 3).map((run, runIndex) => (
@@ -418,7 +431,7 @@ export function ReviewWorkspacePage() {
                             参考分：{suggestion.suggestedPoints}
                           </span>
                         ) : null}
-                        {suggestion.status === "PENDING" && !reviewed ? (
+                        {data.owner && suggestion.status === "PENDING" && !reviewed ? (
                           <div className="mt-2 flex gap-2">
                             <Button
                               size="sm"
@@ -444,6 +457,31 @@ export function ReviewWorkspacePage() {
               ))}
             </CardContent>
           </Card>
+
+          {data.owner && data.collaboratorDrafts.length ? (
+            <Card>
+              <CardHeader>
+                <div>
+                  <p className="page-eyebrow">协作审核</p>
+                  <CardTitle className="mt-1">协作者独立意见</CardTitle>
+                </div>
+                <Badge tone="neutral">{data.collaboratorDrafts.length} 人</Badge>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.collaboratorDrafts.map((draft) => (
+                  <div key={draft.reviewerId} className="rounded-xl border border-line p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <strong className="text-sm">{draft.reviewerName}</strong>
+                      <span className="text-[11px] text-muted">{formatDate(draft.updatedAt)}</span>
+                    </div>
+                    <p className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-xs leading-6 text-stone-700">
+                      {draft.content || "尚无审核内容"}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader>
@@ -477,6 +515,7 @@ export function ReviewWorkspacePage() {
                       type="number"
                       min={0}
                       max={score.maxPoints}
+                      disabled={!data.owner}
                       value={scoreValues[score.id] ?? ""}
                       onChange={(event) =>
                         setScoreValues((values) => ({
@@ -491,15 +530,21 @@ export function ReviewWorkspacePage() {
               ))}
               <div className="flex items-center justify-between border-t border-line pt-3 text-xs">
                 <span className="text-muted">
-                  {computedTotal == null ? "填写全部维度后生成总分" : `当前总分 ${computedTotal}`}
+                  {!data.owner
+                    ? "最终评分由课堂所有者填写"
+                    : computedTotal == null
+                      ? "填写全部维度后生成总分"
+                      : `当前总分 ${computedTotal}`}
                 </span>
-                <Button
-                  size="sm"
-                  disabled={saveScores.isPending}
-                  onClick={() => saveScores.mutate()}
-                >
-                  保存评分
-                </Button>
+                {data.owner ? (
+                  <Button
+                    size="sm"
+                    disabled={saveScores.isPending}
+                    onClick={() => saveScores.mutate()}
+                  >
+                    保存评分
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -523,7 +568,7 @@ export function ReviewWorkspacePage() {
                   </div>
                   <p className="mt-2 text-xs leading-5 text-stone-600">证据：{flag.evidence}</p>
                   <p className="mt-1 text-xs leading-5 text-muted">{flag.reason}</p>
-                  {flag.status === "SUSPECTED" ? (
+                  {data.owner && flag.status === "SUSPECTED" ? (
                     <div className="mt-2 flex gap-2">
                       <Button
                         size="sm"
@@ -542,54 +587,56 @@ export function ReviewWorkspacePage() {
                   ) : null}
                 </div>
               ))}
-              {!flagOpen ? (
-                <Button variant="secondary" size="sm" onClick={() => setFlagOpen(true)}>
-                  <Flag className="size-3.5" />
-                  记录可疑线索
-                </Button>
-              ) : (
-                <div className="grid gap-2 rounded-xl border border-dashed border-line p-3">
-                  <Select
-                    value={flagForm.category}
-                    onChange={(event) =>
-                      setFlagForm((form) => ({ ...form, category: event.target.value }))
-                    }
-                  >
-                    <option>引用来源</option>
-                    <option>署名或协作</option>
-                    <option>AI 使用声明</option>
-                    <option>内容重复</option>
-                  </Select>
-                  <Textarea
-                    rows={2}
-                    value={flagForm.evidence}
-                    onChange={(event) =>
-                      setFlagForm((form) => ({ ...form, evidence: event.target.value }))
-                    }
-                    placeholder="可疑原文或具体位置"
-                  />
-                  <Textarea
-                    rows={2}
-                    value={flagForm.reason}
-                    onChange={(event) =>
-                      setFlagForm((form) => ({ ...form, reason: event.target.value }))
-                    }
-                    placeholder="核验依据"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      disabled={createFlag.isPending}
-                      onClick={() => createFlag.mutate()}
+              {data.owner ? (
+                !flagOpen ? (
+                  <Button variant="secondary" size="sm" onClick={() => setFlagOpen(true)}>
+                    <Flag className="size-3.5" />
+                    记录可疑线索
+                  </Button>
+                ) : (
+                  <div className="grid gap-2 rounded-xl border border-dashed border-line p-3">
+                    <Select
+                      value={flagForm.category}
+                      onChange={(event) =>
+                        setFlagForm((form) => ({ ...form, category: event.target.value }))
+                      }
                     >
-                      保存
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => setFlagOpen(false)}>
-                      取消
-                    </Button>
+                      <option>引用来源</option>
+                      <option>署名或协作</option>
+                      <option>AI 使用声明</option>
+                      <option>内容重复</option>
+                    </Select>
+                    <Textarea
+                      rows={2}
+                      value={flagForm.evidence}
+                      onChange={(event) =>
+                        setFlagForm((form) => ({ ...form, evidence: event.target.value }))
+                      }
+                      placeholder="可疑原文或具体位置"
+                    />
+                    <Textarea
+                      rows={2}
+                      value={flagForm.reason}
+                      onChange={(event) =>
+                        setFlagForm((form) => ({ ...form, reason: event.target.value }))
+                      }
+                      placeholder="核验依据"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={createFlag.isPending}
+                        onClick={() => createFlag.mutate()}
+                      >
+                        保存
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => setFlagOpen(false)}>
+                        取消
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              ) : null}
             </CardContent>
           </Card>
         </div>

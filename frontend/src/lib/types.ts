@@ -260,6 +260,18 @@ export interface TeacherReviewWorkspace {
   reviewChecklist: string[];
   aiConfigured: boolean;
   aiReviews: AiReviewRun[];
+  owner: boolean;
+  reviewerName: string;
+  collaboratorDrafts: CollaboratorDraft[];
+}
+
+export interface CollaboratorDraft {
+  reviewerId: number;
+  reviewerName: string;
+  reviewerUsername: string;
+  title: string;
+  content: string;
+  updatedAt: string;
 }
 
 export interface StudentAssignmentOverview {
@@ -304,6 +316,7 @@ export interface LessonWorkspace {
   evidenceCount: number;
   issueGroups: LessonIssueGroup[];
   aiConfigured: boolean;
+  owner: boolean;
 }
 
 export interface ApiProblem {

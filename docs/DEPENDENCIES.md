@@ -12,7 +12,8 @@
 | 浏览器 | 现代版本 | 访问教师端与学生端 |
 
 前端使用 React、TypeScript、Vite、Tailwind CSS、Radix/shadcn 基础组件、
-TanStack Query 和 Zustand。依赖锁定在 `frontend/package-lock.json`。
+TanStack Query、Zustand 和 SheetJS `xlsx`。依赖锁定在
+`frontend/package-lock.json`。
 
 ## 2. Maven 直接依赖
 
@@ -75,6 +76,7 @@ TanStack Query 和 Zustand。依赖锁定在 `frontend/package-lock.json`。
 | Radix UI | 无障碍 Dialog 与 Slot 基础行为 |
 | TanStack Query | 服务端数据获取、缓存与失效刷新 |
 | Zustand | 会话和通知状态 |
+| SheetJS `xlsx` | 按需解析 XLS/XLSX 学生名单 |
 | ESLint / Prettier | 代码规范与格式检查 |
 
 安装与检查：

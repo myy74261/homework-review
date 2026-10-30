@@ -37,14 +37,26 @@ public class ReviewEvent {
     @Column(nullable = false)
     private Instant occurredAt;
 
+    private Long actorAccountId;
+
+    @Column(length = 80)
+    private String actorName;
+
     protected ReviewEvent() {
         // JPA 需要的无参构造方法
     }
 
     public ReviewEvent(Long submissionId, String eventType, String detail) {
+        this(submissionId, eventType, detail, null, null);
+    }
+
+    public ReviewEvent(Long submissionId, String eventType, String detail,
+                       Long actorAccountId, String actorName) {
         this.submissionId = submissionId;
         this.eventType = eventType;
         this.detail = detail;
+        this.actorAccountId = actorAccountId;
+        this.actorName = actorName;
         this.occurredAt = Instant.now();
     }
 
@@ -66,5 +78,13 @@ public class ReviewEvent {
 
     public Instant getOccurredAt() {
         return occurredAt;
+    }
+
+    public Long getActorAccountId() {
+        return actorAccountId;
+    }
+
+    public String getActorName() {
+        return actorName;
     }
 }

@@ -75,22 +75,30 @@ export function LessonPlanPage() {
           <h1 className="mt-2 font-display text-3xl font-semibold">{data.assignment.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {data.evidenceCount} 条教师确认证据 · 最后更新 {formatDate(data.updatedAt)} ·{" "}
-            {data.aiConfigured ? "AI 增强已启用" : "规则生成模式"}
+            {data.owner
+              ? data.aiConfigured
+                ? "AI 增强已启用"
+                : "规则生成模式"
+              : "协作者只读，备课稿由课堂所有者维护"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            disabled={regenerate.isPending}
-            onClick={() => regenerate.mutate()}
-          >
-            <RefreshCw className="size-4" />
-            {data.aiConfigured ? "AI 重新生成" : "重新生成"}
-          </Button>
-          <Button disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
-            <Save className="size-4" />
-            {save.isPending ? "保存中…" : "保存备课稿"}
-          </Button>
+          {data.owner ? (
+            <>
+              <Button
+                variant="secondary"
+                disabled={regenerate.isPending}
+                onClick={() => regenerate.mutate()}
+              >
+                <RefreshCw className="size-4" />
+                {data.aiConfigured ? "AI 重新生成" : "重新生成"}
+              </Button>
+              <Button disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+                <Save className="size-4" />
+                {save.isPending ? "保存中…" : "保存备课稿"}
+              </Button>
+            </>
+          ) : null}
           <Button asChild variant="outline">
             <a href={`/teacher/assignments/${id}/lesson-plan/export.md`} download>
               <Download className="size-4" />
@@ -107,6 +115,7 @@ export function LessonPlanPage() {
               <p className="page-eyebrow">备课稿</p>
               <Input
                 value={title}
+                disabled={!data.owner}
                 onChange={(event) => {
                   setTitle(event.target.value);
                   setDirty(true);
@@ -118,6 +127,7 @@ export function LessonPlanPage() {
           <CardContent>
             <Textarea
               value={content}
+              disabled={!data.owner}
               onChange={(event) => {
                 setContent(event.target.value);
                 setDirty(true);

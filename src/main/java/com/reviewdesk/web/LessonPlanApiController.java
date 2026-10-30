@@ -43,7 +43,8 @@ public class LessonPlanApiController {
     public LessonPlanResponse saveLessonPlan(@PathVariable long assignmentId,
                                              Authentication authentication,
                                              @Valid @RequestBody SaveLessonPlanRequest request) {
-        accessControlService.requireTeacherAssignment(authentication.getName(), assignmentId);
+        accessControlService.requireTeacherOwnerAssignment(
+                authentication.getName(), assignmentId);
         suggestionService.save(
                 assignmentId, request.title(), request.content(), request.baseRevision());
         return LessonPlanResponse.from(
@@ -53,7 +54,8 @@ public class LessonPlanApiController {
     @PostMapping("/regenerate")
     public LessonPlanResponse regenerate(@PathVariable long assignmentId,
                                          Authentication authentication) {
-        accessControlService.requireTeacherAssignment(authentication.getName(), assignmentId);
+        accessControlService.requireTeacherOwnerAssignment(
+                authentication.getName(), assignmentId);
         LessonPlan plan = suggestionService.regenerate(
                 assignmentId, authentication.getName());
         return LessonPlanResponse.from(

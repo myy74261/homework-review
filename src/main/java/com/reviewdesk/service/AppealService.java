@@ -88,7 +88,7 @@ public class AppealService {
                           String status, String response) {
         Appeal appeal = appealRepository.findById(appealId)
                 .orElseThrow(() -> new IllegalArgumentException("申诉不存在"));
-        accessControlService.requireTeacherSubmission(
+        accessControlService.requireTeacherOwnerSubmission(
                 teacherUsername, appeal.getSubmissionId());
         if (!Set.of("ACCEPTED", "REJECTED", "UNDER_REVIEW").contains(status)) {
             throw new IllegalArgumentException("不支持的申诉状态");

@@ -29,7 +29,7 @@ public class ReviewScoreController {
     public String saveScores(@PathVariable long submissionId,
                              @RequestParam Map<String, String> parameters,
                              Authentication authentication) {
-        accessControlService.requireTeacherSubmission(
+        accessControlService.requireTeacherOwnerSubmission(
                 authentication.getName(), submissionId);
         Map<Long, Integer> scores = new LinkedHashMap<>();
         parameters.forEach((name, value) -> {
