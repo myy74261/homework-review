@@ -26,7 +26,8 @@ public final class SpaViewModels {
                                 String joinCode, long memberCount,
                                 Instant startAt, Instant endAt, String status,
                                 long rosterCount, long linkedRosterCount,
-                                long unlistedMemberCount) {
+                                long unlistedMemberCount, boolean owner,
+                                boolean collaborationEnabled, long collaboratorCount) {
     }
 
     public record AssignmentView(long id, long classroomId, String title,
@@ -144,6 +145,10 @@ public final class SpaViewModels {
             long enrolledStudentCount,
             long submittedStudentCount,
             List<CommonIssueView> commonIssues) {
+    }
+
+    public record CollaboratorView(long teacherId, String username,
+                                   String displayName, String department) {
     }
 
     public record TeacherReviewWorkspace(

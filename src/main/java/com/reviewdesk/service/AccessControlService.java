@@ -36,7 +36,7 @@ public class AccessControlService {
     }
 
     public void requireTeacherClassroom(String username, long classroomId) {
-        if (!classroomService.isTeacherOwner(requireTeacher(username), classroomId)) {
+        if (!classroomService.isTeacherManager(requireTeacher(username), classroomId)) {
             throw new SecurityException("无权访问该课堂");
         }
     }

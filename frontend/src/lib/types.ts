@@ -30,6 +30,9 @@ export interface Classroom {
   rosterCount: number;
   linkedRosterCount: number;
   unlistedMemberCount: number;
+  owner: boolean;
+  collaborationEnabled: boolean;
+  collaboratorCount: number;
 }
 
 export interface Assignment {
@@ -235,6 +238,13 @@ export interface ClassroomAnalytics {
   enrolledStudentCount: number;
   submittedStudentCount: number;
   commonIssues: CommonIssue[];
+}
+
+export interface ClassroomCollaborator {
+  teacherId: number;
+  username: string;
+  displayName: string;
+  department: string | null;
 }
 
 export interface TeacherReviewWorkspace {

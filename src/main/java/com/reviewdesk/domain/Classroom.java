@@ -48,6 +48,8 @@ public class Classroom {
     @Column(name = "dissolved_at")
     private Instant dissolvedAt;
 
+    private Boolean collaborationEnabled;
+
     protected Classroom() {
         // JPA 需要的无参构造方法
     }
@@ -59,6 +61,11 @@ public class Classroom {
 
     public Classroom(String name, String courseName, Long teacherId, String joinCode,
                      Instant startAt, Instant endAt) {
+        this(name, courseName, teacherId, joinCode, startAt, endAt, false);
+    }
+
+    public Classroom(String name, String courseName, Long teacherId, String joinCode,
+                     Instant startAt, Instant endAt, boolean collaborationEnabled) {
         this.name = name;
         this.courseName = courseName;
         this.teacherId = teacherId;
@@ -66,6 +73,7 @@ public class Classroom {
         this.createdAt = Instant.now();
         this.startAt = startAt;
         this.endAt = endAt;
+        this.collaborationEnabled = collaborationEnabled;
     }
 
     public Long getId() {
@@ -104,6 +112,10 @@ public class Classroom {
         return dissolvedAt;
     }
 
+    public boolean isCollaborationEnabled() {
+        return Boolean.TRUE.equals(collaborationEnabled);
+    }
+
     public boolean isDissolved() {
         return dissolvedAt != null;
     }
@@ -115,6 +127,10 @@ public class Classroom {
 
     public void dissolve() {
         this.dissolvedAt = Instant.now();
+    }
+
+    public void setCollaborationEnabled(boolean collaborationEnabled) {
+        this.collaborationEnabled = collaborationEnabled;
     }
 }
 

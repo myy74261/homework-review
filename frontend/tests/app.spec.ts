@@ -72,6 +72,20 @@ test("teacher can schedule and dissolve a finished classroom", async ({ page }) 
   await expect(page.getByText("学期管理测试课堂")).toHaveCount(0);
 });
 
+test("teacher can enable classroom collaboration during creation", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.getByRole("button", { name: "新建课堂" }).click();
+  await page.getByLabel("课堂名称").fill("协作课堂测试");
+  await page.getByLabel("课程名称").fill("协作课程");
+  await page.getByLabel("课程起始时间").fill(localDateTime(0));
+  await page.getByLabel("课程结束时间").fill(localDateTime(30));
+  await page.getByLabel(/启用课堂协作管理员/).check();
+  await page.getByRole("button", { name: "创建课堂" }).click();
+  await expect(page.getByRole("heading", { name: "课堂协作管理员" })).toBeVisible();
+  await expect(page.getByPlaceholder("输入教师登录账号")).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-collaboration.png", fullPage: true });
+});
+
 test("teacher can import a classroom roster", async ({ page }) => {
   await login(page, "chen", "Teach1234");
   const classroomCard = page

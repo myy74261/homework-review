@@ -39,6 +39,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -165,7 +166,7 @@ public class SpaTeacherController {
                 toUser(teacher),
                 classrooms.stream()
                         .map(classroom -> toClassroom(classroom,
-                                classroomService.memberCount(classroom.getId())))
+                                classroomService.memberCount(classroom.getId()), teacher))
                         .toList(),
                 assignmentOverviews.stream()
                         .map(item -> new SpaViewModels.AssignmentOverview(
@@ -208,8 +209,9 @@ public class SpaTeacherController {
                 request.name(),
                 request.courseName(),
                 request.startAt(),
-                request.endAt());
-        return toClassroom(classroom, 0);
+                request.endAt(),
+                request.collaborationEnabled());
+        return toClassroom(classroom, 0, teacher);
     }
 
     @PutMapping("/classrooms/{classroomId}/schedule")
@@ -220,7 +222,7 @@ public class SpaTeacherController {
         Account teacher = accountService.current(authentication);
         Classroom classroom = classroomService.updateSchedule(
                 teacher, classroomId, request.startAt(), request.endAt());
-        return toClassroom(classroom, classroomService.memberCount(classroomId));
+        return toClassroom(classroom, classroomService.memberCount(classroomId), teacher);
     }
 
     @PostMapping("/classrooms/{classroomId}/dissolve")
@@ -229,7 +231,7 @@ public class SpaTeacherController {
             Authentication authentication) {
         Account teacher = accountService.current(authentication);
         Classroom classroom = classroomService.dissolve(teacher, classroomId);
-        return toClassroom(classroom, classroomService.memberCount(classroomId));
+        return toClassroom(classroom, classroomService.memberCount(classroomId), teacher);
     }
 
     @PostMapping("/classrooms/{classroomId}/roster")
@@ -247,12 +249,55 @@ public class SpaTeacherController {
                         .toList());
     }
 
+    @GetMapping("/classrooms/{classroomId}/collaborators")
+    public List<SpaViewModels.CollaboratorView> collaborators(
+            @PathVariable long classroomId,
+            Authentication authentication) {
+        Account teacher = accountService.current(authentication);
+        return classroomService.listCollaborators(teacher, classroomId).stream()
+                .map(collaborator -> toCollaborator(
+                        collaborator.getTeacherId()))
+                .toList();
+    }
+
+    @PutMapping("/classrooms/{classroomId}/collaboration")
+    public SpaViewModels.ClassroomView updateCollaboration(
+            @PathVariable long classroomId,
+            Authentication authentication,
+            @Valid @RequestBody UpdateCollaborationRequest request) {
+        Account teacher = accountService.current(authentication);
+        Classroom classroom = classroomService.updateCollaboration(
+                teacher, classroomId, request.enabled());
+        return toClassroom(
+                classroom, classroomService.memberCount(classroomId), teacher);
+    }
+
+    @PostMapping("/classrooms/{classroomId}/collaborators")
+    public SpaViewModels.CollaboratorView inviteCollaborator(
+            @PathVariable long classroomId,
+            Authentication authentication,
+            @Valid @RequestBody InviteCollaboratorRequest request) {
+        Account teacher = accountService.current(authentication);
+        return toCollaborator(classroomService.inviteCollaborator(
+                teacher, classroomId, request.username()).getTeacherId());
+    }
+
+    @PostMapping("/classrooms/{classroomId}/collaborators/{teacherId}/remove")
+    public ResponseEntity<Void> removeCollaborator(
+            @PathVariable long classroomId,
+            @PathVariable long teacherId,
+            Authentication authentication) {
+        classroomService.removeCollaborator(
+                accountService.current(authentication), classroomId, teacherId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/classrooms")
     public List<SpaViewModels.ClassroomView> classrooms(Authentication authentication) {
         Account teacher = accountService.current(authentication);
         return classroomService.teacherClassrooms(teacher).stream()
                 .map(classroom -> toClassroom(classroom,
-                        classroomService.memberCount(classroom.getId())))
+                        classroomService.memberCount(classroom.getId()), teacher))
                 .toList();
     }
 
@@ -538,6 +583,15 @@ public class SpaTeacherController {
                 account.getDepartment(), account.getProfessionalTitle());
     }
 
+    private SpaViewModels.CollaboratorView toCollaborator(long teacherId) {
+        Account account = accountService.requireById(teacherId);
+        return new SpaViewModels.CollaboratorView(
+                account.getId(),
+                account.getUsername(),
+                account.getDisplayName(),
+                account.getDepartment());
+    }
+
     private List<AssignmentService.RubricDefinition> toRubricDefinitions(
             PublishAssignmentForm form) {
         return form.getRubrics().stream()
@@ -546,14 +600,18 @@ public class SpaTeacherController {
                 .toList();
     }
 
-    private SpaViewModels.ClassroomView toClassroom(Classroom classroom, long members) {
+    private SpaViewModels.ClassroomView toClassroom(
+            Classroom classroom, long members, Account viewer) {
         return new SpaViewModels.ClassroomView(
                 classroom.getId(), classroom.getName(), classroom.getCourseName(),
                 classroom.getJoinCode(), members, classroom.getStartAt(),
                 classroom.getEndAt(), classroomService.lifecycleStatus(classroom),
                 classroomService.rosterCount(classroom.getId()),
                 classroomService.linkedRosterCount(classroom.getId()),
-                classroomService.unlistedMemberCount(classroom.getId()));
+                classroomService.unlistedMemberCount(classroom.getId()),
+                classroomService.isTeacherOwner(viewer, classroom.getId()),
+                classroom.isCollaborationEnabled(),
+                classroomService.collaboratorCount(classroom.getId()));
     }
 
     private SpaViewModels.AssignmentView toAssignment(Assignment assignment) {
@@ -676,7 +734,8 @@ public class SpaTeacherController {
             @NotBlank(message = "请填写课堂名称") String name,
             @NotBlank(message = "请填写课程名称") String courseName,
             @NotNull(message = "请选择课程起始时间") Instant startAt,
-            @NotNull(message = "请选择课程结束时间") Instant endAt) {
+            @NotNull(message = "请选择课程结束时间") Instant endAt,
+            boolean collaborationEnabled) {
     }
 
     public record UpdateClassroomScheduleRequest(
@@ -723,5 +782,12 @@ public class SpaTeacherController {
     public record RosterStudentRequest(
             @NotBlank(message = "学号不能为空") String studentNumber,
             @NotBlank(message = "姓名不能为空") String studentName) {
+    }
+
+    public record UpdateCollaborationRequest(boolean enabled) {
+    }
+
+    public record InviteCollaboratorRequest(
+            @NotBlank(message = "请输入协作教师账号") String username) {
     }
 }

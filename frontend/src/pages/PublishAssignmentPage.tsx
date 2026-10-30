@@ -90,7 +90,8 @@ export function PublishAssignmentPage() {
     setInitialized(true);
   }, [editableAssignment.data, initialized]);
 
-  const selectedClassroom = classroomId || classrooms.data?.[0]?.id || "";
+  const ownerClassrooms = classrooms.data?.filter((classroom) => classroom.owner) ?? [];
+  const selectedClassroom = classroomId || ownerClassrooms[0]?.id || "";
   const rubricLocked = (editableAssignment.data?.submissionCount ?? 0) > 0;
   const total = useMemo(
     () => rubrics.reduce((sum, rubric) => sum + Number(rubric.points || 0), 0),
@@ -165,7 +166,7 @@ export function PublishAssignmentPage() {
         </p>
       </section>
 
-      {classrooms.data?.length ? (
+      {ownerClassrooms.length ? (
         <form
           className="space-y-4"
           onSubmit={(event) => {
@@ -197,7 +198,7 @@ export function PublishAssignmentPage() {
                   onChange={(event) => setClassroomId(Number(event.target.value))}
                   required
                 >
-                  {classrooms.data.map((classroom) => (
+                  {ownerClassrooms.map((classroom) => (
                     <option key={classroom.id} value={classroom.id}>
                       {classroom.name} · {classroom.courseName}
                     </option>

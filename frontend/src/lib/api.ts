@@ -6,6 +6,7 @@ import type {
   AiConnectionResult,
   Appeal,
   Assignment,
+  ClassroomCollaborator,
   Classroom,
   EditableAssignment,
   IntegrityFlag,
@@ -96,6 +97,7 @@ export const api = {
     courseName: string;
     startAt: string;
     endAt: string;
+    collaborationEnabled: boolean;
   }) =>
     request<Classroom>("/api/app/teacher/classrooms", {
       method: "POST",
@@ -121,6 +123,22 @@ export const api = {
         body: JSON.stringify({ students }),
       },
     ),
+  classroomCollaborators: (classroomId: number) =>
+    request<ClassroomCollaborator[]>(`/api/app/teacher/classrooms/${classroomId}/collaborators`),
+  updateClassroomCollaboration: (classroomId: number, enabled: boolean) =>
+    request<Classroom>(`/api/app/teacher/classrooms/${classroomId}/collaboration`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    }),
+  inviteClassroomCollaborator: (classroomId: number, username: string) =>
+    request<ClassroomCollaborator>(`/api/app/teacher/classrooms/${classroomId}/collaborators`, {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    }),
+  removeClassroomCollaborator: (classroomId: number, teacherId: number) =>
+    request<void>(`/api/app/teacher/classrooms/${classroomId}/collaborators/${teacherId}/remove`, {
+      method: "POST",
+    }),
   publishAssignment: (payload: unknown) =>
     request<{ id: number; status: string; redirectPath: string }>("/api/app/teacher/assignments", {
       method: "POST",

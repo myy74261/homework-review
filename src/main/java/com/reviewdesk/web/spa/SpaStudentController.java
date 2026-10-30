@@ -102,7 +102,8 @@ public class SpaStudentController {
                                 classroomService.lifecycleStatus(classroom),
                                 classroomService.rosterCount(classroom.getId()),
                                 classroomService.linkedRosterCount(classroom.getId()),
-                                classroomService.unlistedMemberCount(classroom.getId())))
+                                classroomService.unlistedMemberCount(classroom.getId()),
+                                false, false, 0))
                         .toList(),
                 assignments);
     }
@@ -121,7 +122,8 @@ public class SpaStudentController {
                 classroomService.lifecycleStatus(classroom),
                 classroomService.rosterCount(classroom.getId()),
                 classroomService.linkedRosterCount(classroom.getId()),
-                classroomService.unlistedMemberCount(classroom.getId()));
+                classroomService.unlistedMemberCount(classroom.getId()),
+                false, false, 0);
     }
 
     @GetMapping("/assignments/{assignmentId}")

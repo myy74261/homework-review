@@ -13,6 +13,7 @@ import {
   Trash2,
   Undo2,
   Upload,
+  UsersRound,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -177,6 +178,7 @@ export function TeacherDashboardPage() {
   const [courseName, setCourseName] = useState("");
   const [courseStartAt, setCourseStartAt] = useState(localDateTime(0));
   const [courseEndAt, setCourseEndAt] = useState(localDateTime(120));
+  const [createCollaborationEnabled, setCreateCollaborationEnabled] = useState(false);
   const [scheduleTarget, setScheduleTarget] = useState<Classroom | null>(null);
   const [scheduleStartAt, setScheduleStartAt] = useState("");
   const [scheduleEndAt, setScheduleEndAt] = useState("");
@@ -184,6 +186,9 @@ export function TeacherDashboardPage() {
   const [rosterTarget, setRosterTarget] = useState<Classroom | null>(null);
   const [rosterText, setRosterText] = useState("");
   const [rosterFileName, setRosterFileName] = useState("");
+  const [collaboratorTarget, setCollaboratorTarget] = useState<Classroom | null>(null);
+  const [collaboratorUsername, setCollaboratorUsername] = useState("");
+  const [collaborationEnabled, setCollaborationEnabled] = useState(false);
   const [dueTarget, setDueTarget] = useState<{
     id: number;
     title: string;
@@ -201,6 +206,11 @@ export function TeacherDashboardPage() {
     queryKey: ["teacher-dashboard"],
     queryFn: api.teacherDashboard,
   });
+  const collaborators = useQuery({
+    queryKey: ["classroom-collaborators", collaboratorTarget?.id],
+    queryFn: () => api.classroomCollaborators(collaboratorTarget!.id),
+    enabled: collaboratorTarget != null && collaboratorTarget.owner,
+  });
 
   const createClassroom = useMutation({
     mutationFn: () =>
@@ -209,16 +219,23 @@ export function TeacherDashboardPage() {
         courseName,
         startAt: new Date(courseStartAt).toISOString(),
         endAt: new Date(courseEndAt).toISOString(),
+        collaborationEnabled: createCollaborationEnabled,
       }),
-    onSuccess: async () => {
+    onSuccess: async (classroom) => {
       notify("课堂已创建，可以分享课堂码。", "success");
       setClassroomOpen(false);
       setClassroomName("");
       setCourseName("");
       setCourseStartAt(localDateTime(0));
       setCourseEndAt(localDateTime(120));
+      setCreateCollaborationEnabled(false);
       await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
       await queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+      if (classroom.collaborationEnabled) {
+        setCollaboratorTarget(classroom);
+        setCollaborationEnabled(true);
+        setCollaboratorUsername("");
+      }
     },
     onError: (error: Error) => notify(error.message, "error"),
   });
@@ -276,6 +293,47 @@ export function TeacherDashboardPage() {
     onError: (error: Error) => notify(error.message, "error"),
   });
 
+  const updateCollaboration = useMutation({
+    mutationFn: (enabled: boolean) =>
+      api.updateClassroomCollaboration(collaboratorTarget!.id, enabled),
+    onSuccess: async (_, enabled) => {
+      setCollaborationEnabled(enabled);
+      notify(enabled ? "课堂协作已启用。" : "课堂协作已关闭，协作者权限已移除。", "success");
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-classrooms"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["classroom-collaborators", collaboratorTarget?.id],
+      });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const inviteCollaborator = useMutation({
+    mutationFn: () => api.inviteClassroomCollaborator(collaboratorTarget!.id, collaboratorUsername),
+    onSuccess: async (collaborator) => {
+      setCollaboratorUsername("");
+      notify(`${collaborator.displayName} 已加入课堂协作。`, "success");
+      await queryClient.invalidateQueries({
+        queryKey: ["classroom-collaborators", collaboratorTarget?.id],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
+  const removeCollaborator = useMutation({
+    mutationFn: (teacherId: number) =>
+      api.removeClassroomCollaborator(collaboratorTarget!.id, teacherId),
+    onSuccess: async () => {
+      notify("协作管理员已移除。", "success");
+      await queryClient.invalidateQueries({
+        queryKey: ["classroom-collaborators", collaboratorTarget?.id],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-dashboard"] });
+    },
+    onError: (error: Error) => notify(error.message, "error"),
+  });
+
   const respondAppeal = useMutation({
     mutationFn: ({ id }: { id: number }) =>
       api.respondAppeal(id, {
@@ -311,6 +369,8 @@ export function TeacherDashboardPage() {
     ({ assignment }) => assignment.status === "PUBLISHED",
   ).length;
   const rosterEntries = parseRoster(rosterText);
+  const ownsClassroom = (classroomId: number) =>
+    data.classrooms.find((classroom) => classroom.id === classroomId)?.owner === true;
 
   return (
     <div className="space-y-4">
@@ -458,6 +518,9 @@ export function TeacherDashboardPage() {
                             >
                               {classroomStatusLabels[classroom.status]}
                             </Badge>
+                            <Badge tone={classroom.owner ? "default" : "warning"}>
+                              {classroom.owner ? "所有者" : "协作管理员"}
+                            </Badge>
                           </div>
                           <p className="mt-1 text-xs text-muted">
                             {classroom.courseName} · {classroom.memberCount} 名学生
@@ -494,43 +557,62 @@ export function TeacherDashboardPage() {
                         )}
                       />
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-pine-500/10 pt-3">
-                        <div className="flex flex-wrap gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setScheduleTarget(classroom);
-                              setScheduleStartAt(
-                                classroom.startAt
-                                  ? toDateTimeInput(classroom.startAt)
-                                  : localDateTime(0),
-                              );
-                              setScheduleEndAt(
-                                classroom.endAt
-                                  ? toDateTimeInput(classroom.endAt)
-                                  : localDateTime(120),
-                              );
-                            }}
-                          >
-                            <CalendarClock className="size-3.5" />
-                            {classroom.status === "UNSCHEDULED" ? "设置课程时间" : "调整课程时间"}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setRosterTarget(classroom);
-                              setRosterText("");
-                              setRosterFileName("");
-                            }}
-                          >
-                            <Upload className="size-3.5" />
-                            导入名单
-                          </Button>
-                        </div>
-                        {classroom.status === "ENDED" ? (
+                        {classroom.owner ? (
+                          <div className="flex flex-wrap gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setScheduleTarget(classroom);
+                                setScheduleStartAt(
+                                  classroom.startAt
+                                    ? toDateTimeInput(classroom.startAt)
+                                    : localDateTime(0),
+                                );
+                                setScheduleEndAt(
+                                  classroom.endAt
+                                    ? toDateTimeInput(classroom.endAt)
+                                    : localDateTime(120),
+                                );
+                              }}
+                            >
+                              <CalendarClock className="size-3.5" />
+                              {classroom.status === "UNSCHEDULED" ? "设置课程时间" : "调整课程时间"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setRosterTarget(classroom);
+                                setRosterText("");
+                                setRosterFileName("");
+                              }}
+                            >
+                              <Upload className="size-3.5" />
+                              导入名单
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setCollaboratorTarget(classroom);
+                                setCollaborationEnabled(classroom.collaborationEnabled);
+                                setCollaboratorUsername("");
+                              }}
+                            >
+                              <UsersRound className="size-3.5" />
+                              协作管理 {classroom.collaboratorCount || ""}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted">
+                            课程设置、名单和考核发布由课堂所有者管理
+                          </span>
+                        )}
+                        {classroom.owner && classroom.status === "ENDED" ? (
                           <Button
                             type="button"
                             variant="destructive"
@@ -592,53 +674,59 @@ export function TeacherDashboardPage() {
                           <span>{submissionCount} 份提交</span>
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                          <Button asChild variant="ghost" size="sm">
-                            <Link to={`/teacher/assignments/${assignment.id}/lesson-plan`}>
-                              生成备课建议
-                              <ArrowRight className="size-3.5" />
-                            </Link>
-                          </Button>
-                          {assignment.status === "WITHDRAWN" ? (
-                            <Button asChild variant="secondary" size="sm">
-                              <Link to={`/teacher/assignments/${assignment.id}/edit`}>
-                                继续编辑
-                              </Link>
-                            </Button>
-                          ) : (
+                          {ownsClassroom(assignment.classroomId) ? (
                             <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setDueTarget({
-                                    id: assignment.id,
-                                    title: assignment.title,
-                                  });
-                                  setDueAtInput(
-                                    new Date(assignment.dueAt).getTime() > Date.now()
-                                      ? toDateTimeInput(assignment.dueAt)
-                                      : localDateTime(7),
-                                  );
-                                }}
-                              >
-                                <CalendarClock className="size-3.5" />
-                                调整截止时间
+                              <Button asChild variant="ghost" size="sm">
+                                <Link to={`/teacher/assignments/${assignment.id}/lesson-plan`}>
+                                  生成备课建议
+                                  <ArrowRight className="size-3.5" />
+                                </Link>
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  setWithdrawTarget({
-                                    id: assignment.id,
-                                    title: assignment.title,
-                                    submissionCount,
-                                  })
-                                }
-                              >
-                                <Undo2 className="size-3.5" />
-                                撤回并修改
-                              </Button>
+                              {assignment.status === "WITHDRAWN" ? (
+                                <Button asChild variant="secondary" size="sm">
+                                  <Link to={`/teacher/assignments/${assignment.id}/edit`}>
+                                    继续编辑
+                                  </Link>
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDueTarget({
+                                        id: assignment.id,
+                                        title: assignment.title,
+                                      });
+                                      setDueAtInput(
+                                        new Date(assignment.dueAt).getTime() > Date.now()
+                                          ? toDateTimeInput(assignment.dueAt)
+                                          : localDateTime(7),
+                                      );
+                                    }}
+                                  >
+                                    <CalendarClock className="size-3.5" />
+                                    调整截止时间
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      setWithdrawTarget({
+                                        id: assignment.id,
+                                        title: assignment.title,
+                                        submissionCount,
+                                      })
+                                    }
+                                  >
+                                    <Undo2 className="size-3.5" />
+                                    撤回并修改
+                                  </Button>
+                                </>
+                              )}
                             </>
+                          ) : (
+                            <span className="text-xs text-muted">作业管理由课堂所有者负责</span>
                           )}
                         </div>
                       </Card>
@@ -887,6 +975,20 @@ export function TeacherDashboardPage() {
               />
             </Field>
           </div>
+          <label className="flex items-start gap-3 rounded-xl bg-pine-50 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={createCollaborationEnabled}
+              onChange={(event) => setCreateCollaborationEnabled(event.target.checked)}
+              className="mt-0.5 size-4 accent-pine-600"
+            />
+            <span>
+              <strong className="block">启用课堂协作管理员</strong>
+              <small className="text-xs leading-5 text-muted">
+                创建后可邀请其他教师使用自己的账号协助管理，不会共享密码。
+              </small>
+            </span>
+          </label>
           <Button
             size="lg"
             disabled={
@@ -1022,6 +1124,92 @@ export function TeacherDashboardPage() {
               {importRoster.isPending ? "导入中…" : "确认导入名单"}
             </Button>
           </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={collaboratorTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setCollaboratorTarget(null);
+        }}
+        title="课堂协作管理员"
+        description={
+          collaboratorTarget
+            ? `管理《${collaboratorTarget.name}》的协作教师。每位教师使用自己的账号登录。`
+            : undefined
+        }
+      >
+        <div className="space-y-4">
+          <label className="flex items-center justify-between gap-4 rounded-xl bg-pine-50 p-3 text-sm">
+            <span>
+              <strong className="block">启用课堂协作</strong>
+              <small className="text-xs text-muted">关闭后会立即移除全部协作者的课堂权限。</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={collaborationEnabled}
+              disabled={updateCollaboration.isPending}
+              onChange={(event) => updateCollaboration.mutate(event.target.checked)}
+              className="size-4 accent-pine-600"
+            />
+          </label>
+
+          {collaborationEnabled ? (
+            <>
+              <div className="flex gap-2">
+                <Input
+                  value={collaboratorUsername}
+                  onChange={(event) => setCollaboratorUsername(event.target.value.toLowerCase())}
+                  placeholder="输入教师登录账号"
+                />
+                <Button
+                  type="button"
+                  disabled={inviteCollaborator.isPending || !collaboratorUsername.trim()}
+                  onClick={() => inviteCollaborator.mutate()}
+                >
+                  {inviteCollaborator.isPending ? "添加中…" : "添加协作者"}
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {collaborators.data?.map((collaborator) => (
+                  <div
+                    key={collaborator.teacherId}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-line p-3"
+                  >
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm">{collaborator.displayName}</strong>
+                      <span className="text-xs text-muted">
+                        {collaborator.username}
+                        {collaborator.department ? ` · ${collaborator.department}` : ""}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={removeCollaborator.isPending}
+                      onClick={() => removeCollaborator.mutate(collaborator.teacherId)}
+                    >
+                      移除
+                    </Button>
+                  </div>
+                ))}
+                {!collaborators.isLoading && !collaborators.data?.length ? (
+                  <p className="rounded-xl border border-dashed border-line p-4 text-center text-xs text-muted">
+                    还没有协作管理员。
+                  </p>
+                ) : null}
+                {collaborators.isError ? (
+                  <p className="text-xs text-clay-600">{collaborators.error.message}</p>
+                ) : null}
+              </div>
+
+              <p className="rounded-xl bg-stone-50 p-3 text-xs leading-6 text-muted">
+                协作者可以独立登录、查看课堂和参与审核，但不能修改课程设置、导入名单、解散课堂或管理其他协作者。
+              </p>
+            </>
+          ) : null}
         </div>
       </Dialog>
 

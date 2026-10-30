@@ -2,9 +2,11 @@ package com.reviewdesk.service;
 
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.domain.Classroom;
+import com.reviewdesk.domain.ClassroomCollaborator;
 import com.reviewdesk.domain.ClassroomMembership;
 import com.reviewdesk.domain.ClassroomRosterEntry;
 import com.reviewdesk.repository.AccountRepository;
+import com.reviewdesk.repository.ClassroomCollaboratorRepository;
 import com.reviewdesk.repository.ClassroomMembershipRepository;
 import com.reviewdesk.repository.ClassroomRepository;
 import com.reviewdesk.repository.ClassroomRosterRepository;
@@ -12,7 +14,9 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,20 +37,39 @@ public class ClassroomService {
     private final ClassroomMembershipRepository membershipRepository;
     private final ClassroomRosterRepository rosterRepository;
     private final AccountRepository accountRepository;
+    private final ClassroomCollaboratorRepository collaboratorRepository;
 
     public ClassroomService(ClassroomRepository classroomRepository,
                             ClassroomMembershipRepository membershipRepository,
                             ClassroomRosterRepository rosterRepository,
-                            AccountRepository accountRepository) {
+                            AccountRepository accountRepository,
+                            ClassroomCollaboratorRepository collaboratorRepository) {
         this.classroomRepository = classroomRepository;
         this.membershipRepository = membershipRepository;
         this.rosterRepository = rosterRepository;
         this.accountRepository = accountRepository;
+        this.collaboratorRepository = collaboratorRepository;
     }
 
     public List<Classroom> teacherClassrooms(Account teacher) {
-        return classroomRepository
-                .findByTeacherIdAndDissolvedAtIsNullOrderByCreatedAtDesc(teacher.getId());
+        Map<Long, Classroom> classrooms = new LinkedHashMap<>();
+        classroomRepository
+                .findByTeacherIdAndDissolvedAtIsNullOrderByCreatedAtDesc(teacher.getId())
+                .forEach(classroom -> classrooms.put(classroom.getId(), classroom));
+        List<Long> collaboratorClassroomIds = collaboratorRepository
+                .findByTeacherIdOrderByCreatedAtDesc(teacher.getId()).stream()
+                .map(ClassroomCollaborator::getClassroomId)
+                .toList();
+        if (!collaboratorClassroomIds.isEmpty()) {
+            classroomRepository
+                    .findByIdInAndDissolvedAtIsNullOrderByCreatedAtDesc(
+                            collaboratorClassroomIds)
+                    .forEach(classroom -> classrooms.putIfAbsent(
+                            classroom.getId(), classroom));
+        }
+        return classrooms.values().stream()
+                .sorted((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()))
+                .toList();
     }
 
     public List<Classroom> studentClassrooms(Account student) {
@@ -74,6 +97,13 @@ public class ClassroomService {
     @Transactional
     public Classroom create(Account teacher, String name, String courseName,
                             Instant startAt, Instant endAt) {
+        return create(teacher, name, courseName, startAt, endAt, false);
+    }
+
+    @Transactional
+    public Classroom create(Account teacher, String name, String courseName,
+                            Instant startAt, Instant endAt,
+                            boolean collaborationEnabled) {
         if (!teacher.isTeacher()) {
             throw new IllegalArgumentException("只有教师可以创建课堂");
         }
@@ -87,7 +117,8 @@ public class ClassroomService {
                 teacher.getId(),
                 nextJoinCode(),
                 startAt,
-                endAt));
+                endAt,
+                collaborationEnabled));
     }
 
     @Transactional
@@ -120,6 +151,68 @@ public class ClassroomService {
                 .orElse(false);
     }
 
+    public boolean isTeacherManager(Account teacher, long classroomId) {
+        return isTeacherOwner(teacher, classroomId)
+                || collaboratorRepository.existsByClassroomIdAndTeacherId(
+                        classroomId, teacher.getId());
+    }
+
+    public boolean isClassroomCollaborator(Account teacher, long classroomId) {
+        return teacher.isTeacher()
+                && collaboratorRepository.existsByClassroomIdAndTeacherId(
+                        classroomId, teacher.getId());
+    }
+
+    public List<ClassroomCollaborator> listCollaborators(
+            Account teacher, long classroomId) {
+        requireTeacherClassroom(teacher, classroomId);
+        return collaboratorRepository.findByClassroomIdOrderByCreatedAtAsc(classroomId);
+    }
+
+    @Transactional
+    public ClassroomCollaborator inviteCollaborator(
+            Account owner, long classroomId, String username) {
+        Classroom classroom = requireTeacherClassroom(owner, classroomId);
+        if (!classroom.isCollaborationEnabled()) {
+            throw new IllegalStateException("请先启用课堂协作管理员");
+        }
+        Account collaborator = accountRepository.findByUsername(
+                        username == null ? "" : username.strip().toLowerCase())
+                .orElseThrow(() -> new IllegalArgumentException("协作教师账号不存在"));
+        if (!collaborator.isTeacher() || !collaborator.isActive()) {
+            throw new IllegalArgumentException("协作账号必须是有效的教师账号");
+        }
+        if (collaborator.getId().equals(owner.getId())) {
+            throw new IllegalArgumentException("课堂创建者不需要添加为协作者");
+        }
+        if (collaboratorRepository.existsByClassroomIdAndTeacherId(
+                classroomId, collaborator.getId())) {
+            throw new IllegalArgumentException("该教师已经是课堂协作者");
+        }
+        return collaboratorRepository.save(new ClassroomCollaborator(
+                classroomId, collaborator.getId(), owner.getId()));
+    }
+
+    @Transactional
+    public void removeCollaborator(Account owner, long classroomId, long teacherId) {
+        requireTeacherClassroom(owner, classroomId);
+        collaboratorRepository.deleteByClassroomIdAndTeacherId(classroomId, teacherId);
+    }
+
+    @Transactional
+    public Classroom updateCollaboration(Account owner, long classroomId, boolean enabled) {
+        Classroom classroom = requireTeacherClassroom(owner, classroomId);
+        classroom.setCollaborationEnabled(enabled);
+        if (!enabled) {
+            collaboratorRepository.deleteByClassroomId(classroomId);
+        }
+        return classroomRepository.save(classroom);
+    }
+
+    public long collaboratorCount(long classroomId) {
+        return collaboratorRepository.countByClassroomId(classroomId);
+    }
+
     public boolean isStudentMember(Account student, long classroomId) {
         return !student.isTeacher()
                 && classroomRepository.findById(classroomId)
@@ -148,6 +241,7 @@ public class ClassroomService {
             throw new IllegalStateException("课程尚未结束，不能解散课堂");
         }
         classroom.dissolve();
+        collaboratorRepository.deleteByClassroomId(classroomId);
         return classroomRepository.save(classroom);
     }
 

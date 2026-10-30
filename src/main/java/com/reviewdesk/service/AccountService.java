@@ -3,6 +3,7 @@ package com.reviewdesk.service;
 import com.reviewdesk.domain.Account;
 import com.reviewdesk.repository.AccountRepository;
 import com.reviewdesk.repository.ClassroomMembershipRepository;
+import com.reviewdesk.repository.ClassroomCollaboratorRepository;
 import com.reviewdesk.repository.ClassroomRepository;
 import com.reviewdesk.repository.ClassroomRosterRepository;
 import org.springframework.security.core.Authentication;
@@ -22,21 +23,29 @@ public class AccountService {
     private final ClassroomRepository classroomRepository;
     private final ClassroomMembershipRepository membershipRepository;
     private final ClassroomRosterRepository rosterRepository;
+    private final ClassroomCollaboratorRepository collaboratorRepository;
 
     public AccountService(AccountRepository accountRepository,
                           PasswordEncoder passwordEncoder,
                           ClassroomRepository classroomRepository,
                           ClassroomMembershipRepository membershipRepository,
-                          ClassroomRosterRepository rosterRepository) {
+                          ClassroomRosterRepository rosterRepository,
+                          ClassroomCollaboratorRepository collaboratorRepository) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.classroomRepository = classroomRepository;
         this.membershipRepository = membershipRepository;
         this.rosterRepository = rosterRepository;
+        this.collaboratorRepository = collaboratorRepository;
     }
 
     public Account requireByUsername(String username) {
         return accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("账号不存在"));
+    }
+
+    public Account requireById(Long id) {
+        return accountRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("账号不存在"));
     }
 
@@ -117,6 +126,9 @@ public class AccountService {
                 && classroomRepository.existsByTeacherIdAndDissolvedAtIsNull(
                         account.getId())) {
             throw new IllegalStateException("请先处理并解散所有现有课堂，再注销教师账号");
+        }
+        if (account.isTeacher()) {
+            collaboratorRepository.deleteByTeacherId(account.getId());
         }
         if (!account.isTeacher()) {
             rosterRepository.findByStudentAccountId(account.getId()).forEach(entry -> {

@@ -308,6 +308,58 @@ class SpaApiControllerTest {
     }
 
     @Test
+    void classroomCollaboratorUsesIndependentAccountWithLimitedPermissions()
+            throws Exception {
+        var collaborator = accountService.register(
+                "teacher_collab",
+                "Teacher5678",
+                "协作教师",
+                com.reviewdesk.domain.Account.Role.TEACHER,
+                null);
+
+        mockMvc.perform(put("/api/app/teacher/classrooms/1/collaboration")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.collaborationEnabled").value(true));
+
+        mockMvc.perform(post("/api/app/teacher/classrooms/1/collaborators")
+                        .with(user("chen").roles("TEACHER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "teacher_collab"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.teacherId").value(collaborator.getId()))
+                .andExpect(jsonPath("$.username").value("teacher_collab"));
+
+        mockMvc.perform(get("/api/app/teacher/dashboard")
+                        .with(user("teacher_collab").roles("TEACHER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.classrooms.length()").value(1))
+                .andExpect(jsonPath("$.classrooms[0].owner").value(false))
+                .andExpect(jsonPath("$.classrooms[0].collaboratorCount").value(1));
+
+        mockMvc.perform(get("/api/app/teacher/reviews/1")
+                        .with(user("teacher_collab").roles("TEACHER")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/app/teacher/classrooms/1/collaborators")
+                        .with(user("teacher_collab").roles("TEACHER")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/app/teacher/classrooms/1/dissolve")
+                        .with(user("teacher_collab").roles("TEACHER"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void reactClientCanCreateClassroomThroughJsonApi() throws Exception {
         mockMvc.perform(post("/api/app/teacher/classrooms")
                         .with(user("chen").roles("TEACHER"))
