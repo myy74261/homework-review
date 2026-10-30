@@ -128,6 +128,30 @@ docker compose --env-file .env.production up -d --build
 
 ## 8. 数据备份
 
+版本更新或数据库迁移前，必须先备份：
+
+```bash
+sudo runuser -u postgres -- pg_dump -Fc review_desk \
+  > /opt/review-desk/backups/review-desk-$(date +%Y%m%d-%H%M%S).dump
+
+tar -C /opt/review-desk -czf \
+  /opt/review-desk/backups/uploads-$(date +%Y%m%d-%H%M%S).tar.gz uploads
+```
+
+应用启动时自动执行 `src/main/resources/db/migration/postgresql/` 下的
+Flyway 迁移。生产环境必须设置：
+
+```dotenv
+FLYWAY_ENABLED=true
+FLYWAY_BASELINE_ON_MIGRATE=true
+JPA_DDL_AUTO=validate
+SESSION_STORE_TYPE=jdbc
+```
+
+首次接管已有数据库时，Flyway 会把现有业务结构记录为 V1 基线，然后执行
+V2 的 Spring Session 表迁移。后续结构变化只新增 V3、V4 等迁移文件，禁止
+修改已在生产执行过的迁移。
+
 备份 PostgreSQL：
 
 ```bash

@@ -24,6 +24,8 @@ export default defineConfig({
       SHOW_DEMO_CREDENTIALS: "true",
       THYMELEAF_CACHE: "false",
       UPLOAD_ROOT: "target/e2e-uploads",
+      SESSION_STORE_TYPE: "none",
+      FLYWAY_ENABLED: "false",
     },
   },
 });

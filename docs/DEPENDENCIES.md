@@ -26,6 +26,9 @@ TanStack Query、Zustand 和 SheetJS `xlsx`。依赖锁定在
 | `spring-boot-starter-data-jpa` | runtime | JPA、Hibernate、事务和仓储 |
 | `spring-boot-starter-validation` | runtime | Jakarta Validation 与表单校验 |
 | `spring-boot-starter-security` | runtime | 登录会话、角色权限、CSRF |
+| `spring-session-jdbc` | runtime | 将登录会话保存到关系数据库 |
+| `flyway-core` | runtime | 数据库版本化迁移 |
+| `flyway-database-postgresql` | runtime | Flyway PostgreSQL 支持 |
 | `com.h2database:h2` | runtime | H2 文件数据库驱动 |
 | `org.postgresql:postgresql` | runtime | PostgreSQL 生产数据库驱动 |
 | `spring-boot-starter-test` | test | JUnit 5、AssertJ、MockMvc |

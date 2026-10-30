@@ -84,7 +84,7 @@
 Spring MVC
 ├── 教师端、学生端及审核控制器
 ├── React JSON API 与 OpenAI 兼容模型适配层
-├── Spring Security 会话与角色权限
+├── Spring Security + Spring Session JDBC 会话与角色权限
 └── 全局异常处理
         │
 业务服务层
@@ -118,7 +118,8 @@ Spring Data JPA
 | 运行环境 | Java 17 |
 | 后端 | Spring Boot 3.3.5、Spring MVC、Thymeleaf |
 | 安全 | Spring Security 6.3、BCrypt、CSRF、角色权限 |
-| 数据 | Spring Data JPA、Hibernate、H2（开发）、PostgreSQL（部署） |
+| 会话 | Spring Session JDBC + PostgreSQL 持久化 |
+| 数据 | Spring Data JPA、Flyway、H2（开发）、PostgreSQL（部署） |
 | 前端 | React 19、TypeScript、Vite、Tailwind CSS、Radix/shadcn 基础组件 |
 | 前端状态 | TanStack Query、Zustand |
 | 表格解析 | SheetJS `xlsx`（按需加载） |
@@ -422,6 +423,8 @@ npm run test:e2e
 - Java 使用 4 空格，HTML、CSS、JavaScript、YAML 使用 2 空格。
 - 密码通过 BCrypt 哈希保存，不记录明文。
 - 登录会话使用 Spring Security，写操作启用 CSRF 校验。
+- 生产登录会话保存到 PostgreSQL，应用重启后仍保持登录。
+- 生产数据库由 Flyway 版本化迁移，Hibernate 只执行结构校验。
 - 教师与学生按角色和课堂归属进行双层数据隔离。
 
 ## 已知边界

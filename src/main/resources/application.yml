@@ -9,6 +9,17 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:update}
     open-in-view: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
+    baseline-version: 1
+    locations: classpath:db/migration/postgresql
+  session:
+    store-type: ${SESSION_STORE_TYPE:none}
+    timeout: ${SESSION_TIMEOUT:8h}
+    jdbc:
+      initialize-schema: never
+      cleanup-cron: ${SESSION_CLEANUP_CRON:0 */15 * * * *}
   thymeleaf:
     cache: ${THYMELEAF_CACHE:false}
   servlet:

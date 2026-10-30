@@ -63,7 +63,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `DATABASE_URL` | `jdbc:h2:file:./data/review-desk` | H2 文件数据库地址 |
 | `DATABASE_USERNAME` | `sa` | 数据库用户名 |
 | `DATABASE_PASSWORD` | 空字符串 | 数据库密码 |
-| `JPA_DDL_AUTO` | `update` | Hibernate 表结构更新策略 |
+| `JPA_DDL_AUTO` | `update` | Hibernate 表结构策略；生产使用 `validate` |
+| `FLYWAY_ENABLED` | `false` | 是否启用 Flyway；生产必须为 `true` |
+| `FLYWAY_BASELINE_ON_MIGRATE` | `true` | 首次接管已有生产库时建立 V1 基线 |
+| `SESSION_STORE_TYPE` | `none` | 会话存储；生产使用 `jdbc` |
+| `SESSION_TIMEOUT` | `8h` | 登录会话空闲有效期 |
+| `SESSION_CLEANUP_CRON` | `0 */15 * * * *` | 清理过期持久化会话的频率 |
 | `SESSION_COOKIE_SECURE` | `false` | 是否只允许 HTTPS 发送会话 Cookie |
 | `SESSION_COOKIE_SAME_SITE` | `lax` | 会话 Cookie 的 SameSite 策略 |
 | `SPRING_APPLICATION_NAME` | `review-desk` | 应用名称 |
@@ -93,7 +98,12 @@ SERVER_ADDRESS=0.0.0.0
 DATABASE_URL=jdbc:h2:file:./data/review-desk
 DATABASE_USERNAME=sa
 DATABASE_PASSWORD=
-JPA_DDL_AUTO=update
+JPA_DDL_AUTO=validate
+FLYWAY_ENABLED=true
+FLYWAY_BASELINE_ON_MIGRATE=true
+SESSION_STORE_TYPE=jdbc
+SESSION_TIMEOUT=8h
+SESSION_CLEANUP_CRON=0 */15 * * * *
 SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
 SPRING_APPLICATION_NAME=review-desk
