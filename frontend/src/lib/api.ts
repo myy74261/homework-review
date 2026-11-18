@@ -17,6 +17,9 @@ import type {
   StudentDashboard,
   TeacherDashboard,
   TeacherReviewWorkspace,
+  TeacherApprovalOverview,
+  TeacherApplication,
+  TeacherHelp,
   User,
 } from "@/lib/types";
 
@@ -89,6 +92,19 @@ export async function loadSession(): Promise<Session> {
 }
 
 export const api = {
+  teacherApplications: (status: string) =>
+    request<TeacherApprovalOverview>(
+      `/api/app/admin/teachers?status=${encodeURIComponent(status)}`,
+    ),
+  reviewTeacherApplication: (
+    teacherId: number,
+    payload: { status: "APPROVED" | "REJECTED"; note: string },
+  ) =>
+    request<TeacherApplication>(`/api/app/admin/teachers/${teacherId}/review`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  teacherHelp: () => request<TeacherHelp>("/api/app/teacher/help"),
   teacherDashboard: () => request<TeacherDashboard>("/api/app/teacher/dashboard"),
   studentDashboard: () => request<StudentDashboard>("/api/app/student/dashboard"),
   teacherClassrooms: () => request<Classroom[]>("/api/app/teacher/classrooms"),

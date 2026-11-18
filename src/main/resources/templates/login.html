@@ -14,13 +14,30 @@
         <span class="brand-seal" aria-hidden="true">鉴</span>
         <span class="brand-copy">
           <strong>明鉴</strong>
-          <small>作业审核平台</small>
+          <small>教师作业审核与教学反馈平台</small>
         </span>
       </a>
       <div>
-          <p class="eyebrow">教学与反馈</p>
-          <h1>作业审核与<br>学习反馈</h1>
-          <p>教师创建课堂、发布作业并完成审核；学生加入课堂、提交作业并查看反馈。</p>
+        <p class="eyebrow">智慧教学与学术诚信</p>
+        <h1>让作业反馈<br>更清楚，也更有依据。</h1>
+        <p>
+          明鉴连接课堂、作业、审核和备课。教师可以在同一工作台完成学生提交检查、
+          AI 建议核实、最终评分与课堂材料整理；学生按课堂提交作业，并在反馈发布后查看结果、提出申诉。
+        </p>
+        <div class="auth-feature-list">
+          <div>
+            <strong>课堂与作业</strong>
+            <span>名单导入、课堂码、混合附件和动态评分量规。</span>
+          </div>
+          <div>
+            <strong>审核与诚信</strong>
+            <span>保留原文证据、教师判断、申诉和学术诚信核验记录。</span>
+          </div>
+          <div>
+            <strong>AI 只提供建议</strong>
+            <span>最终评分、反馈和诚信结论始终由教师确认。</span>
+          </div>
+        </div>
       </div>
       <div class="auth-flow">
         <span>发布作业</span><i>→</i><span>学生提交</span><i>→</i><span>教师审核</span><i>→</i><span>导出备课</span>
@@ -29,9 +46,9 @@
 
     <section class="auth-card">
       <div class="auth-card-head">
-        <p class="eyebrow">账号登录</p>
-        <h2>登录账号</h2>
-        <p>教师和学生使用同一个登录入口。</p>
+        <p class="eyebrow">统一身份入口</p>
+        <h2>登录明鉴</h2>
+        <p>教师、学生和平台管理员使用同一个入口，登录后进入各自工作区。</p>
       </div>
 
       <p class="error-banner" th:if="${param.error}">账号或密码不正确，请重新输入。</p>
@@ -44,6 +61,15 @@
       </p>
       <p class="success-banner" th:if="${param.registered}">
         账号创建成功，请使用新账号登录。
+      </p>
+      <p class="success-banner" th:if="${param.pending}">
+        教师申请已提交，请等待平台管理员审核通过后再登录。
+      </p>
+      <p class="error-banner" th:if="${param.rejected}">
+        教师申请未通过审核，请联系平台管理员了解原因。
+      </p>
+      <p class="error-banner" th:if="${param.deactivated}">
+        账号已注销，不能继续登录。
       </p>
 
       <form class="auth-form" th:action="@{/login}" method="post">
@@ -59,18 +85,6 @@
       </form>
 
       <p class="auth-switch">还没有账号？<a th:href="@{/register}">创建教师或学生账号</a></p>
-
-      <div class="demo-accounts" th:if="${showDemoCredentials}">
-        <span>演示账号</span>
-        <div>
-          <strong>教师</strong>
-          <code th:text="${demoTeacherUsername + ' / ' + demoTeacherPassword}">chen / Teach1234</code>
-        </div>
-        <div>
-          <strong>学生</strong>
-          <code th:text="${demoStudentUsername + ' / ' + demoStudentPassword}">lin / Student1234</code>
-        </div>
-      </div>
     </section>
   </main>
 </body>

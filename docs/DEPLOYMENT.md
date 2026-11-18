@@ -148,13 +148,14 @@ install -o reviewdesk -g reviewdesk -m 640 \
 systemctl restart review-desk
 ```
 
-本次 AI 截止时间一致性修复不修改表结构，不需要新增 Flyway 迁移。上线前仍应检查：
+当前版本新增教师审核状态字段，上线时会执行 `V3__teacher_approval.sql`。上线前应备份数据库，并检查：
 
 - `FLYWAY_ENABLED=true`
 - `JPA_DDL_AUTO=validate`
 - `SESSION_STORE_TYPE=jdbc`
 - 教师 AI 配置可用
 - 作业当前截止时间、课堂状态和待执行任务状态符合预期
+- 管理员初始密码已通过环境变量替换
 
 ## 8. 数据备份
 

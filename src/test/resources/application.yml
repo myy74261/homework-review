@@ -13,3 +13,5 @@ spring:
 review-desk:
   ai:
     batch-initial-delay-ms: 3600000
+  demo:
+    cross-discipline-enabled: false

@@ -147,19 +147,18 @@ export function PublishAssignmentPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
+      <Button asChild variant="ghost" className="-ml-2 text-base">
         <Link to="/teacher">
-          <ArrowLeft className="size-4" />
-          返回课堂
+          <ArrowLeft className="size-5" />
+          返回教学工作台
         </Link>
       </Button>
 
       <section>
-        <p className="page-eyebrow">{isEditing ? "修改作业" : "发布作业"}</p>
-        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
+        <h1 className="font-display text-4xl font-semibold tracking-tight">
           {isEditing ? "修改后重新发布" : "创建新的课程作业"}
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+        <p className="mt-3 max-w-3xl text-base leading-8 text-muted">
           {isEditing
             ? "作业仍对学生隐藏。确认修改后重新发布，已有提交记录不会被删除。"
             : "设置提交要求、截止时间和评分标准。发布后学生即可查看并提交。"}
@@ -177,8 +176,7 @@ export function PublishAssignmentPage() {
           <Card>
             <CardHeader>
               <div>
-                <p className="page-eyebrow">01 · 作业信息</p>
-                <CardTitle className="mt-1">基本信息</CardTitle>
+                <CardTitle>作业信息</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -274,9 +272,8 @@ export function PublishAssignmentPage() {
           <Card>
             <CardHeader>
               <div>
-                <p className="page-eyebrow">02 · 评分量规</p>
-                <CardTitle className="mt-1">评分项目</CardTitle>
-                <p className="mt-1 text-xs text-muted">
+                <CardTitle>评分量规</CardTitle>
+                <p className="mt-2 text-sm leading-6 text-muted">
                   {rubricLocked
                     ? `已有 ${editableAssignment.data?.submissionCount} 份提交，为保持历史评分一致，评分维度已锁定。`
                     : "支持 1–10 个维度，总分必须为 100。"}

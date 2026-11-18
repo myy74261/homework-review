@@ -30,7 +30,7 @@ export function Dialog({
             {title}
           </DialogPrimitive.Title>
           {description ? (
-            <DialogPrimitive.Description className="mt-2 text-sm leading-6 text-muted">
+            <DialogPrimitive.Description className="mt-2 text-[15px] leading-7 text-muted">
               {description}
             </DialogPrimitive.Description>
           ) : null}

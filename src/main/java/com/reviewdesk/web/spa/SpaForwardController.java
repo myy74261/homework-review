@@ -12,6 +12,8 @@ public class SpaForwardController {
     @GetMapping({
             "/app",
             "/app/account",
+            "/app/admin",
+            "/app/admin/**",
             "/app/teacher",
             "/app/teacher/**",
             "/app/reviews/**",

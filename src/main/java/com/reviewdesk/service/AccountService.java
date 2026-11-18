@@ -144,6 +144,29 @@ public class AccountService {
     @Transactional
     public Account register(String username, String password, String displayName,
                             Account.Role role, String studentNumber) {
+        return register(username, password, displayName, role, studentNumber, false);
+    }
+
+    /**
+     * 创建系统初始化账号，跳过教师申请审核。
+     */
+    @Transactional
+    public Account registerTrusted(String username, String password, String displayName,
+                                   Account.Role role, String studentNumber) {
+        return register(username, password, displayName, role, studentNumber, true);
+    }
+
+    private Account register(String username, String password, String displayName,
+                             Account.Role role, String studentNumber,
+                             boolean trusted) {
+        if (role == Account.Role.ADMIN && !trusted) {
+            throw new IllegalArgumentException("不支持的用户身份");
+        }
+        if (role != Account.Role.TEACHER
+                && role != Account.Role.STUDENT
+                && role != Account.Role.ADMIN) {
+            throw new IllegalArgumentException("不支持的用户身份");
+        }
         String cleanUsername = username == null ? "" : username.strip().toLowerCase();
         if (!cleanUsername.matches("[a-z0-9_]{3,30}")) {
             throw new IllegalArgumentException("账号需为 3–30 位小写字母、数字或下划线");
@@ -161,12 +184,17 @@ public class AccountService {
                 && (studentNumber == null || studentNumber.isBlank())) {
             throw new IllegalArgumentException("学生账号需要填写学号");
         }
-        return accountRepository.save(new Account(
+        Account account = new Account(
                 cleanUsername,
                 passwordEncoder.encode(password),
                 displayName.strip(),
                 role,
-                role == Account.Role.STUDENT ? studentNumber.strip() : null));
+                role == Account.Role.STUDENT ? studentNumber.strip() : null);
+        if (trusted && role == Account.Role.TEACHER) {
+            account.approve(account.getId() == null ? 0L : account.getId(),
+                    "系统初始化账号");
+        }
+        return accountRepository.save(account);
     }
 
     private String clean(String value) {

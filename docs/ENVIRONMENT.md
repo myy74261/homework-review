@@ -92,6 +92,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `DEMO_STUDENT_PASSWORD` | `Student1234` | 首次启动创建的学生密码 |
 | `DEMO_STUDENT_NAME` | `林清和` | 演示学生姓名 |
 | `DEMO_STUDENT_NUMBER` | `20230116` | 演示学生学号 |
+| `DEMO_ADMIN_USERNAME` | `admin` | 首次启动创建的平台管理员账号 |
+| `DEMO_ADMIN_PASSWORD` | `Admin1234` | 平台管理员初始密码，生产必须修改 |
+| `DEMO_ADMIN_NAME` | `平台管理员` | 管理员显示名称 |
 
 ## 4. 推荐开发配置
 
@@ -126,6 +129,9 @@ DEMO_STUDENT_USERNAME=lin
 DEMO_STUDENT_PASSWORD=Student1234
 DEMO_STUDENT_NAME=林清和
 DEMO_STUDENT_NUMBER=20230116
+DEMO_ADMIN_USERNAME=admin
+DEMO_ADMIN_PASSWORD=Admin1234
+DEMO_ADMIN_NAME=平台管理员
 ```
 
 ## 5. 公网展示配置
@@ -150,6 +156,7 @@ AI_SETTINGS_SECRET=替换为长随机加密密钥
 - 如需重新应用新的演示账号，请先停止服务并备份、删除 `data/review-desk.mv.db`。
 - `SESSION_COOKIE_SECURE=true` 要求浏览器通过 HTTPS 访问。
 - 正式生产环境仍应使用 PostgreSQL，并启用 Flyway 和 `SESSION_STORE_TYPE=jdbc`。
+- 教师注册默认需要管理员审核；学生注册后可以直接登录。管理员初始账号只用于首次启动。
 
 ## 6. 数据库切换
 

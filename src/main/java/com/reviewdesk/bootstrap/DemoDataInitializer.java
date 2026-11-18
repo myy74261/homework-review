@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 首次启动时写入一份完整的教师审核演示数据。
  */
 @Component
+@Order(1)
 public class DemoDataInitializer implements ApplicationRunner {
 
     private static final String SUBMISSION_CONTENT = """
@@ -90,8 +92,15 @@ public class DemoDataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        accountRepository.findByUsername(demoAccounts.adminUsername())
+                .orElseGet(() -> accountService.registerTrusted(
+                        demoAccounts.adminUsername(),
+                        demoAccounts.adminPassword(),
+                        demoAccounts.adminName(),
+                        Account.Role.ADMIN,
+                        null));
         Account teacher = accountRepository.findByUsername(demoAccounts.teacherUsername())
-                .orElseGet(() -> accountService.register(
+                .orElseGet(() -> accountService.registerTrusted(
                         demoAccounts.teacherUsername(),
                         demoAccounts.teacherPassword(),
                         demoAccounts.teacherName(),

@@ -32,7 +32,7 @@
       <div class="auth-card-head">
         <p class="eyebrow">新账号</p>
         <h2>创建你的身份</h2>
-        <p>注册机构或任课教师账号后，可在课堂页创建班级。</p>
+        <p>学生注册后可直接登录；教师申请需要平台管理员审核通过后才能创建课堂。</p>
       </div>
 
       <p class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}">
@@ -50,6 +50,7 @@
               学生
             </option>
           </select>
+          <small>教师申请由平台管理员审核，通常需要等待一段时间。</small>
         </label>
         <label class="field">
           <span>姓名</span>

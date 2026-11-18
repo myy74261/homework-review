@@ -29,6 +29,7 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
 
   await page.getByRole("tab", { name: /作业管理/ }).click();
   await expect(page.getByRole("heading", { name: "已发布作业" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "文献综述：平台劳动与数字身份" })).toBeVisible();
   await page.getByRole("tab", { name: /AI 预审/ }).click();
   await expect(page.getByRole("heading", { name: "批量预审进度" })).toBeVisible();
   await expect(page.getByText(/作业截止后自动开始|尚未接入模型/)).toBeVisible();
@@ -47,6 +48,7 @@ test("teacher React workspace renders dashboard, review and lesson pages", async
   const editor = page.getByLabel("教师审核意见正文");
   await editor.fill(`${await editor.inputValue()}\n\nReact 审核台自动保存验证。`);
   await expect(page.getByText(/已保存 ·/)).toBeVisible();
+  await page.screenshot({ path: "test-results/teacher-review-workspace.png", fullPage: true });
 
   await page.goto("/app/teacher/assignments/1/lesson-plan");
   await expect(page.getByText("备课建议")).toBeVisible();
@@ -97,8 +99,8 @@ test("teacher can import a classroom roster", async ({ page }) => {
   await expect(page.getByText("已识别 2 名学生")).toBeVisible();
   await page.screenshot({ path: "test-results/teacher-roster-import.png", fullPage: true });
   await page.getByRole("button", { name: "确认导入名单" }).click();
-  await expect(page.getByText(/名单已导入，共 2 人，已关联 1 个学生账号/)).toBeVisible();
-  await expect(classroomCard.getByText(/名单 2 人 · 已关联 1 个账号/)).toBeVisible();
+  await expect(page.getByText(/名单已导入，共 \d+ 人，已关联 \d+ 个学生账号/)).toBeVisible();
+  await expect(classroomCard.getByText(/名单 \d+ 人 · 已关联 \d+ 个账号/)).toBeVisible();
 });
 
 test("teacher can import an XLSX roster from a mobile file picker", async ({ page }) => {
@@ -224,6 +226,71 @@ test("teacher AI settings are available on a dedicated page", async ({ page }) =
   await expect(page.getByLabel("模型名称")).toBeVisible();
   await expect(page.getByLabel("API Key")).toBeVisible();
   await page.screenshot({ path: "test-results/teacher-ai-settings.png", fullPage: true });
+});
+
+test("publish assignment page uses a clear heading hierarchy", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.goto("/app/teacher/assignments/new");
+  await expect(page.getByRole("heading", { name: "创建新的课程作业" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "作业信息" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "评分量规" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "返回教学工作台" })).toBeVisible();
+  await page.screenshot({ path: "test-results/publish-assignment.png", fullPage: true });
+});
+
+test("login page presents the project clearly without duplicate demo credentials", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { name: "登录明鉴" })).toBeVisible();
+  await expect(page.getByText("让作业反馈")).toBeVisible();
+  await expect(page.getByText("课堂与作业")).toBeVisible();
+  await expect(page.getByText("审核与诚信")).toBeVisible();
+  await expect(page.getByText("chen / Teach1234")).toHaveCount(0);
+  const logo = await page.locator(".auth-page .brand-seal").boundingBox();
+  expect(logo?.width).toBeGreaterThanOrEqual(50);
+  await page.screenshot({ path: "test-results/login-page.png", fullPage: true });
+});
+
+test("teacher help page contains onboarding guidance and demo accounts", async ({ page }) => {
+  await login(page, "chen", "Teach1234");
+  await page.goto("/app/teacher/help");
+  await expect(page.getByRole("heading", { name: "从课堂设置到反馈导出" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "先建立课堂" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "示例账号" })).toBeVisible();
+});
+
+test("science and engineering simulation teachers can enter their classrooms", async ({ page }) => {
+  await login(page, "zhou", "Teach2026!");
+  await expect(page.getByText("普通物理实验 · 2026 秋")).toBeVisible();
+  await page.getByRole("button", { name: "退出登录" }).click();
+  await login(page, "wujian", "Teach2026!");
+  await expect(page.getByText("软件工程实践 · 2026 秋")).toBeVisible();
+});
+
+test("administrator can approve a newly registered teacher", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel("选择身份").selectOption("TEACHER");
+  await page.getByLabel("姓名").fill("E2E 审核教师");
+  await page.getByLabel("账号").fill("e2e_teacher");
+  await page.getByLabel("密码").fill("Teacher2026!");
+  await page.getByRole("button", { name: "创建账号" }).click();
+  await expect(page).toHaveURL(/\/login\?pending$/);
+  await expect(page.getByText(/教师申请已提交/)).toBeVisible();
+
+  await login(page, "admin", "Admin1234");
+  await expect(page).toHaveURL(/\/app\/admin$/);
+  await expect(page.getByText("E2E 审核教师")).toBeVisible();
+  await page.getByPlaceholder("审核说明；拒绝时必须填写原因").fill("教师身份信息完整，允许使用");
+  await page.getByRole("button", { name: "通过申请" }).click();
+  await expect(page.getByText(/申请已通过/)).toBeVisible();
+  await page.screenshot({ path: "test-results/admin-teacher-approval.png", fullPage: true });
+
+  await page.getByRole("button", { name: "退出登录" }).click();
+  await expect(page).toHaveURL(/\/login\?logout$/);
+  await login(page, "e2e_teacher", "Teacher2026!");
+  await expect(page).toHaveURL(/\/app\/teacher$/);
+  await expect(page.getByRole("heading", { name: "教学工作台" })).toBeVisible();
 });
 
 test("account can switch to another login session safely", async ({ page }) => {

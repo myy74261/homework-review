@@ -1,4 +1,14 @@
-import { Bot, BookOpen, ClipboardCheck, Home, LogOut, Settings, Sparkles } from "lucide-react";
+import {
+  Bot,
+  BookOpen,
+  ClipboardCheck,
+  CircleHelp,
+  Home,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
@@ -10,9 +20,11 @@ const teacherNav = [
   { to: "/teacher", label: "我的课堂", icon: Home },
   { to: "/teacher/assignments/new", label: "发布作业", icon: BookOpen },
   { to: "/teacher/ai-settings", label: "AI 设置", icon: Bot },
+  { to: "/teacher/help", label: "使用帮助", icon: CircleHelp },
 ];
 
 const studentNav = [{ to: "/student", label: "我的作业", icon: ClipboardCheck }];
+const adminNav = [{ to: "/admin", label: "教师审核", icon: ShieldCheck }];
 
 export function AppShell() {
   const session = useAppStore((state) => state.session)!;
@@ -20,7 +32,12 @@ export function AppShell() {
   const dismiss = useAppStore((state) => state.dismiss);
   const reduceMotion = useAppStore((state) => state.reduceMotion);
   const navigate = useNavigate();
-  const nav = session.user.role === "TEACHER" ? teacherNav : studentNav;
+  const nav =
+    session.user.role === "ADMIN"
+      ? adminNav
+      : session.user.role === "TEACHER"
+        ? teacherNav
+        : studentNav;
 
   useEffect(() => {
     document.documentElement.classList.toggle("reduce-motion", reduceMotion);
@@ -85,7 +102,12 @@ export function AppShell() {
             >
               <Settings className="size-3.5" />
               <span className="hidden sm:inline">
-                {session.user.displayName} · {session.user.role === "TEACHER" ? "教师" : "学生"}
+                {session.user.displayName} ·{" "}
+                {session.user.role === "ADMIN"
+                  ? "管理员"
+                  : session.user.role === "TEACHER"
+                    ? "教师"
+                    : "学生"}
               </span>
               <span className="sm:hidden">{session.user.displayName.slice(0, 1)}</span>
             </Link>

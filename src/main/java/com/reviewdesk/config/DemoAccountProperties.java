@@ -16,7 +16,10 @@ public record DemoAccountProperties(
         @DefaultValue("lin") String studentUsername,
         @DefaultValue("Student1234") String studentPassword,
         @DefaultValue("林清和") String studentName,
-        @DefaultValue("20230116") String studentNumber
+        @DefaultValue("20230116") String studentNumber,
+        @DefaultValue("admin") String adminUsername,
+        @DefaultValue("Admin1234") String adminPassword,
+        @DefaultValue("平台管理员") String adminName
 ) {
 }
 

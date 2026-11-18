@@ -1,5 +1,7 @@
 package com.reviewdesk.security;
 
+import com.reviewdesk.domain.Account;
+import com.reviewdesk.repository.AccountRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,6 +15,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
+    private final AccountRepository accountRepository;
+
+    public SecurityConfig(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -25,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login", "/register",
                                 "/css/**", "/js/**", "/error").permitAll()
                         .requestMatchers("/app/**").authenticated()
+                        .requestMatchers("/api/app/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/app/teacher/**").hasRole("TEACHER")
                         .requestMatchers("/api/app/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/app/session").authenticated()
@@ -35,13 +44,34 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .failureUrl("/login?error")
+                        .failureHandler((request, response, exception) -> {
+                            String username = request.getParameter("username");
+                            Account account = username == null
+                                    ? null
+                                    : accountRepository.findByUsername(
+                                            username.strip().toLowerCase()).orElse(null);
+                            String reason = "error";
+                            if (account != null && !account.isActive()) {
+                                reason = "deactivated";
+                            } else if (account != null && account.isTeacher()
+                                    && "PENDING".equals(account.getApprovalStatus())) {
+                                reason = "pending";
+                            } else if (account != null && account.isTeacher()
+                                    && "REJECTED".equals(account.getApprovalStatus())) {
+                                reason = "rejected";
+                            }
+                            response.sendRedirect("/login?" + reason);
+                        })
                         .successHandler((request, response, authentication) -> {
+                            boolean admin = authentication.getAuthorities().stream()
+                                    .anyMatch(authority ->
+                                            "ROLE_ADMIN".equals(authority.getAuthority()));
                             boolean teacher = authentication.getAuthorities().stream()
                                     .anyMatch(authority ->
                                             "ROLE_TEACHER".equals(authority.getAuthority()));
-                            response.sendRedirect(teacher
-                                    ? "/app/teacher" : "/app/student");
+                            response.sendRedirect(admin
+                                    ? "/app/admin"
+                                    : teacher ? "/app/teacher" : "/app/student");
                         })
                         .permitAll())
                 .logout(logout -> logout

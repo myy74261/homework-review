@@ -1,6 +1,7 @@
 package com.reviewdesk.repository;
 
 import com.reviewdesk.domain.Account;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,5 +15,10 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findFirstByStudentNumberIgnoreCase(String studentNumber);
 
     boolean existsByUsername(String username);
+
+    List<Account> findByRoleAndApprovalStatusOrderByCreatedAtDesc(
+            String role, String approvalStatus);
+
+    List<Account> findByRoleOrderByCreatedAtDesc(String role);
 }
 

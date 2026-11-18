@@ -23,4 +23,6 @@ public interface AiBatchReviewJobRepository
     List<AiBatchReviewJob> findByAssignmentIdIn(Collection<Long> assignmentIds);
 
     List<AiBatchReviewJob> findByAssignmentId(Long assignmentId);
+
+    void deleteBySubmissionIdNot(Long submissionId);
 }

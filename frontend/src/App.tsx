@@ -46,6 +46,16 @@ const AiSettingsPage = lazy(() =>
     default: module.AiSettingsPage,
   })),
 );
+const AdminApprovalPage = lazy(() =>
+  import("@/pages/AdminApprovalPage").then((module) => ({
+    default: module.AdminApprovalPage,
+  })),
+);
+const TeacherHelpPage = lazy(() =>
+  import("@/pages/TeacherHelpPage").then((module) => ({
+    default: module.TeacherHelpPage,
+  })),
+);
 
 function HomeRedirect() {
   const session = useAppStore((state) => state.session);
@@ -54,12 +64,29 @@ function HomeRedirect() {
 
 function TeacherOnly({ children }: { children: React.ReactNode }) {
   const session = useAppStore((state) => state.session);
-  return session?.user.role === "TEACHER" ? children : <Navigate to="/student" replace />;
+  return session?.user.role === "TEACHER" ? (
+    children
+  ) : (
+    <Navigate to={session?.user.role === "ADMIN" ? "/admin" : "/student"} replace />
+  );
 }
 
 function StudentOnly({ children }: { children: React.ReactNode }) {
   const session = useAppStore((state) => state.session);
-  return session?.user.role === "STUDENT" ? children : <Navigate to="/teacher" replace />;
+  return session?.user.role === "STUDENT" ? (
+    children
+  ) : (
+    <Navigate to={session?.user.role === "ADMIN" ? "/admin" : "/teacher"} replace />
+  );
+}
+
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  const session = useAppStore((state) => state.session);
+  return session?.user.role === "ADMIN" ? (
+    children
+  ) : (
+    <Navigate to={session?.user.role === "TEACHER" ? "/teacher" : "/student"} replace />
+  );
 }
 
 function LazyPage({ children }: { children: ReactNode }) {
@@ -112,6 +139,16 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route index element={<HomeRedirect />} />
         <Route
+          path="admin"
+          element={
+            <AdminOnly>
+              <LazyPage>
+                <AdminApprovalPage />
+              </LazyPage>
+            </AdminOnly>
+          }
+        />
+        <Route
           path="account"
           element={
             <LazyPage>
@@ -124,6 +161,14 @@ export default function App() {
           element={
             <TeacherPage>
               <AiSettingsPage />
+            </TeacherPage>
+          }
+        />
+        <Route
+          path="teacher/help"
+          element={
+            <TeacherPage>
+              <TeacherHelpPage />
             </TeacherPage>
           }
         />

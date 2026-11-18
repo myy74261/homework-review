@@ -1,4 +1,4 @@
-export type Role = "TEACHER" | "STUDENT";
+export type Role = "ADMIN" | "TEACHER" | "STUDENT";
 
 export interface User {
   id: number;
@@ -9,6 +9,42 @@ export interface User {
   email: string | null;
   department: string | null;
   professionalTitle: string | null;
+}
+
+export interface TeacherApplication {
+  id: number;
+  username: string;
+  displayName: string;
+  email: string | null;
+  department: string | null;
+  professionalTitle: string | null;
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  reviewNote: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export interface TeacherApprovalOverview {
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  teachers: TeacherApplication[];
+}
+
+export interface TeacherHelp {
+  showDemoCredentials: boolean;
+  teacherUsername: string;
+  teacherPassword: string;
+  studentUsername: string;
+  studentPassword: string;
+  adminUsername: string;
+  adminPassword: string | null;
+  disciplineAccounts: {
+    role: string;
+    username: string;
+    password: string;
+    description: string;
+  }[];
 }
 
 export interface Session {

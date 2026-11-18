@@ -32,8 +32,8 @@ public class AuthController {
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             Account account = accountService.requireByUsername(authentication.getName());
-            return "redirect:" + (account.isTeacher()
-                    ? "/app/teacher" : "/app/student");
+            return "redirect:" + (account.isAdmin()
+                    ? "/app/admin" : account.isTeacher() ? "/app/teacher" : "/app/student");
         }
         return "login";
     }
@@ -54,7 +54,8 @@ public class AuthController {
             Account account = accountService.register(
                     username, password, displayName, role, studentNumber);
             classroomService.linkStudentToRosters(account);
-            return "redirect:/login?registered";
+            return "redirect:/login?" + (account.isTeacher()
+                    ? "pending" : "registered");
         } catch (IllegalArgumentException exception) {
             model.addAttribute("errorMessage", exception.getMessage());
             model.addAttribute("username", username);

@@ -39,7 +39,9 @@ public class SpaSessionController {
                 toUser(account),
                 csrfToken.getToken(),
                 csrfToken.getHeaderName(),
-                account.isTeacher() ? "/app/teacher" : "/app/student");
+                account.isAdmin()
+                        ? "/app/admin"
+                        : account.isTeacher() ? "/app/teacher" : "/app/student");
     }
 
     @PutMapping("/account/password")

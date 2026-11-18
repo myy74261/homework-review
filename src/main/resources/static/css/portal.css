@@ -62,17 +62,65 @@ body.portal-page:not(.auth-page) {
 .auth-story h1 {
   margin: 0;
   font-family: var(--font-reading);
-  font-size: clamp(34px, 4vw, 52px);
+  font-size: clamp(34px, 3.6vw, 46px);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
 .auth-story > div > p:last-child {
   max-width: 510px;
   margin: 16px 0 0;
   color: var(--muted);
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.auth-page .brand {
+  gap: 14px;
+}
+
+.auth-page .brand-seal {
+  width: 58px;
+  height: 58px;
+  border-width: 2px;
+  border-radius: 15px;
+  font-size: 30px;
+}
+
+.auth-page .brand-copy strong {
+  font-size: 27px;
+}
+
+.auth-page .brand-copy small {
+  margin-top: 5px;
   font-size: 12px;
-  line-height: 1.8;
+}
+
+.auth-feature-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 24px;
+}
+
+.auth-feature-list div {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid rgba(35, 95, 78, 0.13);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.auth-feature-list strong {
+  color: var(--green-dark);
+  font-size: 13px;
+}
+
+.auth-feature-list span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .auth-flow {
@@ -83,18 +131,18 @@ body.portal-page:not(.auth-page) {
 }
 
 .auth-flow span {
-  padding: 7px 10px;
+  padding: 8px 12px;
   border: 1px solid rgba(35, 95, 78, 0.2);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.55);
   color: var(--green-dark);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .auth-flow i {
   color: var(--muted);
   font-style: normal;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .auth-security {
@@ -133,8 +181,8 @@ body.portal-page:not(.auth-page) {
 .auth-card-head > p:last-child {
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.65;
+  font-size: 13px;
+  line-height: 1.75;
 }
 
 .auth-form {
@@ -156,7 +204,7 @@ body.portal-page:not(.auth-page) {
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   outline: none;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .auth-submit {
@@ -166,7 +214,7 @@ body.portal-page:not(.auth-page) {
   border-radius: 9px;
   background: var(--green);
   color: #fff;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .auth-submit:hover {
@@ -176,7 +224,7 @@ body.portal-page:not(.auth-page) {
 .auth-switch {
   margin: 17px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -967,7 +1015,7 @@ body.portal-page:not(.auth-page) {
 
 .field > span {
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -982,7 +1030,7 @@ body.portal-page:not(.auth-page) {
   outline: none;
   background: #fffefb;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -999,7 +1047,7 @@ body.portal-page:not(.auth-page) {
 
 .field-error {
   color: var(--rust);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .rubric-form-list {

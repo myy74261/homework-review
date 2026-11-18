@@ -16,6 +16,7 @@ import java.time.Instant;
 public class Account {
 
     public enum Role {
+        ADMIN,
         TEACHER,
         STUDENT
     }
@@ -51,6 +52,18 @@ public class Account {
     @Column(nullable = false)
     private Instant createdAt;
 
+    @Column(name = "approval_status", nullable = false, length = 20)
+    private String approvalStatus;
+
+    @Column(name = "review_note", length = 300)
+    private String reviewNote;
+
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
+
+    @Column(name = "reviewed_by_account_id")
+    private Long reviewedByAccountId;
+
     private Boolean active;
 
     private Instant deactivatedAt;
@@ -67,6 +80,7 @@ public class Account {
         this.role = role.name();
         this.studentNumber = studentNumber;
         this.createdAt = Instant.now();
+        this.approvalStatus = role == Role.TEACHER ? "PENDING" : "APPROVED";
         this.active = true;
     }
 
@@ -120,6 +134,48 @@ public class Account {
 
     public boolean isTeacher() {
         return Role.TEACHER.name().equals(role);
+    }
+
+    public boolean isAdmin() {
+        return Role.ADMIN.name().equals(role);
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus == null ? "APPROVED" : approvalStatus;
+    }
+
+    public boolean isApproved() {
+        return "APPROVED".equals(getApprovalStatus());
+    }
+
+    public boolean canSignIn() {
+        return isActive() && (!isTeacher() || isApproved());
+    }
+
+    public String getReviewNote() {
+        return reviewNote;
+    }
+
+    public Instant getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public Long getReviewedByAccountId() {
+        return reviewedByAccountId;
+    }
+
+    public void approve(long reviewerId, String note) {
+        this.approvalStatus = "APPROVED";
+        this.reviewNote = note;
+        this.reviewedAt = Instant.now();
+        this.reviewedByAccountId = reviewerId;
+    }
+
+    public void reject(long reviewerId, String note) {
+        this.approvalStatus = "REJECTED";
+        this.reviewNote = note;
+        this.reviewedAt = Instant.now();
+        this.reviewedByAccountId = reviewerId;
     }
 
     /**
