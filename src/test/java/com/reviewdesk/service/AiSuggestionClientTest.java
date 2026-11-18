@@ -1,6 +1,7 @@
 package com.reviewdesk.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
@@ -83,5 +84,67 @@ class AiSuggestionClientTest {
                 "课程作业", "DOCUMENT", "正文", "NONE",
                 null, null, null, null, "量规"))
                 .isEmpty();
+    }
+
+    @Test
+    void reportsAuthenticationFailureWithoutExposingProviderBody() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/chat/completions", exchange -> {
+            byte[] body = "{\"error\":\"invalid key\"}".getBytes();
+            exchange.sendResponseHeaders(401, body.length);
+            try (var output = exchange.getResponseBody()) {
+                output.write(body);
+            }
+        });
+        server.start();
+        try {
+            AiSuggestionClient client = new AiSuggestionClient(
+                    new ObjectMapper(),
+                    "bad-key",
+                    "http://127.0.0.1:" + server.getAddress().getPort(),
+                    "test-model",
+                    5);
+
+            assertThatThrownBy(() -> client.reviewSubmission(
+                    "课程作业", "DOCUMENT", "用于测试的作业正文", "NONE",
+                    null, null, null, null, "量规"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("鉴权失败")
+                    .satisfies(exception ->
+                            assertThat(exception.getMessage()).doesNotContain("invalid key"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void reportsUnrecognizedModelResponse() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/chat/completions", exchange -> {
+            byte[] body = """
+                    {"choices":[{"message":{"content":"不是 JSON 的回复"}}]}
+                    """.getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            try (var output = exchange.getResponseBody()) {
+                output.write(body);
+            }
+        });
+        server.start();
+        try {
+            AiSuggestionClient client = new AiSuggestionClient(
+                    new ObjectMapper(),
+                    "test-key",
+                    "http://127.0.0.1:" + server.getAddress().getPort(),
+                    "test-model",
+                    5);
+
+            assertThatThrownBy(() -> client.reviewSubmission(
+                    "课程作业", "DOCUMENT", "用于测试的作业正文", "NONE",
+                    null, null, null, null, "量规"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("格式无法识别");
+        } finally {
+            server.stop(0);
+        }
     }
 }

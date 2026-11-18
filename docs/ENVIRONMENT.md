@@ -79,7 +79,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
 | `AI_API_KEY` | 空 | OpenAI 兼容模型密钥；为空时使用规则生成 |
 | `AI_BASE_URL` | `https://api.deepseek.com` | 模型 API 基地址 |
 | `AI_MODEL` | `deepseek-chat` | 模型名称 |
-| `AI_TIMEOUT_SECONDS` | `30` | 模型请求超时秒数 |
+| `AI_TIMEOUT_SECONDS` | `60` | 模型请求超时秒数 |
 | `AI_SETTINGS_SECRET` | 本地开发默认值 | 加密教师在页面中填写的 API Key；生产必须更换 |
 | `AI_BATCH_SIZE` | `3` | 每轮自动预审最多处理的提交数 |
 | `AI_BATCH_INITIAL_DELAY_MS` | `15000` | 服务启动后首次扫描等待时间 |
@@ -116,7 +116,7 @@ UPLOAD_MAX_REQUEST_SIZE=220MB
 AI_API_KEY=
 AI_BASE_URL=https://api.deepseek.com
 AI_MODEL=deepseek-chat
-AI_TIMEOUT_SECONDS=30
+AI_TIMEOUT_SECONDS=60
 AI_SETTINGS_SECRET=change-this-local-encryption-secret
 AI_BATCH_SIZE=3
 AI_BATCH_INITIAL_DELAY_MS=15000

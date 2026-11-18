@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,7 @@ public class AiSuggestionClient {
             @Value("${review-desk.ai.api-key:}") String apiKey,
             @Value("${review-desk.ai.base-url:https://api.deepseek.com}") String baseUrl,
             @Value("${review-desk.ai.model:deepseek-chat}") String model,
-            @Value("${review-desk.ai.timeout-seconds:30}") long timeoutSeconds) {
+            @Value("${review-desk.ai.timeout-seconds:60}") long timeoutSeconds) {
         this.objectMapper = objectMapper;
         this.apiKey = apiKey == null ? "" : apiKey.strip();
         this.baseUrl = baseUrl == null
@@ -171,7 +173,7 @@ public class AiSuggestionClient {
                 valueOrNone(collaborationDeclaration),
                 limit(rubricSummary),
                 limit(submissionContent));
-        Optional<String> raw = chat(config, """
+        String raw = chatRequired(config, """
                 你是教师的作业预审助手。你的结论只是候选意见，不能代替教师，也不能自动扣分。
                 只分析用户提供的作业正文，不得捏造引用、数据或学生信息。
                 只能依据给定评分量规，指出可核验的薄弱点，并引用学生原文作为证据。
@@ -190,11 +192,8 @@ public class AiSuggestionClient {
                 }
                 最多返回 6 条建议。suggestedPoints 必须位于该量规 0 到满分之间。
                 """, source);
-        if (raw.isEmpty()) {
-            return Optional.empty();
-        }
         try {
-            JsonNode root = objectMapper.readTree(extractJson(raw.get()));
+            JsonNode root = objectMapper.readTree(extractJson(raw));
             String summary = root.path("summary").asText("").strip();
             List<ReviewSuggestion> suggestions = new ArrayList<>();
             for (JsonNode item : root.path("suggestions")) {
@@ -211,12 +210,15 @@ public class AiSuggestionClient {
                         rubricName, evidence, suggestion, points));
             }
             if (summary.isBlank() || suggestions.isEmpty()) {
-                return Optional.empty();
+                throw new IllegalStateException(
+                        "AI 模型没有返回可用建议，请重试或调整评分维度名称");
             }
             return Optional.of(new ReviewResult(summary, suggestions));
+        } catch (IllegalStateException exception) {
+            throw exception;
         } catch (Exception exception) {
             LOGGER.warn("AI 预审返回内容无法解析", exception);
-            return Optional.empty();
+            throw new IllegalStateException("AI 模型返回格式无法识别，请稍后重试");
         }
     }
 
@@ -232,6 +234,18 @@ public class AiSuggestionClient {
     private Optional<String> chat(ProviderConfig config,
                                   String systemPrompt,
                                   String userContent) {
+        try {
+            return Optional.of(chatRequired(config, systemPrompt, userContent));
+        } catch (RuntimeException exception) {
+            LOGGER.warn("{}（{} / {}）",
+                    exception.getMessage(), config.provider(), config.model());
+            return Optional.empty();
+        }
+    }
+
+    private String chatRequired(ProviderConfig config,
+                                String systemPrompt,
+                                String userContent) {
         try {
             ObjectNode payload = objectMapper.createObjectNode();
             payload.put("model", config.model());
@@ -253,17 +267,45 @@ public class AiSuggestionClient {
                     .build()
                     .send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                LOGGER.warn("AI 模型调用失败，HTTP {}", response.statusCode());
-                return Optional.empty();
+                throw providerError(response.statusCode());
             }
             JsonNode root = objectMapper.readTree(response.body());
             String content = root.path("choices").path(0)
                     .path("message").path("content").asText("").strip();
-            return content.isBlank() ? Optional.empty() : Optional.of(content);
+            if (content.isBlank()) {
+                throw new IllegalStateException("AI 模型返回内容为空，请稍后重试");
+            }
+            return content;
+        } catch (HttpTimeoutException exception) {
+            throw new IllegalStateException("AI 模型响应超时，请检查网络或稍后重试");
+        } catch (ConnectException exception) {
+            throw new IllegalStateException(
+                    "服务器无法连接模型服务，请检查接口地址和服务器网络");
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("AI 模型请求被中断，请稍后重试");
+        } catch (IllegalStateException exception) {
+            throw exception;
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException("AI 接口地址格式不正确，请检查模型设置");
         } catch (Exception exception) {
             LOGGER.warn("AI 模型调用异常", exception);
-            return Optional.empty();
+            throw new IllegalStateException("AI 模型请求失败，请稍后重试");
         }
+    }
+
+    private IllegalStateException providerError(int statusCode) {
+        String message = switch (statusCode) {
+            case 401, 403 -> "模型鉴权失败：API Key 无效、已过期或没有接口权限";
+            case 402 -> "模型账户余额不足，请充值或更换 API Key";
+            case 429 -> "模型请求频率或额度已用尽，请稍后重试";
+            case 400, 404, 422 -> "模型名称或接口地址不正确，请检查 AI 设置";
+            default -> statusCode >= 500
+                    ? "模型服务暂时不可用，请稍后重试"
+                    : "模型请求失败，HTTP " + statusCode;
+        };
+        LOGGER.warn("AI 模型调用失败，HTTP {}：{}", statusCode, message);
+        return new IllegalStateException(message);
     }
 
     private String extractJson(String value) {

@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "playwright test",
-    "smoke:prod": "node scripts/smoke-production.mjs"
+    "smoke:prod": "node scripts/smoke-production.mjs",
+    "diagnose:ai:prod": "node scripts/diagnose-ai-production.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

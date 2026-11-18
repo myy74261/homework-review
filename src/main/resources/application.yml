@@ -55,7 +55,7 @@ review-desk:
     api-key: ${AI_API_KEY:}
     base-url: ${AI_BASE_URL:https://api.deepseek.com}
     model: ${AI_MODEL:deepseek-chat}
-    timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:60}
     settings-secret: ${AI_SETTINGS_SECRET:review-desk-local-dev-secret}
     batch-size: ${AI_BATCH_SIZE:3}
     batch-initial-delay-ms: ${AI_BATCH_INITIAL_DELAY_MS:15000}
